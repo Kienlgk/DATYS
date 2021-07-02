@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+    datyps_env:
+        container_name: datyps
+        build: .
+        ports:
+            - "9111:9111"
+        volumes:
+            - ./src:/app/src
+        tty: true
