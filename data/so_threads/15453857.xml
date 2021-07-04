@@ -1,0 +1,15 @@
+https://stackoverflow.com/questions/15453857
+
+Is it possible to extend TreeMultimap from Google's guava to <API label="">get</API> some king odd <code><API label="com.google.common.collect.ContiguousSet.ceiling">ceiling</API></code> function? <code><API label="com.google.common.collect.ContiguousSet.ceiling">ceiling</API>(key)</code> would return the smallest key greater than the given one. (I know I could <API label="">get</API> an ordered set view and just look, but I would prefer something with beter time complexity, like a balanced binary search tree offers)
+Is there any other library that would implement a balanced binary search tree and allow that?
+What is the complexity of common operations of TreeMultimap?
+
+
+==========
+<pre><code>
+<API label="com.google.common.collect.AbstractListMultimap.keySet">multimap.keySet</API>().<API label="None">ceiling</API>(key)
+
+</code></pre>
+
+does it pretty directly, but you need Java 6 and the most recent Guava release, 14.0, which is when <code><API label="com.google.common.collect.TreeMultimap.keySet">TreeMultimap.keySet</API>()</code> <a href="http://docs.guava-libraries.googlecode.com/git-history/release/javadoc/com/google/common/collect/TreeMultimap.html#<API label="None">keySet</API>%28%29" rel="nofollow">started returning <code>NavigableSet</code></a>.  The complexity is O(log #<API label="">keys</API>), exactly as you would expect.
+

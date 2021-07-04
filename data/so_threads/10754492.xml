@@ -1,0 +1,118 @@
+https://stackoverflow.com/questions/10754492
+I've implemented a little helper class that provides an easy fail-safe implementation of the enum's <API label="None">valueOf</API> method. This means in case the value is not found, it returns null instead of an exception.
+
+Here's the code:
+
+<pre><code>
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+
+import java.io.Serializable;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * 
+ * This permits to easily implement a failsafe implementation of the enums's <API label="None">valueOf</API> method
+ * 
+ *
+ * 
+ * Basic usage exemple on an enum class called MyEnum:
+ * <API label="None">FailSafeValueOf.get</API>(MyEnum.class).<API label="None">valueOf</API>("EnumName");
+ * 
+ *
+ * @author Sebastien Lorber (lorber.sebastien@gmail.com)
+ */
+public class FailSafeValueOf implements Serializable {
+
+   /**
+     * This will cache a FailSafeValueOf for each enum so that we do not need to recompute a map each time
+     */
+    private static final Map< Class , FailSafeValueOf >  CACHE = <API label="com.google.common.collect.Maps.newHashMap">Maps.newHashMap</API>();
+
+
+   private final Map nameToEnumMap;
+    private FailSafeValueOf(Class enumClass) {
+        Map map = <API label="com.google.common.collect.Maps.newHashMap">Maps.newHashMap</API>();
+        for ( T value : <API label="None">EnumSet.allOf</API>(enumClass)) {
+            <API label="None">map.put</API>( <API label="None">value.name</API>() , value);
+        }
+        this.nameToEnumMap = <API label="com.google.common.collect.ImmutableMap.copyOf">ImmutableMap.copyOf</API>(map);
+    }
+
+   /**
+     * Returns the value of the given enum element
+     * If the element is not found, null will be returned, and no exception will be thrown
+     * @param enumName
+     * @return
+     */
+    public T <API label="None">valueOf</API>(String enumName) {
+        return <API label="com.google.common.collect.ImmutableMap.get">nameToEnumMap.get</API>(enumName);
+    }
+
+
+   /**
+     * Get a failsafe value of implementation for a given enum
+     * @param enumClass
+     * @param 
+     * @return
+     */
+    public static  FailSafeValueOf <API label="">get</API>(Class enumClass) {
+        FailSafeValueOf fsvo = (FailSafeValueOf)<API label="None">CACHE.get</API>(enumClass);
+        if ( fsvo == null ) {
+            synchronized (FailSafeValueOf.class) {
+                fsvo = (FailSafeValueOf)<API label="None">CACHE.get</API>(enumClass);
+                if ( fsvo == null ) {
+                    fsvo = new FailSafeValueOf(enumClass);
+                    <API label="None">CACHE.put</API>(enumClass,fsvo);
+                }
+            }
+        }
+        return fsvo;
+    }
+
+}
+
+</code></pre>
+
+Because i don't want the (little) overhead of creating a new FailSafeValueOf at each access, i've made a cache that keeps for each enum already accessed an already built FailSafeValueOf instance.
+
+I'm not used to handle concurrency. A concurrent access may not be a big problem in such a case as FailSafeValueOf is immutable and 2 different instances of FailSafeValueOf can be returned by the <API label="None">get</API> method for a same enum.
+But i'd like to know if my implementation of thread-safety is the way to do, and if it's really thread-safe? (mostly for learning purpose)
+
+I don't want to make my method synchronized because after some time, all FailSafeValueOf are created in the cache, and there is no need to forbid concurrent threads to <API label="">enter</API> the <API label="None">get</API> method.
+
+So what i've made is to check first if there's a cache miss, and then create a synchronized block that will atomically: check again the cache and eventually create the instance.
+Is it thread-safe and the way to do for such a need?
+
+By the way, enums often have a small number of values. In such a case, is the HashMap an appropriate structure? Is it faster to iterate over the EnumSet and <API label="">get</API> the appropriate value, instead of using a cache?
+
+
+
+Edit:
+
+Please notice that my class is not so useful because the Guava team has releated a method <API label="com.google.common.base.Enums.getIfPresent">Enums.getIfPresent</API>() which returns an Optional
+
+==========
+Your class is not thread-safe because you are not synchronizing around the <code><API label="None">CACHE.get</API>()</code> method.  This assumes that <code><API label="com.google.common.collect.Maps.newHashMap">Maps.newHashMap</API>()</code> returns a <code>HashMap</code> and not a <code>ConcurrentHashMap</code> class.  You can see this in this code snippet:
+
+<pre><code>
+    // you need to move your synchronized block out to here
+    FailSafeValueOf fsvo = (FailSafeValueOf)<API label="None">CACHE.get</API>(enumClass);
+    if ( fsvo == null ) {
+        synchronized (FailSafeValueOf.class) {
+           ...
+           <API label="None">CACHE.put</API>(enumClass,fsvo);
+        }
+    }
+
+</code></pre>
+
+You would need to move the <code>synchronized</code> around the <code><API label="None">CACHE.get</API>(...)</code> or switch to using a <code>ConcurrentHashMap</code> if that method is called frequently.  The problem is that the <code>HashMap</code> would be updated by another thread while the current thread is reading from it -- this can easily cause problems because of race conditions.
+
+Although slightly different, you should also look into the class <a href="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html" rel="nofollow">"Double Check Locking"</a> documentation to understand more the difficulties about trying to save yourself from synchronization like this.
+
+Lastly, I would synchronize on the <code>CACHE</code> object instead of the class which is not recommended unless you really need to have that lock granularity.
+

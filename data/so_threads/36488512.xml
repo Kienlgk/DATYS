@@ -1,0 +1,110 @@
+https://stackoverflow.com/questions/36488512
+I have a file upload REST endpoint implemented in Dropwizard. I am new to this and just trying to learn.
+
+<pre><code>
+@Path("/files")
+@Produces(MediaType.APPLICATION_JSON)
+public class FileUploadResource {
+
+   private final MyAppWebConfiguration configuration;
+    private static final Logger logger = <API label="None">LoggerFactory.getLogger</API>(FileUploadResource.class);
+
+   public FileUploadResource(MyAppWebConfiguration configuration) {
+        this.configuration = configuration;
+    }
+
+   @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response uploadFile(
+            @FormDataParam("file") InputStream uploadedInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileDetail) throws IOException {
+
+       <API label="None">logger.info</API>("Request to upload the file ", fileDetail.getFileName());
+        final String uploadedFileLocation = configuration.getCsvUploadPath();
+        final String fileName = fileDetail.getFileName();
+        writeToFile(uploadedInputStream, uploadedFileLocation, fileName);
+        return Response.ok("File " + fileName + " is uploaded to the location " + uploadedFileLocation).<API label="None">build</API>();
+    }
+
+   // save uploaded file to new location
+    protected void writeToFile(InputStream uploadedInputStream, String uploadedFileLocation, String fileName) throws IOException {
+        <API label="None">logger.info</API>("Writing {} to {}", fileName, uploadedFileLocation);
+        final java.nio.file.Path outputPath = FileSystems.getDefault().<API label="None">getPath</API>(uploadedFileLocation, fileName);
+        <API label="None">Files.copy</API>(uploadedInputStream, outputPath, StandardCopyOption.REPLACE_EXISTING);
+        <API label="None">logger.info</API>("Uploaded {} to the location {}", fileName, uploadedFileLocation);
+    }
+
+</code></pre>
+
+The code works fine and am able to upload the file.
+I am trying to <API label="">test</API> it with below code based on <a href="https://gist.github.com/psamsotha/218c6bbeb6164bac7cbc" rel="nofollow">https://gist.github.com/psamsotha/218c6bbeb6164bac7cbc</a> :
+
+<pre><code>
+public class FileUploadResourceTest extends JerseyTest {
+
+   private final static MyAppWebConfiguration mockConfiguration = <API label="org.mockito.Mockito.mock">mock</API>(MyAppWebConfiguration.class);
+
+   @Override
+    public ResourceConfig <API label="">configure</API>() {
+        return new ResourceConfig(FileUploadResource.class)
+                .<API label="None">register</API>(MultiPartFeature.class)
+                .<API label="None">register</API>(new LoggingFilter(Logger.getAnonymousLogger(), true));
+    }
+
+   @Override
+    public void configureClient(ClientConfig config) {
+        <API label="None">config.register</API>(MultiPartFeature.class);
+    }
+
+   @Test
+    public void <API label="">test</API>() {
+        FileDataBodyPart filePart = new FileDataBodyPart("file", new File("/Users/rocky/Downloads/<API label="">test</API>.csv"));
+        filePart.setContentDisposition(<API label="None">FormDataContentDisposition.name</API>("file").fileName("/Users/rocky/Downloads/<API label="">test</API>.csv").<API label="None">build</API>());
+
+       MultiPart multiPart = new FormDataMultiPart()
+                .bodyPart(filePart);
+        Response response = <API label="None">target</API>("/files").request()
+                .<API label="None">post</API>(Entity.entity(multiPart, MediaType.MULTIPART_FORM_DATA_TYPE));
+        <API label="None">assertThat</API>(response.getStatus()).<API label="">isEqualTo</API>(Response.Status.OK.getStatusCode());
+        <API label="None">response.close</API>();
+    }
+
+</code></pre>
+
+This <API label="">test</API> fails with the below error:
+
+<pre><code>
+WARNING: The following warnings have been detected: WARNING: HK2 service reification failed for [com.my.app.resources.FileUploadResource] with an exception:
+MultiException stack 1 of 2
+java.lang.NoSuchMethodException: Could not find a suitable constructor in com.my.app.resources.FileUploadResource class.
+    at <API label="">org.glassfish.jersey.internal.inject.JerseyClassAnalyzer.getConstructor</API>(JerseyClassAnalyzer.java:192)
+    at <API label="">org.jvnet.hk2.internal.Utilities.getConstructor</API>(Utilities.java:178)
+    at <API label="">org.jvnet.hk2.internal.ClazzCreator.initialize</API>(ClazzCreator.java:128)
+    at <API label="">org.jvnet.hk2.internal.ClazzCreator.initialize</API>(ClazzCreator.java:179)
+
+</code></pre>
+
+I do not have a no argument constructor in <code>FileUploadResource</code> but <code>new ResourceConfig(FileUploadResource.class)</code> expects a no argument constructor. How do I pass the <API label="">info</API> about the one argument constructor here?
+
+Any help here would be highly appreciated. Also, please feel free to suggest any other best practices about the code and the tests so that I can improve them.
+
+Many thanks in advance.
+
+==========
+When you <API label="">register</API> the resource as a class
+
+<pre><code>
+new ResourceConfig(FileUploadResource.class)
+
+</code></pre>
+
+You are telling Jersey to create it. But it has no idea how to create it, as there is only a constructor that accepts a configuration object, which Jersey knows nothing about. Instead you should just <API label="">register</API> as an object. Same way as if you were registering with Dropwizard (<code>env.jersey().<API label="None">register</API>(...)</code>).
+
+<pre><code>
+new ResourceConfig().regster(new FileUploadResource(mockConfiguration))
+    ...
+
+</code></pre>
+
+As an aside, with Dropwizard we don't need to explicitly use the <code>JerseyTest</code>. Dropwizard comes with a JUnit Rule, that explicitly run its own <code>JerseyTest</code>, and we can <API label="">configure</API> it with the rule. See <a href="https://github.com/dropwizard/dropwizard/issues/1496" rel="nofollow">this issue</a>, where I posted a complete example.
+

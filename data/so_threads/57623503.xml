@@ -1,0 +1,140 @@
+https://stackoverflow.com/questions/57623503
+I am not able to <API label="org.mockito.Mockito.mock">mock</API> object inside my unit test. 
+
+Code Snippet:
+
+<pre><code>
+@Before
+public void setUp(){
+    <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+}
+
+@Test
+public void test_employee_name() {
+    Employee employee = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Employee.class);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">employee.getName</API>())
+            .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("jitesh");
+    assertEquals("jitesh", <API label="None">employee.getName</API>());
+}
+
+</code></pre>
+
+Dependencies:
+
+<pre><code>
+testImplementation 'org.mockito:mockito-core:2.7.22'
+
+</code></pre>
+
+Gradle:
+
+<pre><code>
+android {
+    compileSdkVersion 28
+    dataBinding {
+        enabled = true
+    }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+    defaultConfig {
+        applicationId "com.example.myapplication"
+        minSdkVersion 15
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+   // Room components
+    implementation "android.arch.persistence.room:runtime:1.1.1"
+    annotationProcessor "android.arch.persistence.room:compiler:1.1.1"
+    androidTestImplementation "android.arch.persistence.room:testing:1.1.1"
+    annotationProcessor "android.arch.lifecycle:compiler:1.1.1"
+    implementation "android.arch.lifecycle:extensions:1.1.1"
+
+   implementation 'com.android.support:design:28.0.0'
+    testImplementation 'org.mockito:mockito-core:2.7.22' 
+}
+
+</code></pre>
+
+Error:
+
+<pre><code>
+java.lang.IllegalStateException: Could not initialize plugin: interface org.mockito.plugins.MockMaker
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader$1.invoke</API>(PluginLoader.java:66)
+    at <API label="">com.sun.proxy.$Proxy7.isTypeMockable</API>(Unknown Source)
+    at org.mockito.internal.util.MockUtil.typeMockabilityOf(MockUtil.java:29)
+    at <API label="">org.mockito.internal.util.MockCreationValidator.validateType</API>(MockCreationValidator.java:22)
+    at org.mockito.internal.creation.MockSettingsImpl.validatedSettings(MockSettingsImpl.java:186)
+    at <API label="">org.mockito.internal.creation.MockSettingsImpl.confirm</API>(MockSettingsImpl.java:180)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:62)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1729)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1642)
+    at com.example.myapplication.ExampleUnitTest.setUp(ExampleUnitTest.java:30)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:24)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:137)
+    at com.intellij.junit4.JUnit4IdeaTestRunner.startRunnerWithArgs(JUnit4IdeaTestRunner.java:68)
+    at com.intellij.rt.execution.junit.IdeaTestRunner$Repeater.startRunnerWithArgs(IdeaTestRunner.java:47)
+    at com.intellij.rt.execution.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:242)
+    at <API label="">com.intellij.rt.execution.junit.JUnitStarter.main</API>(JUnitStarter.java:70)
+Caused by: java.lang.NoClassDefFoundError: net/bytebuddy/dynamic/loading/ClassLoadingStrategy
+    at org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker.(SubclassByteBuddyMockMaker.java:33)
+    at org.mockito.internal.creation.bytebuddy.ByteBuddyMockMaker.(ByteBuddyMockMaker.java:21)
+    at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+    at <API label="">sun.reflect.NativeConstructorAccessorImpl.newInstance</API>(NativeConstructorAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingConstructorAccessorImpl.newInstance</API>(DelegatingConstructorAccessorImpl.java:45)
+    at <API label="">java.lang.reflect.Constructor.newInstance</API>(Constructor.java:423)
+    at <API label="">java.lang.Class.newInstance</API>(Class.java:442)
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader.loadPlugin</API>(PluginLoader.java:54)
+    at org.mockito.internal.configuration.plugins.PluginRegistry.(PluginRegistry.java:18)
+    at org.mockito.internal.configuration.plugins.Plugins.(Plugins.java:17)
+    at org.mockito.internal.configuration.GlobalConfiguration.tryGetPluginAnnotationEngine(GlobalConfiguration.java:55)
+    at <API label="">org.mockito.MockitoAnnotations.initMocks</API>(MockitoAnnotations.java:68)
+    at com.example.myapplication.ExampleUnitTest.setUp(ExampleUnitTest.java:29)
+    ... 22 more
+Caused by: java.lang.ClassNotFoundException: net.bytebuddy.dynamic.loading.ClassLoadingStrategy
+    at <API label="">java.net.URLClassLoader.findClass</API>(URLClassLoader.java:382)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:424)
+    at <API label="">sun.misc.Launcher$AppClassLoader.loadClass</API>(Launcher.java:349)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:357)
+
+</code></pre>
+
+==========
+I don't know what exactly goes wrong here, after clean and make the project everything seems to get working.  
+
+It seems that some other dependencies causing this issue If anyone facing the same issue in the future, just try to create a sample of it first and then only do implement inside your project. 
+

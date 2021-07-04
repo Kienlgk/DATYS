@@ -1,0 +1,166 @@
+https://stackoverflow.com/questions/37861091
+I am trying write a unit test for a "save as" action using mockito. Part of that action is making and showing a FileDialog where the user can enter a file to save to. Choosing a file is not something I can automate, so I want to <API label="">mock</API> the FileDialog and <API label="">mock</API> <code><API label="None">mockedFileDialog.getFiles</API>()</code> to return the file I want to "save" to.
+
+The problem is that the file dialog is created in a parent class of my "save as" action. <code><API label="org.mockito.Mockito.when">when</API>(..)</code> seems to only work on mocks, but mocking the class I want to test defeats the point of the exercise. Then I am only testing if methods are called, which is not very useful. I could just run <code>AbstractSaveAction.saveNet(..)</code> in the test, but this way I can not be sure that the save action is actually working - I would just be testing if there is a method that would save something, but I can't test if there is a chain of events that invokes this function.
+
+The test below would yield:
+
+
+<pre>SaveActionTest.java:[60,24] getFileDialog(java.lang.String,java.lang.String) has protected access in application.AbstractSaveAction</pre>
+
+
+What is the correct way to test this action?
+
+
+
+Code to be tested
+
+<pre><code>
+public class SaveAsAction extends AbstractSaveAction {
+    public SaveAsAction(Controller controller, View view) {
+       super("", "", controller, view);
+    }
+
+   @Override
+    public void actionPerformed(ActionEvent e) {
+        saveAsNet();
+    }
+}
+
+</code></pre>
+
+
+
+<pre><code>
+public abstract class AbstractSaveAction extends GuiAction {
+    public AbstractSaveAction(..) {
+        //...
+    }
+
+
+   protected final File saveAsFile(FileDialog fileDialog, String extension) {
+        //...
+    }
+
+
+   protected final void saveAsNet() {
+        FileDialog fileDialog = getFileDialog("Save the world", "xml");
+        File file = saveAsFile(fileDialog, "xml");
+        saveNet(file);
+    }
+
+   protected final void saveNet(File file) {
+        try {
+            controller.saveAsFile(file);
+        } catch (TicklishPolarBearException e) {
+            //Panic
+        }
+    }
+
+   protected final FileDialog getFileDialog(String title, final String extension) {
+        FileDialog fileDialog = new FileDialog(view, title, FileDialog.SAVE);
+        fileDialog.setFile("*." + extension);
+        fileDialog.setFilenameFilter(new FilenameFilter() {
+            @Override
+            public boolean <API label="">accept</API>(File dir, String name) {
+                return <API label="None">name.endsWith</API>("." + extension);
+            }
+        });
+
+       return fileDialog;
+    }
+}
+
+</code></pre>
+
+Test
+
+<pre><code>
+@Test
+public void performsSaveAsWhenNetHasNoFile()
+        throws AllKindsOfExceptions {
+    NetName normalName = new NormalNetName("");
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">mockNet.getName</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(normalName);
+    File file = new File("test.xml");
+
+   //This will error out
+    <API label="org.mockito.Mockito.when">when</API>(saveAction.getFileDialog("Save the world", "xml")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockFileDialog);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">mockFileDialog.getFiles</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new File[]{file});
+
+   saveAsAction.actionPerformed(null);
+    <API label="org.mockito.Mockito.verify">verify</API>(mockController).saveAsFile(file);
+}
+
+</code></pre>
+
+==========
+Assuming you use the same package and (per comment) can remove the <code>final</code> qualifier from methods, I would consider adding some <code>protected</code> setter methods to that you can inject mocks into the <code>AbstractSaveAction</code>. This is somewhat controversial, but it will work.
+
+I have a working example, but the gist is the following in the Production code:
+
+<pre><code>
+public abstract class AbstractSaveAction extends GuiAction {
+    // ...
+
+   // for tests only. Consider naming as 'testFileDialog' if you prefer
+    private FileDialog fileDialog = null;
+
+   // for tests only
+    protected void setFileDialog(FileDialog fileDialog) {
+        this.fileDialog = fileDialog;
+    }
+
+   // for tests only
+    protected void setController(Controller controller) {
+        this.controller = controller;
+    }
+
+   protected FileDialog buildFileDialog(String title) {
+        FileDialog result = null;
+
+       if (this.fileDialog != null) {
+            result = this.fileDialog;
+        } else {
+            result = new FileDialog(view, title, FileDialog.SAVE);
+        }
+
+       return result;
+    }
+    protected FileDialog getFileDialog(String title, final String extension) {
+        // This is new. Get a FileDialog, and if in test-mode
+        // so be it... It is a light-touch.
+        FileDialog fileDialog = buildFileDialog(title);
+        // ...
+     }
+}
+
+</code></pre>
+
+and then the test looks like:
+
+<pre><code>
+@Test
+public void performsSaveAsWhenNetHasNoFile() {
+    SaveAsAction saveAsAction = new SaveAsAction(null, null);
+    FileDialog mockFileDialog = <API label="org.mockito.Mockito.mock">mock</API>(FileDialog.class);
+    Controller mockController = <API label="org.mockito.Mockito.mock">mock</API>(Controller.class);
+    Net mockNet = <API label="org.mockito.Mockito.mock">mock</API>(Net.class);
+
+   NetName normalName = new NormalNetName("");
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">mockNet.getName</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(normalName);
+
+   File file = new File("test.xml");
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">mockFileDialog.getFiles</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new File[]{file});
+
+   // these steps are crucial
+    saveAsAction.setFileDialog(mockFileDialog);
+    saveAsAction.setController(mockController);
+
+   // test
+    saveAsAction.actionPerformed(null);
+
+   <API label="org.mockito.Mockito.verify">verify</API>(mockController).saveAsFile(file);
+}
+
+</code></pre>
+

@@ -1,0 +1,102 @@
+https://stackoverflow.com/questions/60956275
+I'm getting InvocationTarget Exception in my test case. This is the class which I'm trying to test :
+
+<pre><code>
+public class UpdateHandler implements Handler {
+ public void <API label="">process</API>(UE m, UEC u) {
+  try {
+   Info info = facade1.queryInfo(string).getInfo();
+   Index index = facade2.findindex(string2);
+   if(<API label="None">facade3.isWhitelisted</API>() {
+    <API label="None">facade2.update</API>(info, index);
+   }
+  } catch(UpdateException e) {
+    //log
+  }
+}
+
+
+</code></pre>
+
+This is my test file
+
+<pre><code>
+public class TestFile {
+ @Mock
+ protected Facade1 facade1;
+
+@Mock
+ protected Facade2 facade2;
+
+@Mock
+ protected Facade3 facade3;
+
+private Info info;
+ private Index index;
+
+@InjectMocks 
+ private UpdateHandler updatehandler;
+
+@BeforeMethod
+ public void beforeTest() {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    }
+
+@Test
+ public void Test1() {
+  info = getInfo();
+  index = <API label="None">getIndex</API>();
+  <API label="None">updateHandler.process</API>(UEprepare(), null);
+  <API label="org.mockito.Mockito.when">Mockito.when</API>(facade1.queryInfo(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>()).getInfo()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(getInfo());
+  <API label="org.mockito.Mockito.when">Mockito.when</API>(facade2.findindex(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(<API label="None">getIndex</API>());
+  <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="None">facade3.isWhitelisted</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+  <API label="org.mockito.Mockito.verify">Mockito.verify</API>(facade1, <API label="org.mockito.Mockito.times">Mockito.times</API>(1).<API label="None">update</API>(info, index);
+ }
+}
+
+</code></pre>
+
+getInfo() and <API label="None">getIndex</API>() are two methods I created in the test file just to create a sample object of Info and Index. UEprepare is a method to prepare a sample object of UE. UM can be null. I've checked that's not the issue.
+
+The error I'm getting is Null pointer exception. Specifically, the value of facade1.queryInfo(string) is null. It's supposed to be an object of type InfoResult from which I can extract an object of Info. I checked the queryInfo method and that does not throw a NPE anywhere. It only throws exception of type UpdateException which I've already handled in my code in try catch. 
+
+When I dug deeper, I found an InvocationTargetException. I can't specifically understand where that exception is coming from but I think it's got something to do with the queryInfo method. 
+
+I've initialized mocks for all the facades I'm using and I think I've used InjectMocks correctly as well so I'm stuck on how to debug this. 
+
+==========
+There are 2 errors in your code:
+
+Order of methods
+
+You have:
+
+
+call of method under test
+setting expectations <code><API label="org.mockito.Mockito.when">Mockito.when</API></code>
+verification of expectations <code><API label="org.mockito.Mockito.verify">Mockito.verify</API></code>
+
+
+while it should be 
+
+
+setting expectations <code><API label="org.mockito.Mockito.when">Mockito.when</API></code>
+call of method under test
+verification of expectations <code><API label="org.mockito.Mockito.verify">Mockito.verify</API></code>
+
+
+Chained expectations
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(facade1.queryInfo(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>()).getInfo()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(getInfo());
+
+</code></pre>
+
+You need additional mock for result of <code>queryInfo</code> call, let's say <code>@Mock QueryInfo queryInfo</code>. Then, you need 2 calls for setting this expectation:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(facade1.queryInfo(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(queryInfo);
+<API label="org.mockito.Mockito.when">Mockito.when</API>(queryInfo.getInfo()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(getInfo());
+
+</code></pre>
+

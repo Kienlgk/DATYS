@@ -1,0 +1,23 @@
+https://stackoverflow.com/questions/2543052
+I'm using google-collections and trying to <API label="">find</API> the first element that satisfies Predicate if not, return me 'null'.
+
+Unfortunately, <API label="com.google.common.collect.Iterables.find">Iterables.find</API> and <API label="com.google.common.collect.Iterators.find">Iterators.find</API> throws NoSuchElementException when no element is found.
+
+Now, I am forced to do
+
+<pre><code>
+Object found = null;
+if ( <API label="com.google.common.collect.Iterators.any">Iterators.any</API>( newIterator(...) , my_predicate )
+{
+    found = <API label="com.google.common.collect.Iterators.find">Iterators.find</API>( newIterator(...), my_predicate )
+}
+
+</code></pre>
+
+I can surround by 'try/catch' and do the same thing but for my use-cases, I am going to encounter many cases where no-element is found. 
+
+Is there a simpler way of doing this? 
+
+==========
+It sounds like you should be using <API label="com.google.common.collect.Iterators.filter">Iterators.filter</API>, then checking the value of hasNext on the returned iterator.
+

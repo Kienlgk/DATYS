@@ -1,0 +1,66 @@
+https://stackoverflow.com/questions/26737853
+I'm getting this error since I updated Android Studio to 9.1 and to gradle 14.+ :
+
+I'm executing the task assembleRelease on my project.
+And here is what I got :
+
+<pre><code>
+* What went wrong:
+Execution failed for task ':app:dexParisRelease'.
+> <API label="com.google.common.io.Files.asCharSink">com.google.common.io.Files.asCharSink</API>(Ljava/io/File;Ljava/nio/<API label="None">charset</API>/Charset;[Lcom/google/common/io/FileWriteMode;)Lcom/google/common/io/CharSink;
+
+* Try:        
+Run with --info or --debug option to get more log output.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:dexParisRelease'.
+        at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeActions(ExecuteActionsTaskExecuter.java:69)
+        at <API label="None">org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute</API>(ExecuteActionsTaskExecuter.java:46)
+        at <API label="None">org.gradle.api.internal.tasks.execution.PostExecutionAnalysisTaskExecuter.execute</API>(PostExecutionAnalysisTaskExecuter.java:35)
+        at <API label="None">org.gradle.api.internal.tasks.execution.SkipUpToDateTaskExecuter.execute</API>(SkipUpToDateTaskExecuter.java:64)
+        at <API label="None">org.gradle.api.internal.tasks.execution.ValidatingTaskExecuter.execute</API>(ValidatingTaskExecuter.java:58)
+        at <API label="None">org.gradle.api.internal.tasks.execution.SkipEmptySourceFilesTaskExecuter.execute</API>(SkipEmptySourceFilesTaskExecuter.java:42)
+        at <API label="None">org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute</API>(SkipTaskWithNoActionsExecuter.java:52)
+        at <API label="None">org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute</API>(SkipOnlyIfTaskExecuter.java:53)
+        at <API label="None">org.gradle.api.internal.tasks.execution.ExecuteAtMostOnceTaskExecuter.execute</API>(ExecuteAtMostOnceTaskExecuter.java:43)
+        at org.gradle.api.internal.AbstractTask.executeWithoutThrowingTaskFailure(AbstractTask.java:305)
+        at org.gradle.execution.taskgraph.AbstractTaskPlanExecutor$TaskExecutorWorker.executeTask(AbstractTaskPlanExecutor.java:79)
+        at org.gradle.execution.taskgraph.AbstractTaskPlanExecutor$TaskExecutorWorker.processTask(AbstractTaskPlanExecutor.java:63)
+        at <API label="None">org.gradle.execution.taskgraph.AbstractTaskPlanExecutor$TaskExecutorWorker.run</API>(AbstractTaskPlanExecutor.java:51)
+        at <API label="None">org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run</API>(DefaultExecutorFactory.java:64)
+Caused by: java.lang.NoSuchMethodError: <API label="">com.google.common.io.Files.asCharSink</API>(Ljava/io/File;Ljava/nio/<API label="">charset</API>/Charset;[Lcom/google/common/io/FileWriteMode;)Lcom/google/common/io/CharSink;
+        at com.android.builder.core.AndroidBuilder.getFilesToAdd(AndroidBuilder.java:1429)
+        at com.android.builder.core.AndroidBuilder.convertByteCode(AndroidBuilder.java:1408)
+        at <API label="None">com.android.builder.core.AndroidBuilder$convertByteCode$4.call</API>(Unknown Source)
+        at com.android.build.gradle.tasks.Dex.doTaskAction(Dex.groovy:136)
+        at com.android.build.gradle.tasks.Dex.this$5$doTaskAction(Dex.groovy)
+        at com.android.build.gradle.tasks.Dex$this$5$doTaskAction.callCurrent(Unknown Source)
+        at com.android.build.gradle.tasks.Dex.taskAction(Dex.groovy:79)
+        at <API label="None">org.gradle.internal.reflect.JavaMethod.invoke</API>(JavaMethod.java:63)
+        at org.gradle.api.internal.project.taskfactory.AnnotationProcessingTaskFactory$IncrementalTaskAction.doExecute(AnnotationProcessingTaskFactory.java:235)
+        at <API label="None">org.gradle.api.internal.project.taskfactory.AnnotationProcessingTaskFactory$StandardTaskAction.execute</API>(AnnotationProcessingTaskFactory.java:211)
+        at <API label="None">org.gradle.api.internal.project.taskfactory.AnnotationProcessingTaskFactory$IncrementalTaskAction.execute</API>(AnnotationProcessingTaskFactory.java:222)
+        at <API label="None">org.gradle.api.internal.project.taskfactory.AnnotationProcessingTaskFactory$StandardTaskAction.execute</API>(AnnotationProcessingTaskFactory.java:200)
+        at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeAction(ExecuteActionsTaskExecuter.java:80)
+        at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeActions(ExecuteActionsTaskExecuter.java:61)
+        ... 13 more
+
+</code></pre>
+
+Any idea please ?
+
+==========
+You use two different versions of Guava at the same time.
+
+Your stacktrace is incomplete so I cannot answer fully. Also, I don't know Android Studio.
+
+But, I can <API label="">read</API> your stack trace and I see that the class <code>AndroidBuilder</code> is trying to access the method <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/io/Files.html#<API label="">asCharSink</API>(java.io.File,%<API label="">20java.nio.charset</API>.Charset,%20com.google.common.io.FileWriteMode...)" rel="nofollow"><code><API label="com.google.common.io.Files.asCharSink">com.google.common.io.Files.asCharSink</API></code></a>. The method <code><API label="com.google.common.io.Files.asCharSink">asCharSink</API></code> exists from Guava 14.
+
+Usually the error you get happens when you mess with dependencies.
+
+Given that you see some stack trace components indicating Gradle and that you mention using Gradle, I gather that you get this issue when building using Gradle.
+
+So I don't think that you actually mess with dependencies but rather that you have incompatibilities between your gradle version (requiring Guava 14 or later) and the Guava actually loaded in the classpath of your builder.
+
+So check how Gradle is called and update the Guava version of that tool to 14 or later.
+

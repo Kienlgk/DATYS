@@ -1,0 +1,47 @@
+https://stackoverflow.com/questions/49912449
+I have a specific case for two collections of such items:
+
+<pre><code>
+public class Item {
+    private Long id;
+    private boolean isVisible;
+}
+
+</code></pre>
+
+List A <API label="">contains</API> items both visible and invisible.
+
+List B <API label="">contains</API> only visible items from list A, but ordered (indexed) differently.
+
+I need a result list with visible items layed down in relative order of B, and with unchanged relative order of invisible items from A. So far, the only way I could do it right is through iterators:
+
+<pre><code>
+Iterator ai = <API label="None">A.listIterator</API>();
+Iterator bi = <API label="None">B.iterator</API>();
+while(<API label="None">ai.hasNext</API>() && <API label="None">bi.hasNext</API>()) {
+    Item <API label="">next</API> = <API label="None">ai.next</API>();
+    if (<API label="">next</API>.isVisible() && <API label="None">B.contains</API>(<API label="">next</API>)) {
+        <API label="None">ai.set</API>(<API label="None">bi.next</API>())
+    }
+}
+
+</code></pre>
+
+So we're replacing every <API label="">next</API> visible item in A contained in B, with item from B. I wonder if there is more beautiful solution to this problem through either Guava or Stream API.
+
+==========
+If you need to share the same object between listA and listB, then you can do the following 
+
+loop through listA,
+ - if a is invisible, return a,
+ - if a is visible, return b.
+then combine back into a list and replace the list (or create a new list if needed).    
+
+<pre><code>
+    AtomicInteger index = new AtomicInteger();
+    listA = <API label="None">listA.stream</API>()
+            .<API label="None">map</API>(a -> a.isVisible ? <API label=None"">listB.get</API>(<API label="None">index.getAndIncrement</API>()) :  a)
+            .collect(<API label="None">Collectors.toList</API>());
+
+</code></pre>
+

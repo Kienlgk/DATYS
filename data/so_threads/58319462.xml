@@ -1,0 +1,106 @@
+https://stackoverflow.com/questions/58319462
+Whenever I try to <API label="">run</API> a Mockito tests, Eclipse gives following output:
+
+<pre><code>
+java.lang.IllegalStateException: Could not <API label="">initialize</API> plugin: interface org.mockito.plugins.InstantiatorProvider2 (alternate: interface org.mockito.plugins.InstantiatorProvider)
+
+</code></pre>
+
+I have tried to install a different version <API label="">of</API> mockito, alongside byte buddy, by comparing the given version <API label="">of</API> mockito using maven repository and corresponding byte buddy version. I use mockito-core 2.28.2 and bytebuddy 1.9.10
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class LanguageClientTest {
+
+   private static final String WORKSPACE_EXECUTE_COMMAND = "workspace/executeCommand"; //$NON-NLS-1$
+
+   @Test
+    public void shouldInitializeLanguageClient() {
+
+       //given
+        LanguageClient <API label="">mock</API> = <API label="org.mockito.Mockito.mock">mock</API>(LanguageClient.class);
+        <API label="org.mockito.Mockito.doThrow">Mockito.doThrow</API>(new IllegalStateException("Error occurred")).<API label="org.mockito.stubbing.Stubber.when">when</API>(<API label="">mock</API>).startListener();
+        //<API label="">when</API>
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(new LanguageClient()).<API label="org.mockito.stubbing.OngoingStubbing.thenCallRealMethod">thenCallRealMethod</API>();
+        //<API label="">then</API>
+        <API label="org.mockito.Mockito.verify">verify</API>(<API label="">mock</API>, <API label="org.mockito.Mockito.times">Mockito.times</API>(1)).registerCommands(WORKSPACE_EXECUTE_COMMAND);
+    }
+
+</code></pre>
+
+Entire Stacktrace:
+
+<pre><code>
+java.lang.IllegalStateException: Could not <API label="">initialize</API> plugin: interface org.mockito.plugins.InstantiatorProvider2 (alternate: interface org.mockito.plugins.InstantiatorProvider)
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader$1.invoke</API>(PluginLoader.java:74)
+    at <API label="">com.sun.proxy.$Proxy17.getInstantiator</API>(Unknown Source)
+    at <API label="">org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker.createMock</API>(SubclassByteBuddyMockMaker.java:44)
+    at <API label="">org.mockito.internal.creation.bytebuddy.ByteBuddyMockMaker.createMock</API>(ByteBuddyMockMaker.java:25)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:35)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:62)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1908)
+    at org.mockito.internal.configuration.MockAnnotationProcessor.processAnnotationForMock(MockAnnotationProcessor.java:44)
+    at <API label="">org.mockito.internal.configuration.MockAnnotationProcessor.process</API>(MockAnnotationProcessor.java:19)
+    at <API label="">org.mockito.internal.configuration.MockAnnotationProcessor.process</API>(MockAnnotationProcessor.java:16)
+    at <API label="">org.mockito.internal.configuration.IndependentAnnotationEngine.createMockFor</API>(IndependentAnnotationEngine.java:38)
+    at <API label="">org.mockito.internal.configuration.IndependentAnnotationEngine.process</API>(IndependentAnnotationEngine.java:62)
+    at org.mockito.internal.configuration.InjectingAnnotationEngine.processIndependentAnnotations(InjectingAnnotationEngine.java:49)
+    at <API label="">org.mockito.internal.configuration.InjectingAnnotationEngine.process</API>(InjectingAnnotationEngine.java:41)
+    at <API label="">org.mockito.MockitoAnnotations.initMocks</API>(MockitoAnnotations.java:69)
+    at <API label="">org.mockito.internal.runners.DefaultInternalRunner$1$1.evaluate</API>(DefaultInternalRunner.java:43)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.mockito.internal.runners.DefaultInternalRunner$1.run</API>(DefaultInternalRunner.java:74)
+    at <API label="">org.mockito.internal.runners.DefaultInternalRunner.run</API>(DefaultInternalRunner.java:80)
+    at <API label="">org.mockito.internal.runners.StrictRunner.run</API>(StrictRunner.java:39)
+    at <API label="">org.mockito.junit.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:163)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:89)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:41)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:541)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:763)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:463)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:209)
+Caused by: java.lang.NoClassDefFoundError: org/objenesis/ObjenesisStd
+    at org.mockito.internal.creation.instance.ObjenesisInstantiator.(ObjenesisInstantiator.java:16)
+    at org.mockito.internal.creation.instance.DefaultInstantiatorProvider.(DefaultInstantiatorProvider.java:13)
+    at java.lang.Class.forName0(Native Method)
+    at java.lang.Class.forName(Class.java:264)
+    at <API label="">org.mockito.internal.configuration.plugins.DefaultMockitoPlugins.create</API>(DefaultMockitoPlugins.java:68)
+    at org.mockito.internal.configuration.plugins.DefaultMockitoPlugins.getDefaultPlugin(DefaultMockitoPlugins.java:45)
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader.loadPlugin</API>(PluginLoader.java:67)
+    at org.mockito.internal.configuration.plugins.PluginRegistry.(PluginRegistry.java:36)
+    at org.mockito.internal.configuration.plugins.Plugins.(Plugins.java:19)
+    at <API label="">org.mockito.internal.runners.RunnerFactory$2.get</API>(RunnerFactory.java:42)
+    at <API label="">org.mockito.internal.runners.RunnerFactory$2.get</API>(RunnerFactory.java:40)
+    at <API label="">org.mockito.internal.runners.DefaultInternalRunner$1$1.evaluate</API>(DefaultInternalRunner.java:40)
+    ... 19 more
+Caused by: java.lang.ClassNotFoundException: org.objenesis.ObjenesisStd
+    at <API label="">java.net.URLClassLoader.findClass</API>(URLClassLoader.java:381)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:424)
+    at <API label="">sun.misc.Launcher$AppClassLoader.loadClass</API>(Launcher.java:349)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:357)
+    ... 31 more
+
+
+
+</code></pre>
+
+==========
+This error was caused by not having objenesis library in the MANIFEST.MF. Due to that, Eclipse sometimes worked correctly with Mockito, sometimes not. I have added following lines to the MANIFEST.MF
+
+<pre><code>
+ org.mockito.mockito-core,
+ net.bytebuddy.byte-buddy,
+ org.objenesis
+
+</code></pre>
+
+After that, I could see it in plugin dependencies and it worked.
+

@@ -1,0 +1,46 @@
+https://stackoverflow.com/questions/2419144
+It seems like there should be a removalAllOccuring(Collection) (or similiar) method in Multiset.  A sort <API label="">of</API> analog to <API label="com.google.common.collect.Multiset.remove">remove</API>(Object,int) and <API label="com.google.common.collect.Multiset.removeAll">removeAll</API>(Collection).  Short <API label="">of</API> that method, what is the best way to accomplish its intent.  I wrote a small JUnit driver to demonstrate:
+
+<code>
+/**
+ * @see http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/Multiset.html
+ * @see http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/HashMultiset.html  
+ */
+@Test
+public void testBag() {
+    Multiset bag1 = <API label="com.google.common.collect.HashMultiset.create">HashMultiset.create</API>();
+    <API label="com.google.common.collect.HashMultiset.add">bag1.add</API>("a", 2);
+    <API label="com.google.common.collect.HashMultiset.add">bag1.add</API>("b", 3);
+    <API label="com.google.common.collect.HashMultiset.add">bag1.add</API>("c", 3);
+
+   <API label="None">logger.debug</API>(bag1);
+    Multiset bag1Copy = <API label="com.google.common.collect.HashMultiset.create">HashMultiset.create</API>(bag1);
+
+   Multiset bag2 = <API label="com.google.common.collect.ImmutableMultiset.of">ImmutableMultiset.of</API>("a","b","b","b","c","c");
+    Multiset expected = <API label="com.google.common.collect.ImmutableMultiset.of">ImmutableMultiset.of</API>("a","c");
+
+   for( String el :  <API label="com.google.common.collect.ImmutableMultiset.elementSet">bag2.elementSet</API>() ) {
+        <API label="com.google.common.collect.ImmutableMultiset.remove">bag1.remove</API>( el, <API label="com.google.common.collect.ImmutableMultiset.count">bag2.count</API>(el));
+    } // end for
+
+   Assert.assertEquals(expected, bag1);
+
+   <API label="com.google.common.collect.HashMultiset.removeAll">bag1Copy.removeAll</API>(bag2);
+    <API label="None">logger.debug</API>( bag1Copy );
+}
+</code>
+
+The output:
+
+<code>
+[b x 3, c x 3, a x 2]
+[]
+</code>
+
+I'm thinking there might be a a way provided that I'm missing, or a different/better way than looping over the collection to be removed.  Also note, that I could just as easily have a use case where the collection to be removed is a <code>List</code>
+
+==========
+There is nothing that will do this yet. :(   There is an internal (to Google) feature request about this and other similar methods (as static methods for the Multisets class).  I'll try to get it pasted into an externally-visible feature request that you could keep an eye on.
+
+EDIT: I hadn't been planning to accept other kinds <API label="">of</API> Collections besides a Multiset as the parameter to such methods, though.  Will have to think about that.
+

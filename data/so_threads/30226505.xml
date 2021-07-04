@@ -1,0 +1,46 @@
+https://stackoverflow.com/questions/30226505
+Is there <API label="">any</API> <API label="">difference</API> between?
+
+<pre><code>
+MyObject myWantedObj = <API label="com.google.common.collect.Iterables.tryFind">Iterables.tryFind</API>(myListOfObjects, new Predicate() {
+    public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(MyObject myObj) {
+        return myObj.getSomeAttribute().<API label="com.google.common.base.Predicate.equals">equals</API>(someFinalVariable);
+    }
+}).<API label="com.google.common.base.Optional.orNull">orNull</API>();
+
+</code></pre>
+
+and 
+
+<pre><code>
+MyObject myWantedObj = <API label="com.google.common.collect.FluentIterable.from">FluentIterable.from</API>(myListOfObjects).<API label="com.google.common.collect.FluentIterable.firstMatch">firstMatch</API>(new Predicate() {
+    public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(MyObject myObj) {
+        return myObj.getSomeAttribute().<API label="com.google.common.base.Predicate.equals">equals</API>(someFinalVariable);
+    }
+}).<API label="com.google.common.base.Optional.orNull">orNull</API>();
+
+</code></pre>
+
+<a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Iterables.html#<API label="">tryFind</API>%28java.lang.Iterable,%20com.google.common.base.Predicate%29" rel="nofollow"><API label="com.google.common.collect.Iterables.tryFind">Iterables.tryFind</API></a> and <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/FluentIterable.html#<API label="">firstMatch</API>%28com.google.common.base.Predicate%29" rel="nofollow"><API label="com.google.common.collect.FluentIterable.firstMatch">FluentIterable.firstMatch</API></a> Javadoc are <API label="">equals</API> to:
+
+
+ Returns an <code>Optional</code> containing the first element in iterable that satisfies the given predicate, if such an element exists.
+
+
+I missing something?
+
+==========
+<code><API label="com.google.common.collect.Iterables.tryFind">Iterables.tryFind</API>()</code> pre-dates <code><API label="com.google.common.collect.FluentIterable.firstMatch">FluentIterable.firstMatch</API>()</code> by quite a bit. If you're just doing a single operation (as in your example), it doesn't really matter which you use. We probably never would have created the <code>Iterables</code> class if we had created <code>FluentIterable</code> first (hindsight is 20/20).
+
+The power of <code>FluentIterable</code> comes when you're chaining several functional-type steps together. For example:
+
+<pre><code>
+   FluentIterable
+       .<API label="com.google.common.collect.FluentIterable.from">from</API>(database.getClientList())
+       .<API label="com.google.common.collect.FluentIterable.filter">filter</API>(activeInLastMonth())
+       .<API label="com.google.common.collect.FluentIterable.transform">transform</API>(<API label="com.google.common.base.Functions.toStringFunction">Functions.toStringFunction</API>())
+       .<API label="com.google.common.collect.FluentIterable.limit">limit</API>(10)
+       .<API label="com.google.common.collect.FluentIterable.toList">toList</API>();
+
+</code></pre>
+

@@ -1,0 +1,109 @@
+https://stackoverflow.com/questions/16520699
+I've got such a code snippet:
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Thread.class})
+public class AllMeasuresDataTest {
+
+@Before
+public void setUp() throws Exception {
+}
+
+@Test
+public void testGetMeasures() {
+    AllMeasuresData measure = new AllMeasuresData();
+    assertEquals(measure.getMeasures(), null);
+    HashMap map = new HashMap();
+    measure.setMeasures(map);
+    assertEquals(measure.getMeasures(), map);
+    measure.setMeasures(null);
+    assertEquals(measure.getMeasures(), null);
+}
+
+@Test
+public void testAllMeasuresData() throws IOException {
+    ClassLoader loader = <API label="None">PowerMockito.mock</API>(ClassLoader.class);
+    Thread threadMock = <API label="None">PowerMockito.mock</API>(Thread.class);
+    Vector vec = new Vector();
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="None">loader.getResources</API>("measure")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(vec.elements());
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(threadMock.getContextClassLoader()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(loader);
+    PowerMockito.mockStatic(Thread.class);
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(Thread.currentThread()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(threadMock);
+        ...
+    }
+}
+
+</code></pre>
+
+While running this tests I got:
+
+<pre><code>
+java.lang.LinkageError: loader constraint violation: loader (instance of org/powermock/core/classloader/MockClassLoader) previously initiated loading for a different type with name "javax/management/MBeanServer"
+at java.lang.ClassLoader.defineClass1(Native Method)
+at <API label="">java.lang.ClassLoader.defineClass</API>(ClassLoader.java:791)
+at <API label="">java.lang.ClassLoader.defineClass</API>(ClassLoader.java:634)
+at org.powermock.core.classloader.MockClassLoader.loadUnmockedClass(MockClassLoader.java:201)
+at org.powermock.core.classloader.MockClassLoader.loadModifiedClass(MockClassLoader.java:149)
+at <API label="">org.powermock.core.classloader.DeferSupportingClassLoader.loadClass</API>(DeferSupportingClassLoader.java:67)
+at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:356)
+at org.codecover.instrumentation.java.measurement.ProtocolImpl.initializeMBean(ProtocolImpl.java:247)
+at org.codecover.instrumentation.java.measurement.ProtocolImpl.(ProtocolImpl.java:237)
+at <API label="">org.codecover.instrumentation.java.measurement.ProtocolImpl.getInstance</API>(ProtocolImpl.java:185)
+at measure.CodeCoverCoverageCounter$6ya5ud0ow79ijrr1dvjrp4nxx60qhxeua02ta2fzpmb1d.(MeasureCalculatorsHolder.java:146)
+at measure.MeasureCalculatorsHolder.(MeasureCalculatorsHolder.java:17)
+at java.lang.Class.forName0(Native Method)
+at java.lang.Class.forName(Class.java:188)
+at javassist.runtime.Desc.getClassObject(Desc.java:43)
+at <API label="">javassist.runtime.Desc.getClassType</API>(Desc.java:152)
+at <API label="">javassist.runtime.Desc.getType</API>(Desc.java:122)
+at <API label="">javassist.runtime.Desc.getType</API>(Desc.java:78)
+at algorithm.AllMeasuresDataTest.testGetMeasures(AllMeasuresDataTest.java:26)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:601)
+at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:66)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:312)
+at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:86)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:94)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:296)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit49RunnerDelegateImpl$PowerMockJUnit49MethodRunner.executeTestInSuper(PowerMockJUnit49RunnerDelegateImpl.java:116)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit49RunnerDelegateImpl$PowerMockJUnit49MethodRunner.executeTest(PowerMockJUnit49RunnerDelegateImpl.java:77)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:284)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:84)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:209)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:148)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:122)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:101)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:53)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+at <API label="">org.codecover.juniteclipse.runner.EclipseTestRunner.main</API>(EclipseTestRunner.java:40)
+
+</code></pre>
+
+Do you know how can I prevent this? I maybe there is another way to <API label="">mock</API> such a piece of code:
+
+<pre><code>
+ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+...
+Enumeration resources = <API label="None">classLoader.getResources</API>(path);
+
+</code></pre>
+
+==========
+Try adding this annotation to your Test class:
+
+<code>@PowerMockIgnore("javax.management.*")</code>
+
+Worked for me.
+

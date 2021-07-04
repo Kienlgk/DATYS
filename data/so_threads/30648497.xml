@@ -1,0 +1,47 @@
+https://stackoverflow.com/questions/30648497
+I have a <code>Map</code>(say inputMap) and I want to convert this to another <code>Map</code> where each (k,v) in the new map is (<API label="None">v.get</API>(0),k) of inputMap.
+
+Ex.
+
+<pre><code>
+X -> B,C,D
+Y -> B,D,E
+Z -> B,G,H
+P -> A,B,D
+Q -> A,D,F
+R -> A,C,B
+
+</code></pre>
+
+to
+
+<pre><code>
+B->X,Y,Z
+A->P,Q,R
+
+</code></pre>
+
+I initially thought I could do this using something like
+
+<pre><code>
+<API label="None">inputMap.entrySet</API>().<API label="None">stream</API>().collect(<API label="None">Collectors.toMap</API>(Map.Entry::<API label="None">getValue</API>.<API label="None">get</API>(0),Map.Entry::<API label="None">getKey</API>));
+
+</code></pre>
+
+and then converting this map to a multimap, but I cannot write <code>Map.Entry::<API label="None">getValue</API>.<API label="None">get</API>(0)</code>
+
+It would also be great if I could create the multimap in <code>.collect()</code> itself.
+
+==========
+You can collect directly into a <code>Multimap</code>:
+
+<pre><code>
+Multimap result = <API label="None">inputMap.entrySet</API>().<API label="None">stream</API>()
+        .collect(
+                ArrayListMultimap::create,
+                (mm,e) -> <API label="com.google.common.collect.ArrayListMultimap.put">mm.put</API>(<API label="None">e.getValue</API>().<API label="None">get</API>(0), <API label="None">e.getKey</API>()),
+                Multimap::<API label="com.google.common.collect.Multimap.putAll">putAll</API>
+        );
+
+</code></pre>
+

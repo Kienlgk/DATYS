@@ -1,0 +1,58 @@
+https://stackoverflow.com/questions/48259912
+The below test example code is expected to throw a NullPointerException in runtime and print some stacktrace in the console. But it does not do so. Line 2 gets printed as if no error happened. 
+
+If you debug the execution, you see the expected exception 
+"<API label="None">map.put</API>( k: 3L, new House()); map: Method threw 'java.lang.NullPointerException' exception. Cannot evaluate <API label="com.google.common.collect.TreeMultimap.toString">com.google.common.collect.TreeMultimap.toString</API>()". But it does not break the execution as it should in case of a runtime exception. 
+
+Even if you try to catch the NullPointerException on the Line 1, it is not captured.
+
+Why is it so? 
+
+<pre><code>
+import com.google.common.collect.Multimap;   
+import com.google.common.collect.TreeMultimap;
+// from com.google.guava version 18.0
+
+public static void <API label="None">main</API>(String args[]) {
+
+   Multimap map = <API label="com.google.common.collect.TreeMultimap.create">TreeMultimap.create</API>();
+    <API label="None">map.put</API>(3L, new House());  //**Line 1** . expected to break the execution.
+    <API label="None">System.out.println</API>("done"); // **Line 2**. expected to not <API label="">get</API> printed.
+
+}
+
+private static class House implements Comparable{
+
+   Integer numberOfRooms_ = null;
+
+   @Override
+
+   public int <API label="None">hashCode</API>() {
+
+       return <API label="None">numberOfRooms_.hashCode</API>(); //NullPointerException generated
+
+   }
+
+   @Override
+
+   public int <API label="None">compareTo</API>(Object o) {
+
+       return 1;
+
+   }
+
+}
+
+</code></pre>
+
+jdk 1.7 is used.
+
+==========
+<a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/collect/TreeMultimap.html" rel="nofollow noreferrer">According to Javadoc, <code>TreeMultimap</code> is</a> an:
+
+
+ Implementation of <code>Multimap</code> whose <API label="None">keys</API> and <API label="">values</API> are ordered by their <API label="">natural</API> ordering or by supplied comparators. In all cases, this implementation uses <code><API label="None">Comparable.compareTo</API>(T)</code> or <code><API label="">Comparator.compare</API>(T, T)</code> instead of <code><API label="None">Object.equals</API>(java.lang.Object)</code> (or <code><API label="None">hashCode</API></code> - Xaerxess) to determine equivalence of instances.
+
+
+<code><API label="">hashCode</API></code> isn't called, but <code><API label="None">compareTo</API></code> is, no NPE is thrown there. On the other hand, if you used <code>HashMultimap</code>, it'd fail to <API label="">put</API> object with <code><API label="None">hashCode</API></code> implementation throwing NPE, because it uses <code><API label="None">equals</API></code>/<code><API label="None">hashCode</API></code> under the hood.
+

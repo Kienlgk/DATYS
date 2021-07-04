@@ -1,0 +1,40 @@
+https://stackoverflow.com/questions/33138276
+I'm having two collections of Foo. I can not change the implementation of Foo and Foo's <API label="">equals</API> function is implemented incorrectly. I can also not inherit from Foo. I do custom equality function: I've implemented using guava's Predicate function. To give you an idea, the implementation looks a bit like this.
+
+<pre><code>
+new Predicate() {
+        @Override
+        public boolean <API label="None">apply</API>(@Nullable Pair input) {
+          Foo one = <API label="None">input.getFirst</API>();
+          Foo two = input.getSecond();
+          return <API label="None">Objects.equals</API>(<API label="None">one.getId</API>(), <API label="None">two.getId</API>());
+        }
+      };
+
+</code></pre>
+
+
+
+Now I need to check if my two collections of Foo contain the same items ignoring the order 
+
+I'm looking for the best way to do this using this custom equality function.
+
+==========
+You could <API label="">wrap</API> your class in a Guava <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Equivalence.html" rel="noreferrer"><code>Equivalence</code></a> and store that in the Sets.
+
+<pre><code>
+Equivalence eq = new Equivalence{
+// implement <API label="None">equals</API> and hashcode
+};
+Set set1 = new HashSet<>();
+<API label="None">set1.add</API>(<API label="None">eq.wrap</API>(someFoo));
+
+</code></pre>
+
+That way you could do a bidirectional <code><API label="None">containsAll</API>()</code> or do
+
+<pre><code>
+<API label="com.google.common.collect.Sets.difference">Sets.difference</API>(set1, set2).<API label="None">isEmpty</API>()
+
+</code></pre>
+

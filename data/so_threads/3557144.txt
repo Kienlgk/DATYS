@@ -1,0 +1,89 @@
+https://stackoverflow.com/questions/3557144
+Here is some code I've been twiddling with to try and lazily fill in fields in object, mostly for object factories in JUnit but it could be quite a useful method to have.
+
+<code>
+    private void lazyObjectFill(Object profil) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    final Method[] list = <API label="None">profil.getClass</API>().getDeclaredMethods();
+    for (Method m : list) {
+        if (<API label=="None">Modifier.isPublic</API>(<API label=="None">m.getModifiers</API>()) && <API label=="None">m.getName</API>().<API label=="None">startsWith</API>("set")) {
+
+           final Class< ?>[] parameterTypes = <API label=="None">m.getParameterTypes</API>();
+            if (parameterTypes.length == 1) {
+                final Class< ?> clazz = parameterTypes[0];
+                if (clazz == String.class) {
+                    <API label="None">log.info</API>("Invoking " + <API label="None">m.getName</API>() + " with [\"\"]");
+                    <API label="None">m.invoke</API>("");
+                } else if (<API label="None">clazz.isPrimitive</API>() && <API label="com.google.common.base.Defaults.defaultValue">Defaults.defaultValue</API>(clazz) != null) {
+                    <API label="None">log.info</API>("Invoking " + <API label="None">m.getName</API>() + " with [" + <API label="com.google.common.base.Defaults.defaultValue">Defaults.defaultValue</API>(clazz) + "]");
+                    <API label="None">m.invoke</API>(<API label="com.google.common.base.Defaults.defaultValue">Defaults.defaultValue</API>(clazz));
+                }
+            }
+
+       }
+    }
+}
+</code>
+
+We get the following exception when running this code on an object.
+
+<code>
+java.lang.IllegalArgumentException: object is not an instance of declaring class
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:39)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:592)
+</code>
+
+The exception occurs when running <API label="None">m.invoke</API>(""); on a string setter.
+
+
+
+Updated source code for the benefit of the googlers.
+
+<code>
+private void lazyObjectFill(Object obj) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+    final Method[] list = <API label="None">obj.getClass</API>().getDeclaredMethods();
+    for (Method method : list) {
+        <API label="None">method.setAccessible</API>(true);
+        if (<API label="None">Modifier.isPublic</API>(<API label="None">method.getModifiers</API>()) && <API label="None">method.getName</API>().<API label="None">startsWith</API>("set")) {
+
+           final Class< ?>[] parameterTypes = <API label="None">method.getParameterTypes</API>();
+            if (parameterTypes.length == 1) {
+                final Class< ?> clazz = parameterTypes[0];
+                if (clazz == String.class) {
+                    <API label="None">log.info</API>("Invoking " + <API label="None">method.getName</API>() + " with [\"\"]");
+                    <API label="None">method.invoke</API>(obj, "");
+                } else if (<API label="None">clazz.isPrimitive</API>() && <API label="com.google.common.base.Defaults.defaultValue">Defaults.defaultValue</API>(clazz) != null) {
+                    <API label="None">log.info</API>("Invoking " + <API label="None">method.getName</API>() + " with [" + <API label="com.google.common.base.Defaults.defaultValue">Defaults.defaultValue</API>(clazz) + "]");
+                    <API label="None">method.invoke</API>(obj, <API label="com.google.common.base.Defaults.defaultValue">Defaults.defaultValue</API>(clazz));
+                }
+            }
+
+       }
+    }
+}
+</code>
+
+==========
+You are almost there, but methods are static and they need an object on which to <API label="">invoke</API> them.
+
+i.e.
+
+<code>
+<API label="None">m.invoke</API>(profil, "");
+</code>
+
+and
+
+<code>
+<API label="None">m.invoke</API>(profil, <API label="com.google.common.base.Defaults.defaultValue">Defaults.defaultValue</API>(clazz));
+</code>
+
+You were (unknowingly) trying to execute the method on a string object without parameters. And since the string class does not have that method, it had to fail. Details can be found in the Method javadoc.
+
+BTW: Static methods are invoked like this:
+
+<code>
+<API label="None">method.invoke</API>(null, params);
+</code>
+

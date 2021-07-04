@@ -1,0 +1,48 @@
+https://stackoverflow.com/questions/27374200
+I was using <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multiset.html" rel="nofollow"><code>Multiset</code></a> to have easy access to the freq of elements, but I realize there is <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Collections.html#<API label="">frequency</API>-java.util.Collection-java.lang.Object-" rel="nofollow"><code>Collections#<API label="None">frequency</API>(Collection, Object)</code></a> that does the same for any collection. What is the point of using <code>Multiset</code> then? Is performance an issue here?
+
+==========
+Guava documentation for <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multiset.html#<API label="">count</API>(java.lang.Object)]" rel="nofollow noreferrer">Multiset#<API label="com.google.common.collect.Multiset.count">count</API>()</a>
+has to say:
+
+
+ Note that for an <API label="None">Object.equals</API>(java.lang.Object)-based multiset, this gives the same result as <API label="None">Collections.frequency</API>(java.util.Collection, java.lang.Object) (which would presumably perform more poorly).
+
+
+So, yes, I suspect that performance is the issue here.
+
+I think <code>Multiset#<API label="com.google.common.collect.Multiset.count">count</API></code> is more efficient because <code>Collections#<API label="None">frequency</API></code> iterates through the entire collection. For an object o whose <API label="">frequency</API> you're checking, it goes through all elements e in the collection and checks <code>(o == null ? e == null : <API label="None">o.equals</API>(e))</code>.
+
+For Multiset (which is an interface), the exact implementation of <code><API label="com.google.common.collect.Multiset.count">count</API></code> depends on the class. If it is a <code>HashMultiset</code>, for example, then it is backed by a <code>HashMap</code>. For details about how that is more efficient than iterating through the whole collection, take a look at this answer: <a href="https://stackoverflow.com/questions/6493605/how-does-a-hashmap-work-in-java">How does a Java HashMap handle different objects with the same hash code?</a>.
+
+The <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/collect/AbstractMapBasedMultiset.java" rel="nofollow noreferrer">Guava code</a> is as follows 
+
+<pre><code>
+public int <API label="com.google.common.collect.Multiset.count">count</API>(@Nullable Object element) {
+    Count <API label="">frequency</API> = <API label="com.google.common.collect.Maps.safeGet">Maps.safeGet</API>(backingMap, element);
+    return (<API label="">frequency</API> == null) ? 0 : <API label="">frequency</API>.<API label="com.google.common.collect.Count.get">get</API>();
+}
+
+</code></pre>
+
+Similarly, for a <code>TreeMultiset</code>, which maintains the ordering of its elements and is backed by an AVL tree, <code><API label="com.google.common.collect.TreeMultiset.count">count</API></code> can be obtained in O(<API label="">log</API>(n)) steps instead of O(n), where n is the <API label="">size</API> of the collection. The <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/collect/TreeMultiset.java" rel="nofollow noreferrer">Guava code</a> is as follows:
+
+<pre><code>
+public int <API label="com.google.common.collect.TreeMultiset.count">count</API>(@Nullable Object element) {
+    try {
+      @SuppressWarnings("unchecked")
+          E e = (E) element;
+          AvlNode root = <API label="None">rootReference.get</API>();
+          if (!<API label="com.google.common.collect.TreeMultiset.contains">range.contains</API>(e) || root == null) {
+              return 0;
+          }
+      return <API label="com.google.common.collect.TreeMultiset.count">root.count</API>(<API label="com.google.common.collect.TreeMultiset.comparator">comparator</API>(), e);
+    } catch (ClassCastException e) {
+          return 0;
+    } catch (NullPointerException e) {
+          return 0;
+    }
+}
+
+</code></pre>
+

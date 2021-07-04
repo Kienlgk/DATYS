@@ -1,0 +1,22 @@
+https://stackoverflow.com/questions/28268682
+I was doing some tests with a colleague, and we were pulling data in from a database (about 350,000 records), converting each record into an object and a key object, and then populating them into an ImmutableMap.Builder. 
+
+When we called the <API label="None">build</API>() method it took forever, probably due to all the data integrity checks that come with ImmutableMap (dupe keys, nulls, etc). To be fair we tried to use a hashmap as well, and that took awhile but not as long as the ImmutableMap. We finally settled on just using ConcurrentHashMap which we populated with 9 threads as the records were iterated, and wrapped that in an unmodifiable map. The performance was good. 
+
+I noticed on the documentation it <API label="None">read</API> ImutableMap is not optimized for "<API label="">equals</API>()" operations. As a die-hard immutable-ist, I'd like the ImmutableMap to work for large data volumes but I'm getting the sense it is not meant for that. Is that assumption right? Is it optimized only for small/medium-sized data sets? Is there a hidden implementation I need to invoke via  "<API label="None">copyOf</API>()" or something?
+
+==========
+My experience is that none of Java's built in <code>Collection</code> classes are really optimised for performance at huge volumes. For example HashMap uses simple iteration once hashCode has been used as an index in the array and compares the key via <code><API label="">equals</API></code> to each item with the same hash. If you are going to store several million items in the map then you need a very well designed hash and large capacity. These classes are designed to be as generic and safe as possible.
+
+So performance optimisations to try if you wish to stick with the standard Java HashMap:
+
+
+Make sure your hash function provides as <API label="">close</API> as possible to even distribution. Many domains have skewed values and your hash needs to take account of this.
+When you have a lot of data <code>HashMap</code> will be expanded many times. Ideally set initial capacity as <API label="">close</API> as possible to the final value.
+Make sure your <code><API label="">equals</API></code> implementation is as efficient as possible.
+
+
+There are massive performance optimisations you can <API label="">apply</API> if you know (for example) that your key is an integer, for example using some form of btree after the hash has been applied and using <code>==</code> rather than <code><API label="None">equals</API></code>.
+
+So the simple answer is that I believe you will need to <API label="">write</API> your own collection to get the performance you want or use one of the more optimised implementations available. 
+

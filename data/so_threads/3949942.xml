@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/3949942
+I have to implement Priority Queue using MultiMap. I use MultiMap from Google Collections. 
+The following code creates a MultiMap and adds few elements into it. 
+
+<pre><code>
+    Multimap multimap = <API label="com.google.common.collect.HashMultimap.create">HashMultimap.create</API>();
+
+   <API label="com.google.common.collect.HashMultimap.put">multimap.put</API>(5,"example");
+    <API label="com.google.common.collect.HashMultimap.put">multimap.put</API>(1,"is");
+    <API label="com.google.common.collect.HashMultimap.put">multimap.put</API>(1,"this");
+    <API label="com.google.common.collect.HashMultimap.put">multimap.put</API>(4,"some");
+
+</code></pre>
+
+Now my problem is how to write the pop method? 
+
+I think that there should be a for loop and it should be iterating through MultiMap. 
+
+The lowest key should be the highest priority, so in C++ I would set a pointer to the first element and <API label="">increment</API> it. How to do it in Java?
+
+==========
+The <code>HashMultimap</code> you're using won't give you any help in efficiently selecting the lowest element. Instead use a <code>TreeMultimap</code> (also in Google Collections) which lets you specify an ordering and iterate through the items in the list in that order. For instance:
+
+<pre><code>
+for (Map.Entry entry : <API label="com.google.common.collect.Multimap.entries">multimap.entries</API>()) {
+  <API label="None">System.out.println</API>("Item " + <API label="None">entry.getValue</API>() + " has priority " + <API label="None">entry.getKey</API>();
+}
+
+</code></pre>
+
+You'll notice that this always prints out <API label="">entries</API> in priority order, so to get the first-priority element you can just do <code><API label="com.google.common.collect.Multimap.entries">multimap.entries</API>().<API label="None">iterator</API>().<API label="None">next</API>()</code>  (assuming you know the map has at least one element).
+
+See <a href="http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/TreeMultimap.html" rel="noreferrer">the TreeMultimap documentation</a> for more information.
+

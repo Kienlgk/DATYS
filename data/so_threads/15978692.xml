@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/15978692
+I wanted a concurrent set with weak references to elements. I thought of doing this using Guava's <code><API label="">MapMaker</API></code>:
+
+<pre><code>
+Set concurrentSet = <API label="None">Collections.newSetFromMap</API>(
+    new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>().<API label="com.google.common.collect.MapMaker.weakKeys">weakKeys</API>().<API label="com.google.common.collect.MapMaker.makeMap">makeMap</API>());
+
+</code></pre>
+
+Guava will automatically give you identity hashes with weak keys.
+However, it turns out that <code><API label="">MapMaker</API></code> does not allow type parameters.
+
+<pre><code>
+file.java:123 type <API label="">com.google.common.collect.MapMaker</API> does not take parameters
+                new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>().<API label="com.google.common.collect.MapMaker.weakKeys">weakKeys</API>().<API label="com.google.common.collect.MapMaker.makeMap">makeMap</API>());
+                            ^
+
+</code></pre>
+
+Any solutions how I can obtain a concurrent set with weak references to elements?
+
+==========
+As explained <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/<API label="">MapMaker</API>.html" rel="noreferrer">in the documentation</a>, <code><API label="">MapMaker</API></code> is not a generic type; it's <code></code>. This means you can put anything as key or value, you just need to cast it when retreiving. Quoting the link:
+
+<pre><code>
+   ConcurrentMap timers = new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>()
+       .<API label="com.google.common.collect.MapMaker.concurrencyLevel">concurrencyLevel</API>(4)
+       .<API label="com.google.common.collect.MapMaker.weakKeys">weakKeys</API>()
+       .<API label="com.google.common.collect.MapMaker.makeMap">makeMap</API>();
+
+</code></pre>
+
+To get a <code>Set</code> with the <code>Map</code> entries, you just call <a href="http://docs.oracle.com/javase/6/docs/api/java/util/Map.html#<API label="">entrySet</API>%28%29" rel="noreferrer"><code>Map#<API label="None">entrySet</API>()</code></a>.
+

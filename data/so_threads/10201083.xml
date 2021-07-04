@@ -1,0 +1,58 @@
+https://stackoverflow.com/questions/10201083
+I have an immutable object, for example a node in the Cartesian space. The class is immutable, so I cache the <code><API label="None">hashCode</API></code> for very fast hashing. 
+
+<pre><code>
+private final int <API label="None">hashCode</API>;
+
+private final double x, y, z;
+
+public Node(final double x, final double y, final double z)
+{
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    <API label="None">this.hashCode</API> = <API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>(this.x, this.y, this.z);
+}
+
+@Override
+public boolean <API label="None">equals</API>(final Object obj)
+{
+    if (this == obj) { return true; }
+    if (obj == null) { return false; }
+    if (!(obj instanceof Node)) { return false; }
+    final Node other = (Node) obj;
+    return <API label="Objects.equal">Objects.equal</API>(this.x, other.x) && <API label="Objects.equal">Objects.equal</API>(this.y, other.y) && <API label="Objects.equal">Objects.equal</API>(this.z, other.z);
+}
+
+@Override
+public int <API label="None">hashCode</API>()
+{
+    return <API label="None">this.hashCode</API>;
+}
+
+</code></pre>
+
+Since the <code><API label="None">hashCode</API></code> is unique and dependent on all fields of the class AND the class is Immutable, would it be correct to only check <code>Node</code> equality based on the <code><API label="None">hashCode</API></code>?
+
+<pre><code>
+@Override
+public boolean <API label="None">equals</API>(final Object obj)
+{
+    if (this == obj) { return true; }
+    if (obj == null) { return false; }
+    if (!(obj instanceof Node)) { return false; }
+    final Node other = (Node) obj;
+    return <API label="None">this.hashCode</API> == <API label="None">other.hashCode</API>;
+}
+
+</code></pre>
+
+This passes all Unit Tests I have written about the properties of <code><API label="None">equals</API>()</code> and <code><API label="None">hashCode</API>()</code> and their interaction, but perhaps there is something I am missing?
+
+Note: <code><API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>()</code> and <code><API label="com.google.common.base.Objects.equal">Objects.equal</API>()</code> are Guava classes helpful for the respective methods.
+
+==========
+Nope; that won't work.
+
+You have 232 possible hashcodes and 2192 possible values.
+

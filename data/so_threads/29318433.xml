@@ -1,0 +1,79 @@
+https://stackoverflow.com/questions/29318433
+I try to <API label="org.mockito.Mockito.mock">mock</API> a final method (<a href="http://docs.oracle.com/javase/7/docs/api/java/io/DataInputStream.html#<API label="">readChar</API>()" rel="nofollow"><API label="">readChar</API></a> of class DataInputStream):
+
+MyClassTest
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(DataInputStream.class)
+public class MyClassTest {
+
+   @Test
+    public void testMyMethod() throws IOException {
+        DataInputStream mockStream = <API label="">PowerMockito.mock</API>(DataInputStream.class);
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="None">mockStream.readChar</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>('a');
+        <API label="None">System.out.println</API>(<API label="None">mockStream.readChar</API>());  // OK (<API label="">print</API> 'a')
+        Assert.assertEquals('a', MyClass.myMethod(mockStream));
+    }
+}
+
+</code></pre>
+
+MyClass
+
+<pre><code>
+public class MyClass {
+    public static char myMethod(DataInputStream dis) throws IOException {
+        return <API label="None">dis.readChar</API>();  // NPE raises
+    }
+}
+
+</code></pre>
+
+It works <API label="">when</API> calling the mocked method in testMyMethod() but in myMethod() NullPointerException raises, why?
+
+EDIT :
+
+The complete failure trace :
+
+<pre><code>
+java.lang.NullPointerException
+    at <API label="">java.io.DataInputStream.readChar</API>(Unknown Source)
+    at test.test.MyClass.myMethod(MyClass.java:8)
+    at test.test.MyClassTest.testMyMethod(MyClassTest.java:23)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+    at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:59)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:310)
+    at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:79)
+    at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:87)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:294)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:282)
+    at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:77)
+    at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:42)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:207)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:146)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+    at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:27)
+    at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:37)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:122)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:104)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+    at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:53)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+
+</code></pre>
+
+==========
+<code>DataInputStream</code> is a 'system' class from JVM which is probably already loaded by JVM.
+<code>@PrepareForTest</code> would have to <API label="">remove</API> <code>final</code> modifier from the methods (to be able to <API label="org.mockito.Mockito.mock">mock</API>), but it can't do so for already-loaded classes (HotSpot JVM doesn't support class signature changes for already-loaded classes), and this is probably why you get this exception.
+
+Luckily there's also <code>DataInput</code> interface implemented by <code>DataInputStream</code> - maybe you can try mocking not <code>DataInputStream</code> but <code>DataInput</code>, for this you don't even need PowerMock, just Mockito.
+

@@ -1,0 +1,10 @@
+https://stackoverflow.com/questions/6233745
+Is there a a built-in method or combination of methods to return a filtered view of Guava ImmutableMultimaps using predicates, like you can with regular maps?
+
+There does not appear to be <API label="">Maps.filter</API> method that accepts an ImmutableMultimap as a parameter.  Looking at the API I could call <API label="com.google.common.collect.Multimaps.asMap">asMap</API>() and get a map based view of the multimap and perform the <API label="">filter</API> that way.  However, I need to return an ImmutableMultimap from my function and for obvious reasons there isn't a way to view a Map> as an ImmutableMultimap - without having to contruct a new Multimap.
+
+Even if I could <API label="">filter</API> it as a Map and cast it back to an ImmutableMultimap since they are all just views (I think?), the <API label="">filter</API> methods would only let me <API label="">filter</API> on the collection as a whole not removing individual <API label="">values</API>.
+
+==========
+<a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Multimaps.html#filterEntries-com.google.common.collect.Multimap-com.google.common.base.Predicate-" rel="nofollow noreferrer"><API label="com.google.common.collect.Multimaps.filterEntries">Multimaps.filterEntries</API></a> was added to Guava in release 11.
+

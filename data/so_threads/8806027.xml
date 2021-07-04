@@ -1,0 +1,148 @@
+https://stackoverflow.com/questions/8806027
+I am trying to <API label="">mock</API> a class using Mockito and also using PowerMock.
+This is the test
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(value = Util.class)
+public final class FSNS_MLFTUnitTests
+{
+    @Test
+    public final void testChecksum()
+    {
+        final Util mockedServiceB = <API label="None">mock</API>(Util.class);
+        try
+        {
+            whenNew(Util.class).withNoArguments().<API label="org.mockito.stubbing.OngoingStubbing">thenReturn</API>(mockedServiceB);
+        }
+       catch (final Exception e)
+       {
+            <API label="None">System.out.println</API>("Exception thrown: " + e);
+       }
+}
+
+</code></pre>
+
+I get the following error when trying to <API label="">run</API> the test.
+
+<pre><code>
+java.lang.ExceptionInInitializerError
+at <API label="">sun.reflect.GeneratedSerializationConstructorAccessor6.newInstance</API>(Unknown Source)
+at <API label="">java.lang.reflect.Constructor.newInstance</API>(Constructor.java:501)
+at <API label="">org.objenesis.instantiator.sun.SunReflectionFactoryInstantiator.newInstance</API>(SunReflectionFactoryInstantiator.java:40)
+at <API label="">org.objenesis.ObjenesisBase.newInstance</API>(ObjenesisBase.java:59)
+at org.mockito.internal.creation.jmock.ClassImposterizer.createProxy(ClassImposterizer.java:120)
+at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.imposterise</API>(ClassImposterizer.java:60)
+at org.powermock.api.mockito.internal.mockcreation.MockCreator.createMethodInvocationControl(MockCreator.java:79)
+at <API label="">org.powermock.api.mockito.internal.mockcreation.MockCreator.mock</API>(MockCreator.java:53)
+at <API label="">org.powermock.api.mockito.PowerMockito.mock</API>(PowerMockito.java:80)
+at com.cerner.edc.ccm.host.drivers.fsns.mlft.FSNS_MLFTUnitTests.testChecksum(FSNS_MLFTUnitTests.java:23)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:39)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:592)
+at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:66)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:322)
+at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:86)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:94)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:309)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:297)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:84)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:222)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:161)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:135)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:133)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:112)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:44)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:46)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:197)
+Caused by: com.system.exception.ExceptionAdapter
+    at com.util.lang.ClassAssistant.lookupClass(ClassAssistant.java:50)
+    at com.util.lang.ClassAssistant.lookupClass(ClassAssistant.java:66)
+    at com.logging.edc.EdcAssistant.getResourceBundle(EdcAssistant.java:113)
+    at com.logging.edc.EdcLogger.(EdcLogger.java:26)
+    at <API label="">com..logging.edc.EdcLoggerManager.getLogger</API>(EdcLoggerManager.java:50)
+    at com.framework.Util.(Util.java:65)
+    ... 36 more
+
+</code></pre>
+
+This error is being thrown on the <API label="None">mock</API>(Util.class).
+
+These are the following pom dependencies that I am using:
+
+<pre><code>
+
+ org.powermock.modules
+  powermock-module-junit4
+  1.3.1
+  test
+
+
+ org.powermock.api
+  powermock-api-mockito
+  1.3.1
+  test
+
+
+ junit
+  junit
+  4.6
+  test
+
+
+ org.mockito
+  mockito-all
+  1.8.0
+
+
+</code></pre>
+
+Any help is appreicated.
+
+Thanks!!
+
+==========
+Let's analyse the bottom part of the stacktrace :
+
+<pre><code>
+Caused by: com.cerner.system.exception.ExceptionAdapter
+    at com.cerner.system.util.lang.ClassAssistant.lookupClass(ClassAssistant.java:50)
+
+</code></pre>
+
+I think it's pretty <API label="">clear</API> here : the line 50 of <code>com.cerner.system.util.lang.ClassAssistant</code> is causing a <code>com.cerner.system.exception.ExceptionAdapter</code>.
+
+<pre><code>
+    at com.cerner.system.util.lang.ClassAssistant.lookupClass(ClassAssistant.java:66)
+    at com.cerner.system.instrument.logging.edc.EdcAssistant.getResourceBundle(EdcAssistant.java:113)
+    at com.cerner.system.instrument.logging.edc.EdcLogger.(EdcLogger.java:26)
+    at <API label="">com.cerner.system.instrument.logging.edc.EdcLoggerManager.getLogger</API>(EdcLoggerManager.java:50)
+
+</code></pre>
+
+It seems the actual construction of <code>com.cerner.system.instrument.logging.edc.EdcLoggerManager</code> is trying to lookup some class in order to get a logger.
+
+<pre><code>
+    at com.cerner.edc.ccm.host.drivers.framework.Util.(Util.java:65)
+
+</code></pre>
+
+Here you see <code></code> instead of a method name, it means that's the static part of the class. Which means that the <code>Util</code> class can't be load properly by the JVM because an <code>ExceptionAdapter</code> is raised when the <code>EdcLoggerManger</code> is getting a logger (line 65 of Util class).
+
+Then on subsequent tries to instantiate a <code>Util</code> class, the JVM will say hey this class is not found, ie your <code>ClassNotFound</code>.
+
+How to fix it ?
+I don't have much more information on your actual code. But you should inspect why this line <code>com.cerner.system.util.lang.ClassAssistant.lookupClass(ClassAssistant.java:66)</code> is actually throwing a <code>com.cerner.system.exception.ExceptionAdapter</code>.
+
+Or you could eventually <API label="None">mock</API> the <API label="">EdcLoggerManager.getLogger</API>(...).
+
+As a reminder if this code is not legacy, I really encourage you to avoid PowerMock as it will not guard you against bad design (poorly testable code, porr evolutivity, poor maintainability). Instead embrace true OOP design with good practice and patterns where appropriate.
+

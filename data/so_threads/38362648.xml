@@ -1,0 +1,133 @@
+https://stackoverflow.com/questions/38362648
+I have a <code>nullPointerException</code> <API label="">when</API> I try <API label="">mock</API> a <code>DataSourceTransactionManager</code>, I just test one Method without access to DB.
+
+Maybe I am do something wrong, but I don't know what.
+
+TestClass
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class VdpDirectshipDAOImplUT {
+
+   Logger logger = <API label="None">LoggerFactory.getLogger</API>(<API label="None">getClass</API>());
+
+   @InjectMocks
+    private VdpDirectshipDAOImpl dao;
+
+   @Mock
+    private DataSourceTransactionManager oracleTxManager;
+
+   @Mock
+    TransactionStatus transactionStatus;
+
+   @Mock
+    TransactionDefinition transactionDefinition;
+
+   @Test
+    public void testSubmitDSOrder() {
+        // given
+        int result = -1;
+        VdpDirectShipSession vdpDirectShipSession = new VdpDirectShipSession();
+        String vnetUserId = "10624802";
+
+       // <API label="">when</API>
+        try {
+            result = dao.submitDSOrder(vdpDirectShipSession, vnetUserId);
+            <API label="None">logger.info</API>("result: {}", result);
+
+       } catch (DirectShipDataAccessException e) {
+            <API label="None">fail</API>(<API label="None">e.getMessage</API>());
+        }
+
+       // then
+        assertTrue("SKU invalid correction", result > 0);
+    }
+
+   @Before
+    public void setup() {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+        oracleTxManager = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(DataSourceTransactionManager.class);
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(oracleTxManager.getTransaction(transactionDefinition)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(<API label="org.mockito.Mockito.mock">Mockito.mock</API>(TransactionStatus.class));
+    }
+
+}
+
+</code></pre>
+
+DAO
+
+<pre><code>
+public class VdpDirectshipDAOImpl extends SimpleJdbcDaoSupport implements
+        VdpDirectshipDAO {
+
+   /**
+     * transactionManager for Oracle Database
+     */
+    private DataSourceTransactionManager oracleTxManager;
+
+
+   ....
+
+   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class )
+    public int submitDSOrder(final VdpDirectShipSession vdpDirectshipService,
+                final String vnetUserId) throws DirectShipDataAccessException {
+
+       ...
+            final TransactionDefinition def = new DefaultTransactionDefinition();
+            final TransactionStatus status = oracleTxManager.getTransaction(def);
+
+       ...
+    }
+}
+
+</code></pre>
+
+Trace
+
+<pre><code>
+java.lang.NullPointerException
+    at org.springframework.transaction.support.AbstractPlatformTransactionManager.getTransaction(AbstractPlatformTransactionManager.java:317)
+    at com.autozone.vendornet.vdpdirectship.dao.VdpDirectshipDAOImplUT.setup(VdpDirectshipDAOImplUT.java:69)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:39)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:592)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:24)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+    at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:678)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+
+</code></pre>
+
+I'm using Java 5, Spring 2.0, and junit 4.12 and I can't update their versions.
+
+==========
+The correct implementation for my was the <API label="">next</API>.
+
+<pre><code>
+@Spy 
+private DataSourceTransactionManager oracleTxManager; 
+
+...
+
+oracleTxManager.setDataSource(<API label="org.mockito.Mockito.mock">Mockito.mock</API>(DataSource.class, Mockito.RETURNS_MOCKS));
+
+</code></pre>
+

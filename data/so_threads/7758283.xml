@@ -1,0 +1,29 @@
+https://stackoverflow.com/questions/7758283
+I could not find a method in guava that converts a Collection (or Iterator/Iterable) to a Map, something like the following (wildcards omitted for clarity):
+
+<pre><code>
+public static  Map collectionSplitter(Collection source, Function kProducer, Function vProducer){
+    Map map = <API label="None">Maps.newHashMap</API>();
+    for(T t : source){
+        <API label="None">map.put</API>(<API label="">kProducer.apply</API>(t), <API label="">vProducer.apply</API>(t));
+    }
+    return map;
+}
+
+</code></pre>
+
+Is any existing method that does this? The closest I could find is Splitter.keyValueSplitter(), if T is a String.
+
+==========
+The closest I'm aware of is <a href="http://docs.guava-libraries.googlecode.com/git-history/v10.0.1/javadoc/com/google/common/collect/Maps.html#uniqueIndex%28java.lang.Iterable,%20com.google.common.base.Function%29"><code><API label="com.google.common.collect.Maps.uniqueIndex">Maps.uniqueIndex</API></code></a> - that does the key side, but not the value side... is that <API label="">close</API> enough?
+
+You could potentially use:
+
+<pre><code>
+Map map = <API label="com.google.common.collect.Maps.transformValues">Maps.transformValues</API>(<API label="">Maps.uniqueIndex</API>(source, kProducer),
+                                     vProducer);
+
+</code></pre>
+
+Slightly awkward, but it would get the job done, I think...
+

@@ -1,0 +1,35 @@
+https://stackoverflow.com/questions/39599874
+I have the following Spring Boot (1.3.1) <code>@RestController</code> defined:
+
+<pre><code>
+@RequestMapping(value = "/blah", method = DELETE)
+@ResponseStatus(NO_CONTENT)
+public void blah() {...}
+
+</code></pre>
+
+and am using <a href="https://github.com/RobWin/assertj-swagger" rel="nofollow"><code>assertj-swagger</code></a> to validate the above against the following swagger specification:
+
+<pre><code>
+'/blah':
+  <API label="">delete</API>:
+
+</code></pre>
+
+Validation (assertion) of the implemented operation fails for the following reason:
+
+<pre><code>
+[Checking 'produces' of 'DELETE' operation of path '/blah'] 
+ Expecting null or empty but was:<["*/*"]>
+
+</code></pre>
+
+But I can't understand why a <code>produces</code> <code>MediaType.ALL</code> is required when it's a <code>void</code> method we're attempting to <API label="">describe</API> with Swagger? 
+
+Any thoughts would be greatly appreciated, seems extraneous to have to add this to all of our documented APIs...
+
+Thanks and regards.
+
+==========
+Http is <a href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technical_overview" rel="nofollow">a request/response protocol</a>. So even if your operation returns a void, there is still a http response; even if it has a <code>Content-Length</code> of 0 (void). Thats the reason its modeled as a <code>MediaType.ALL</code> (read any media type or no particular media type)
+

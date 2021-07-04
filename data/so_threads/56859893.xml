@@ -1,0 +1,124 @@
+https://stackoverflow.com/questions/56859893
+We are using the Robot in AssertJ Swing in a Demo version of our Java Application to perform some automated <API label="">configuration</API> changes to our application.  This is much better and easier than teaching our salesman to do these things correctly.  
+
+The code is working for us on several Linux machines, a Mac and one Windows 10 machine.  However, it is not working on our salesman's Windows 10 machine.  His machine has Java 1.8  and we have <API label="">run</API> successfully under that version of Java on the other machines.
+
+I've spent some time debugging the problem and haven't been able to <API label="">resolve</API> it.  Here is the code that uses the Robot:
+
+<pre><code>
+        FrameFixture fullScreenFrame = robot.getFullScreenFrameFixture();
+        // Go to the <API label="">configuration</API> screen
+        robot.runCommand("MENU config");
+        robot.waitForIdle();
+
+       // Select Buttons tab
+        JTabbedPaneFixture tabbedPane = fullScreenFrame.tabbedPane();
+        <API label="None">LOG.log</API>(Level.WARNING, "Found the Tab Pane "+tabbedPane);
+        tabbedPane.selectTab("Buttons");
+        <API label="None">LOG.log</API>(Level.WARNING, "Found the Buttons Tab");
+        robot.waitForIdle();
+        // Select the "or" button group
+        robot.clickOnTable(fullScreenFrame, "buttons", "buttongroups", "Name", "or");
+        robot.waitForIdle();
+
+</code></pre>
+
+Here is the method that gets the fixture:
+
+<pre><code>
+public FrameFixture getFullScreenFrameFixture() {
+    return new FrameFixture(ROBOT, <API label="None">DataSource.getInstance</API>().getFullScreenFrame());
+}
+
+</code></pre>
+
+<API label="None">DataSource.getInstance</API>().getFullScreenFrame() returns the top level JFrame. The ROBOT variable is:
+
+<pre><code>
+public static final Robot ROBOT = BasicRobot.robotWithCurrentAwtHierarchy();
+
+</code></pre>
+
+The method robot.runCommand(...) doesn't even use the robot and looks like this:
+
+<pre><code>
+public void runCommand(final String command) {
+    try {
+        SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
+            public void <API label="">run</API>() {
+                <API label="None">DataSource.getInstance</API>().getFullScreenFrame().handleCommand(command);
+            }
+        });
+    } catch (InterruptedException ex) {
+        <API label="None">Logger.getLogger</API>("com.hcs.orc.demo.DemoRobot").<API label="None">log</API>(Level.SEVERE, "Bad news - Robot failed to <API label="">run</API> the command "+command, ex);
+    } catch (InvocationTargetException ex) {
+        <API label="None">Logger.getLogger</API>("com.hcs.orc.demo.DemoRobot").<API label="None">log</API>(Level.SEVERE, "Bad news - Robot failed to <API label="">run</API> the command "+command, ex);
+    }
+    waitForIdle();
+}
+
+</code></pre>
+
+This code is working correctly (and ties into our larger application) and brings up the <API label="">configuration</API> screen for our application.
+
+Here is the wait for idle method:
+
+<pre><code>
+/**
+ * Wait for the Event Thread to be idle.
+ */
+public void waitForIdle() {
+    ROBOT.waitForIdle();
+}
+
+</code></pre>
+
+The clickOnTable() method fails on the Windows 10 machine, because the the <code>tabbedPane.selectTab("Buttons")</code> method didn't actually click on the tab, so the table we are looking for isn't present on the screen.
+
+Oddly, the selectTab() method thinks it did the right thing and so doesn't throw any errors.  However, when I watch it, the mouse goes to the top of the screen above the tab and so clicks (if it clicks at all - I'm not sure) on the application title bar.  Very strange, especially since it works on all the other systems (including Windows 10) that we've tried.
+
+Here are some things I've looked at as possible problems on the failing machine and come up empty:
+
+
+Font Scale - set to 100%, so no scaling
+Running at the native resolution (1920x1080)
+Check for an "extra" monitor attached (no, there is not)
+Booting into Safe Mode with Networking (couldn't <API label="">run</API> our application, because there is no Network driver for WiFi and no network plug on the laptop - Safe Mode with Networking now comes without Networking)
+Looked for possibly interfering apps - didn't find any
+Turned off the Windows Firewall (shot in the dark)
+I was unable to get the debugger attached after a few attempts (runs under WebStart so the debugger is tricky - not sure what I was hoping to learn anyways).
+
+
+So, I'm looking for what I might have missed that is interfering with AssertJ Swing.  Any suggestions or ideas?
+
+Update 1
+
+Tried different versions and bitness of Java on both the failing laptop and a working Windows 10 machine.  Made no difference on either.
+
+The failing laptop is running Windows 10 v1803.
+The working machine is running Windows 10 v1809.
+
+We don't see an easy way to upgrade or downgrade Windows 10 to a specific version and don't want to join the beta testing for a salesman's laptop by upgrading to v1903.
+
+Update 2
+
+We selected the tab a different way (using regular Swing code, instead of AssertJ Swing code) and that, of course, worked.  However, the next bit of AssertJ Swing code that needed to move the mouse, moved it to a different wrong location.
+
+Looks like it is somehow doing the math wrong and clicking too high and too far to the left, even though Swing is feeding it the right coordinates (according to some of our added <API label="">log</API> statements).
+
+Update 3
+
+We tried it on a different laptop that is the same hardware and OS and it failed in the same way there.
+
+==========
+It is a bug in Java 8 that is documented here:
+
+<a href="https://bugs.openjdk.java.net/browse/JDK-8196030?attachmentOrder=des" rel="nofollow noreferrer">https://bugs.openjdk.java.net/browse/JDK-8196030?attachmentOrder=des</a>
+
+Unfortunately, the first comment from Oracle claims that the bug doesn't affect Java 8.  This is not true as the test cases in the ticket fail on my test system that exhibits the problem.
+
+I reported the problem to Oracle, but confidence is low that a fix for Java 8 will be forth coming.
+
+I found that it does work correctly under Java 11.0.4 (supposed to be fixed in Java 11.0.1), so we are avoiding the problem by moving to Java 11 (which comes with its own set of problems).
+

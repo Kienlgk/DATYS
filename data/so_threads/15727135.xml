@@ -1,0 +1,56 @@
+https://stackoverflow.com/questions/15727135
+I'm trying to do something within the GAE runtime that needs to do "mocking":
+
+<pre><code>
+  private Mongo createMongo() {
+    Mongo mongo = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Mongo.class);
+    ...
+  }
+
+</code></pre>
+
+However, this obviously cause an error since "reflection" is a restricted class:
+
+<pre><code>
+java.lang.NoClassDefFoundError: sun.reflect.ReflectionFactory is a restricted class. Please see the Google  App Engine developer's guide for more details.
+    at com.google.appengine.tools.development.agent.runtime.Runtime.reject(Runtime.java:51)
+    at org.objenesis.instantiator.sun.SunReflectionFactoryInstantiator.(SunReflectionFactoryInstantiator.java:24)
+    at <API label="">org.objenesis.strategy.StdInstantiatorStrategy.newInstantiatorOf</API>(StdInstantiatorStrategy.java:65)
+    at <API label="">org.objenesis.ObjenesisBase.getInstantiatorOf</API>(ObjenesisBase.java:76)
+    at <API label="">org.objenesis.ObjenesisBase.newInstance</API>(ObjenesisBase.java:59)
+    at org.mockito.internal.creation.jmock.ClassImposterizer.createProxy(ClassImposterizer.java:111)
+    at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.imposterise</API>(ClassImposterizer.java:51)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:52)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:41)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1014)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:909)
+
+</code></pre>
+
+
+Is there any workaround for this? Is there a way to make "reflection"
+work with GAE runtime?
+Are there any "emulation" library for <code>sun.reflect</code> that makes it possible to do reflection? 
+Perhaps, to define which classes possible to be reflected? Like <code>@Reflectable</code> or something
+Or there already exist a Mock framework that works in AppEngine?
+
+
+Update: 
+
+I found a similar question way back 2010:
+
+<a href="https://groups.google.com/forum/?fromgroups=#!topic/google-appengine-java/uIWRftGl-fA" rel="nofollow">https://groups.google.com/forum/?fromgroups=#!topic/google-appengine-java/uIWRftGl-fA</a>
+
+However no answer until now.
+
+==========
+App Engine apps run in a sandbox which places limits on what they can do.  An overview of the sandbox can be found here:
+
+<a href="https://cloud.google.com/appengine/docs/java/#Java_The_sandbox" rel="nofollow">https://cloud.google.com/appengine/docs/java/#Java_The_sandbox</a>
+
+One of the sandbox limitations is a restriction on the jre-bundled classes that an application can access.  The full list of jre-bundled classes an application is allowed to access is listed here:
+
+<a href="https://cloud.google.com/appengine/docs/java/jrewhitelist" rel="nofollow">https://cloud.google.com/appengine/docs/java/jrewhitelist</a>
+
+Why is ReflectionFactory itself not on this list of accessible classes?  Well, if you <API label="">read</API> the javadocs for this class you will find the following statement: "The methods in this class are extremely unsafe and can cause subversion of both the language and the verifier."  And so, this class can be used to subvert the sandbox.
+

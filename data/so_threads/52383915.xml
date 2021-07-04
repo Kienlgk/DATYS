@@ -1,0 +1,20 @@
+https://stackoverflow.com/questions/52383915
+Is there an easy way to implement a <code>Multimap</code> that is like a <code>TreeMultimap</code> in the sense that the keys take a <API label="">natural</API> ordering, but also like an <code>ArrayListMultimap</code> in the sense that the collections are <API label="">sorted</API> in the order the values were added?
+
+==========
+You can use <a href="https://google.github.io/guava/releases/26.0-jre/api/docs/com/google/common/collect/MultimapBuilder.html" rel="nofollow noreferrer"><code>MultimapBuilder</code></a> to create <API label="">combinations</API> of features you need. From javadoc:
+
+
+ A builder for a multimap implementation that allows customization of the backing map and value collection implementations used in a particular multimap.
+  
+  This can be used to easily configure multimap data structure implementations not provided explicitly in <code>com.google.common.collect</code>, for example:
+
+<pre><code>
+ListMultimap treeListMultimap =
+      <API label="com.google.common.collect.MultimapBuilder.treeKeys">MultimapBuilder.treeKeys</API>().arrayListValues().<API label="None">build</API>();
+SetMultimap hashEnumMultimap =
+     <API label="com.google.common.collect.MultimapBuilder.hashKeys">MultimapBuilder.hashKeys</API>().enumSetValues(MyEnum.class).<API label="None">build</API>();
+
+</code></pre>
+
+

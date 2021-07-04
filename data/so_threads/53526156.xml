@@ -1,0 +1,52 @@
+https://stackoverflow.com/questions/53526156
+I'm working with AssertJ and I need to check that all objects in a <API label="">list</API> <API label="">have</API> <code>intField > 0</code>. Something like this:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(myObjectList).<API label="org.assertj.core.api.AbstractIteratorAssert.extracting">extracting</API>(p -> p.getIntField()).<API label="">isGreaterThan</API>(0);
+
+</code></pre>
+
+What's the correct way to achieve this? Should I use some other library?
+
+==========
+Option 1:
+
+Use <a href="https://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractIterableAssert.html#<API label="">allMatch</API>-java.util.function.Predicate-" rel="nofollow noreferrer"><code><API label="org.assertj.core.api.AbstractIterableAssert.allMatch">allMatch</API>(Predicate)</code></a>:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="None">asList</API>(0, 2, 3))
+    .<API label="org.assertj.core.api.AbstractIterableAssert.allMatch">allMatch</API>(i -> i > 0);
+
+</code></pre>
+
+
+
+Option 2 (<API label="">as</API> suggested by <a href="https://stackoverflow.com/users/66686/jens-schauder">Jens Schauder</a>):
+
+Use <code>Consumer</code> based assertions with <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractIterableAssert.html#<API label="">allSatisfy</API>-java.util.function.Consumer-" rel="nofollow noreferrer"><code><API label="org.assertj.core.api.AbstractIterableAssert.allSatisfy">allSatisfy</API></code></a>:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="">asList</API>(0, 1, 2, 3))
+        .<API label="org.assertj.core.api.AbstractIterableAssert.allSatisfy">allSatisfy</API>(i ->
+                <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(i).<API label="">isGreaterThan</API>(0));
+
+</code></pre>
+
+The second option may result in more informative <API label="">failure</API> messages.
+
+In this particular case the message highlights that some elements <API label="">are</API> expected to be greater than <code>0</code>
+
+<pre><code>
+java.lang.AssertionError: 
+Expecting all elements of:
+  <[0, 1, 2, 3]>
+to satisfy <API label="">given</API> requirements, but these elements did <API label="">not</API>:
+
+ <0> 
+Expecting:
+ <0>
+to be greater than:
+ <0> 
+
+</code></pre>
+

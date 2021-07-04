@@ -1,0 +1,18 @@
+https://stackoverflow.com/questions/8860770
+My understanding of Multiset is a set with <API label="">frequency</API>, but I can always use Map to represent the <API label="">frequency</API>, is there other reason to use Multiset?
+
+==========
+Advantages of a <code>Multiset</code> over a <code>Map</code>:
+
+
+No special code required when adding an element that is not already in the collection.
+Methods for handling the <API label="">count</API> of elements directly: <code><API label="com.google.common.collect.Multiset.count">count</API>(E)</code>, <code><API label="com.google.common.collect.Multiset.add">add</API>(E, int)</code>, etc.
+The intention of the code is clearer. A <code>Multiset</code> obviously maps the elements to their counts. A <code>Map</code> could map the elements to arbitrary integers.
+
+
+See also:
+
+<a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Multiset.html" rel="nofollow noreferrer">Multiset Javadoc</a>
+
+<a href="http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multiset" rel="nofollow noreferrer">Multiset explained in the Guava Wiki</a>
+

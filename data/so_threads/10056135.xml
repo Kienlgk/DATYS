@@ -1,0 +1,19 @@
+https://stackoverflow.com/questions/10056135
+From <a href="http://b010.blogspot.it/2009/05/speed-comparison-of-1-javas-built-in.html" rel="nofollow">here</a>, I found that Colt's <code>OpenIntIntHashMap</code> and Trove's <code>TIntIntHashMap</code> give better performance and memory uses than Java's built in <code>HashMap</code> or Guava's <code>HashMultimap</code>.
+
+Do Colt's <code>OpenIntIntHashMap</code> or Trove's <code>TIntIntHashMap</code> allow <API label="">keys</API> with multiple <API label="">values</API>, as with <code>HashMultimap</code>? If not what is a nice way to implement a <code>HashMultimap</code> that can achieve Colt's or Trove's performance and memory efficiency?
+
+Note: I have tested Guava's <code>HashMultimap</code>, but its performance and memory efficiency seems poor to me.
+
+==========
+<pre><code>
+<API label="com.google.common.collect.Multimaps.newSetMultimap">Multimaps.newSetMultimap</API>(
+  <API label="None">TDecorators.wrap</API>(new TIntObjectHashMap()),
+  new Supplier() {
+    public Set <API label="None">get</API>() {
+      return <API label="None">TDecorators.wrap</API>(new TIntHashSet());
+    }
+  });
+
+</code></pre>
+

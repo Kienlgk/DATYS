@@ -1,0 +1,94 @@
+https://stackoverflow.com/questions/14374584
+Given the following code:
+
+<pre><code>
+    LinkedList list = <API label="org.mockito.Mockito.mock">mock</API>(LinkedList.class);
+    <API label="org.mockito.Mockito.doCallRealMethod">doCallRealMethod</API>().<API label="org.mockito.stubbing.Stubber.when">when</API>(list).<API label="None">clear</API>();
+    <API label="None">list.clear</API>();
+
+</code></pre>
+
+by executing this test, a NullPointerException is thrown from first line in LinkedList#clear: 
+
+<pre><code>
+public void <API label="">clear</API>() {
+    Entry e = header.next;
+    while (e != header) {
+        Entry next = e.next;
+        //Code omitted. 
+
+</code></pre>
+
+but header has been instantiated before: 
+
+<pre><code>
+private transient Entry header = new Entry(null, null, null);
+
+</code></pre>
+
+Could someone please explain what's happening during <API label="">mock</API> creation?
+
+#######  UPDATE.  ######
+
+Having read all answers especially Ajay's one, I looked into Objenesis source code and find out that it's using Reflection API to create the proxy instance (through CGLIB) and therefore bypassing all constructors in the hierarchy until java.lang.Object.
+
+Here is the sample code to simulate the issue:
+
+<pre><code>
+public class ReflectionConstructorTest {
+
+   @Test
+    public void testAgain() {
+
+       try {
+            //java.lang.Object default constructor
+            Constructor javaLangObjectConstructor = Object.class
+                    .getConstructor((Class[]) null);
+            Constructor mungedConstructor = ReflectionFactory
+                    .getReflectionFactory()
+                    .newConstructorForSerialization(CustomClient.class, javaLangObjectConstructor);
+
+           <API label="None">mungedConstructor.setAccessible</API>(true);
+
+           //Creates new client instance without calling its constructor
+            //Thus "name" is not initialized.
+            Object client = <API label="None">mungedConstructor.newInstance</API>((Object[]) null);
+
+           //this will print "CustomClient" 
+            <API label="None">System.out.println</API>(<API label="None">client.getClass</API>());
+            //this will print "CustomClient: null". name is null.
+            <API label="None">System.out.println</API>(<API label="None">client.toString</API>());
+
+       } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+class CustomClient {
+    private String name;
+
+   CustomClient() {
+        <API label="None">System.out.println</API>(<API label="None">this.getClass</API>().<API label="None">getSimpleName</API>() + " - Constructor");
+        this.name = "My Name";
+    }
+
+   @Override
+    public String <API label="">toString</API>() {
+        return <API label="None">this.getClass</API>().<API label="None">getSimpleName</API>() + ": " + name;
+    }
+}
+
+</code></pre>
+
+==========
+Your reasoning is flawless.
+The key issue is that you are not operating on the actual <code>LinkedList</code> object.  Here is what is happening behind the scenes:
+
+The object that you are given by Mockito's <code><API label="org.mockito.Mockito.mock">mock</API>()</code>  is an <a href="http://cglib.sourceforge.net/apidocs/net/sf/cglib/Enhancer.html" rel="nofollow noreferrer">Enhancer</a> object from the CGLIB library.
+
+For me it is something like <code>java.util.LinkedList$$EnhancerByMockitoWithCGLIB$$cae81a28</code>  
+
+which kind of acts like a Proxy, albeit with the fields set to default values. (null,0 etc)
+

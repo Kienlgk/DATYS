@@ -1,0 +1,59 @@
+https://stackoverflow.com/questions/24618956
+I have, for example, this class:
+
+<pre><code>
+public class A {
+    private List list;
+
+   public A(B b){
+        list = b.getList();
+    }
+
+   public List someMethod(){
+        return list;
+    }
+}
+
+</code></pre>
+
+I want to unit <API label="">test</API> <code>someMethod</code> without invoking constructor. I use reflection to set <code>list</code>. 
+
+The problem <API label="">is</API> that I don't want to create <code>B</code> class object and I cannot <API label="">mock</API> it since it will cause NPE.
+
+So my question <API label="">is</API>:
+
+How to <API label="">test</API> <code>someMethod</code> without calling constructor of <code>A</code>? Is there any way to <API label="">mock</API> class A and doesn't lose posibility to call methods?
+
+Creating constructor with zero arguments <API label="">is</API> not a solution.
+
+Note: I don't want to change any part of A class. I'm asking if it <API label="">is</API> possible to perform this <API label="">test</API> without adding or changing <API label="">anything</API> in A class.
+
+==========
+You can <API label="">test</API> class A without calling it's constructor by Mockito. Not sure if I really understand your requirement but the following codes work for me.
+
+<pre><code>
+import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class ATest {
+
+   @Test
+    public void <API label="">test</API>() {
+        A a = <API label="org.mockito.Mockito.mock">mock</API>(A.class);
+        <API label="org.mockito.Mockito.when">when</API>(a.someMethod()).<API label="org.mockito.stubbing.OngoingStubbing.thenCallRealMethod">thenCallRealMethod</API>();
+        List listInA = new ArrayList();
+        <API label="None">ReflectionTestUtils.setField</API>(a, "list", listInA);
+        <API label="None">assertThat</API>(a.someMethod(), <API label="org.hamcrest.CoreMatchers.is">is</API>(listInA));
+    }
+}
+
+</code></pre>
+

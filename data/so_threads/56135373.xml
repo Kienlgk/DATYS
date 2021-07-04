@@ -1,0 +1,71 @@
+https://stackoverflow.com/questions/56135373
+I am developing Test cases for the <code>Spring Data Mongo</code> Services. 
+
+<pre><code>
+org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
+Optional cannot be returned by <API label="None">stream</API>()
+<API label="None">stream</API>() should return Stream
+***
+If you're unsure why you're getting above <API label="">error</API> <API label="">read</API> on.
+Due to the nature of the syntax above problem might occur because:
+1. This exception *might* occur in wrongly written multi-threaded tests.
+   Please refer to Mockito FAQ on limitations of concurrency testing.
+2. A <API label="">spy</API> is stubbed using <API label="org.mockito.Mockito.when">when</API>(<API label="">spy</API>.foo()).<API label="org.mockito.stubbing.OngoingStubbing.then">then</API>() syntax. It is safer to <API label="">stub</API> spies - 
+   - with <API label="org.mockito.Mockito.doReturn">doReturn</API>|Throw() family of methods. More in javadocs for <API label="org.mockito.Mockito.spy">Mockito.spy</API>() method.
+
+   at com.mastercard.customer.program.refdata.service.SubDivisionServiceTest.findAllSubDivisions_SuccessTest(SubDivisionServiceTest.java:168)
+    at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:68)
+    at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:89)
+    at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:97)
+    at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:87)
+    at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:50)
+    at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+    at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:538)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:760)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:460)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:206)
+
+</code></pre>
+
+Here is the my sample code:
+
+<pre><code>
+AggregationResults employeeFacets = null;
+try {
+    employeeFacets = mongoTemplate.aggregate(aggregation, Department.class, EmployeeFacet.class);
+} catch (Exception ex) {
+    <API label="">log</API>.<API label="None">error</API>(AppConstants.ERROR, AppConstants.DB_ERROR, ex);
+    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, AppConstants.DB_ERROR, ex);
+}
+
+</code></pre>
+
+Another Code:
+
+<pre><code>
+private SortOperation getSortOperation(Pageable pageable) {
+        SortOperation sortOperation = null;
+        Optional value = <API label="None">pageable.getSort</API>().<API label="None">stream</API>().findFirst();
+        if(<API label="None">value.isPresent</API>()) {
+            Direction direction = <API label="None">value.get</API>().getDirection();
+            String property = <API label="None">value.get</API>().getProperty();
+            sortOperation = <API label="None">Aggregation.sort</API>(direction, property); 
+        }
+        return sortOperation;
+    }
+
+</code></pre>
+
+==========
+I was able to fixed using below:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">pageable.getSort</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(Sort.by(order));
+
+</code></pre>
+
+This works like charm !
+

@@ -1,0 +1,132 @@
+https://stackoverflow.com/questions/31202190
+I was trying to find solution but haven't found yet. I tried to test public method which has calls of the couple of private ones inside. One of the problem that private method retrieves Hibernate's Criteria by generic method that in its turn retrieves it through chain of another generic methods. Please take a look at the code below. Frankly I'm not sure that it <API label="">is</API> possible to test that case but if anyone has ideas please suggest them:
+
+ConcreteDao
+
+<pre><code>
+public class ConcreteDao extends EntityDao {
+
+   public Class <API label="">getClassType</API>() {
+        return ConcreteEntity.class;
+    }
+
+}
+
+</code></pre>
+
+EntityDao
+
+<pre><code>
+public abstract class EntityDao extends AbstractDao{
+
+   public List getEntityByFilter(EntityFilter filter) {
+        Criteria criteria = getCriteriaByFilter(<API label="None">filter.getFilters</API>());
+        criteria.setMaxResult(filter.getMaxResult());
+        criteria.setFirstResult(filter.getFirstResult());
+        criteria.addOrder(Order.asc(filter.getSortedField()));
+        <API label="None">criteria.list</API>();
+    }
+
+   private Criteria getCriteriaByFilter(List filters) {
+        Criteria criteria = getCriteria();
+        for (CustFilter filter : filters) {
+            filter.addrestrictionToCriteria(criteria, filter.getProperty(), <API label="None">filter.getValue</API>());
+        }
+        return criteria;
+    }
+
+}
+
+</code></pre>
+
+AbstractDao
+
+<pre><code>
+public abstract class AbstractDao {
+
+   private EntityManagerFactory entityManagerFactory;
+
+   public abstract <API label="">getClassType</API>();
+
+   public Criteria getCriteria() {
+        return getSession().createCriteria(<API label="None">getClassType</API>());
+    }
+
+   public Session getSession() {
+        Session session = (Session) getEntityManager().<API label="None">getDelegate</API>();
+        return session;
+    }
+
+   public EntityManager getEntityManager() {
+        entityManagerFactory.getEntityManager();
+    }
+
+}
+
+</code></pre>
+
+Test class
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class ConcreteDaoTest {
+
+   @Mock
+    private EntityManager entityManager;
+
+   @Mock
+    private Session session;
+
+   @Mock
+    private Criteria criteria;
+
+   private List filters;
+
+   private EntityFilter entityFilter;
+
+   private List resultList;
+
+   @InjectMocks
+    private ConcreteDao concreteDao = new ConcreteDao;
+
+   public void <API label="">init</API>() {
+        filters = new ArrayLis();
+        CustFilter custFilter = new CustFilter();
+        //fill filter;
+        <API label="None">filters.add</API>(custFilter);
+
+       entityFilter = new EntityFilter();
+        //fill entityFilter
+        <API label="None">entityFilter.setFilters</API>(filters);
+
+       ConcreteEntity concreteEntity = new ConcreteEntity();
+        resultList = new ArrayList();
+        <API label="None">resultList.add</API>(concreteEntity);
+
+   }
+
+
+   @Test
+    public void getEntityByFilterTest() {
+        <API label="org.mockito.Mockito.when">when</API>(concreteDao.getEntityManager).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(entityManager);
+        <API label="org.mockito.Mockito.when">when</API>(concreteDao.getSession()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(session);
+        <API label="org.mockito.Mockito.when">when</API>(concretedao.getCriteria()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(criteria);
+
+       <API label="org.mockito.Mockito.when">when</API>(<API label="None">filter.getFilters</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(filters);
+        <API label="org.mockito.Mockito.when">when</API>(filter.getMaxResult()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(10);
+        <API label="org.mockito.Mockito.when">when</API>(filter.getFirstResult()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(0);
+        <API label="org.mockito.Mockito.when">when</API>(filter.getSortedField()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("firstName");
+        <API label="org.mockito.Mockito.when">when</API>(<API label="None">criteria.list</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(resultList);
+
+       List result = concreteDao.getEntityByFilter(entityFilter);
+        Assert.assertThen(result. <API label="None">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    }
+
+} 
+
+</code></pre>
+
+==========
+With Mockito, you cannot mock private method calls.
+Try PowerMockito with which you can mock any kinds of methods like static methods, private methods, local method instantiations and so on.
+

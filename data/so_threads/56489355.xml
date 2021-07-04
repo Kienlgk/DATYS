@@ -1,0 +1,105 @@
+https://stackoverflow.com/questions/56489355
+I have upgraded my jdk from 10 to 11 with all the dependencies updated to use the latest versions. When compiling using gradle wrapper it is throwing following error
+
+<code>symbol:   method <API label="None">getId</API>()
+TestLombok.java:55: error: cannot find symbol
+<API label="None">object.setId</API>(<API label="None">Long.valueOf</API>(getRandomString(5, onlyNumbers)));</code>
+
+
+Gradle Wrapper Distribution version 5.4.1
+JDK 11.0.2
+Mac Machine
+Lombok 1.18.8
+
+
+I have tried with various versions of lombok but not able to solve the issue
+
+
+1.18.8
+1.18.4
+
+
+previously I was using lombok 1.18.2 and annotationprocessor 1.18.2
+
+<pre><code>
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+
+ @JsonProperty("id")
+  public Long id;
+}
+
+</code></pre>
+
+I expect the issues to be fixed with gradle5.x.x version but still the issue persists. Let me know if we have any issue using gradle wrapper version. Following is my build.gradle file
+
+<pre><code>
+buildscript {
+    ext {
+        springBootVersion = '2.1.1.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+        maven { url "https://jitpack.io" }
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+    }
+}
+
+
+apply plugin: "java"
+apply plugin: "eclipse"
+apply plugin: "org.springframework.boot"
+
+group = "com.demo"
+version = "0.0.1-SNAPSHOT"
+sourceCompatibility = 11
+targetCompatibility = 11
+
+repositories {
+    maven { url "https://plugins.gradle.org/m2/" }
+    maven { url "http://repo.maven.apache.org/maven2" }
+    maven { url "https://repo.spring.io/milestone" }
+    maven { url "https://maven.google.com" }
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    <API label="None">compile</API> group: 'javax.inject', name: 'javax.inject', version: '1'
+    <API label="">compile</API>("org.springframework.boot:spring-boot-starter-data-jpa")
+    <API label="">compile</API> group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: '2.1.4.RELEASE'
+    <API label="">compile</API>("org.springframework.boot:spring-boot-starter-web")
+    compileOnly("org.projectlombok:lombok:1.18.8")
+    <API label="">compile</API>("org.mockito:mockito-core:" + mockitoVersion)
+    test.useJUnitPlatform()
+    annotationProcessor ('org.projectlombok:lombok:1.18.8')
+    testCompileOnly("org.projectlombok:lombok:1.18.8")
+
+}
+
+</code></pre>
+
+==========
+I just reproduced the same issue which you faced, my gradle version is 
+
+
+ Gradle Version : 5.4.1
+
+
+To resolve this, in reference to the Lombok doc (<a href="https://projectlombok.org/setup/gradle" rel="nofollow noreferrer">https://projectlombok.org/setup/gradle</a>) I changed the dependency as below.
+
+<pre><code>
+    compileOnly 'org.projectlombok:lombok:1.18.8'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+
+</code></pre>
+
+You could take look at this <a href="https://github.com/rzwitserloot/lombok/issues/1945" rel="nofollow noreferrer">https://github.com/rzwitserloot/lombok/issues/1945</a> for more info
+

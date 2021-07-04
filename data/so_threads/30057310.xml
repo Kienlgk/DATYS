@@ -1,0 +1,101 @@
+https://stackoverflow.com/questions/30057310
+I am using Android Studio 1.2 and the <code>com.android.tools.build:gradle:1.2.2</code> plugin.
+
+Attempt 1
+
+I include the following in my <code>app/build.gradle</code>:
+
+<pre><code>
+androidTestCompile ('com.google.dexmaker:dexmaker-mockito:1.2')
+androidTestCompile ('org.powermock:powermock-mockito-release-full:1.6.2')
+
+</code></pre>
+
+but then the PowerMockito package in <API label="">not</API> available for import:
+
+<pre><code>
+error: cannot <API label="">find</API> symbol
+    PowerMockito.mockStatic(DatastoreFactory.class);
+    ^
+
+</code></pre>
+
+Attempt 2
+
+I include the following in my <code>app/build.gradle</code>:
+
+<pre><code>
+androidTestCompile ('org.powermock:powermock-api-mockito:1.6.2') {
+    exclude module: 'hamcrest-core'
+    exclude module: 'objenesis'
+}
+
+androidTestCompile ('org.powermock:powermock-module-junit4:1.6.2') {
+    exclude module: 'hamcrest-core'
+    exclude module: 'objenesis'
+}
+
+</code></pre>
+
+which is a trial-and-error offshoot of this q/a here: <a href="https://stackoverflow.com/questions/25136862/androidstudio-gradle-with-powermock">AndroidStudio/Gradle with powermock</a>
+
+This compiles but when <API label="">run</API> Mockito gives a runtime error:
+
+<pre><code>
+java.lang.VerifyError: org/mockito/cglib/core/ReflectUtils
+    at <API label="">org.mockito.cglib.core.KeyFactory$Generator.generateClass</API>(KeyFactory.java:167)
+    at <API label="">org.mockito.cglib.core.DefaultGeneratorStrategy.generate</API>(DefaultGeneratorStrategy.java:25)
+    at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:217)
+    at <API label="">org.mockito.cglib.core.KeyFactory$Generator.create</API>(KeyFactory.java:145)
+    at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:117)
+    at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:109)
+    at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:105)
+    at org.mockito.cglib.proxy.Enhancer.(Enhancer.java:70)
+    at <API label="">org.powermock.api.mockito.repackaged.ClassImposterizer.createProxyClass</API>(ClassImposterizer.java:95)
+    at <API label="">org.powermock.api.mockito.repackaged.ClassImposterizer.imposterise</API>(ClassImposterizer.java:57)
+    at <API label="">org.powermock.api.mockito.repackaged.ClassImposterizer.imposterise</API>(ClassImposterizer.java:49)
+    at <API label="">org.powermock.api.mockito.repackaged.CglibMockMaker.createMock</API>(CglibMockMaker.java:24)
+    at <API label="">org.powermock.api.mockito.internal.mockmaker.PowerMockMaker.createMock</API>(PowerMockMaker.java:45)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:33)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:59)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1285)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1163)
+    at com.mdsol.naga.FormPusherTest.setUp(FormPusherTest.java:40)
+    at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:191)
+    at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:176)
+    at android.test.InstrumentationTestRunner.onStart(InstrumentationTestRunner.java:554)
+    at <API label="">android.app.Instrumentation$InstrumentationThread.run</API>(Instrumentation.java:1701)
+
+</code></pre>
+
+Is anyone using Powermock successfully with Android Studio 1.2? Please share your <code>build.gradle</code> - thanks!
+
+==========
+It should be good already. At least in my case its working fine.
+
+<pre><code>
+dependencies {
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-core:2.0.5-beta'
+    testCompile 'com.android.support:support-v4:22.0.0'
+    testCompile ('org.powermock:powermock-api-mockito:1.6.2') {
+        exclude module: 'hamcrest-core'
+        exclude module: 'objenesis'
+    }
+    testCompile ('org.powermock:powermock-module-junit4:1.6.2') {
+        exclude module: 'hamcrest-core'
+        exclude module: 'objenesis'
+    }
+}
+
+</code></pre>
+
+Also, remember to select <code>Unit Tests</code> in the Test Artifact section of Build Variants in Android Studio.
+You need to make sure you are using the right project structure, Gradle version and testCompile.
+
+You can <API label="">find</API> the article about this here:
+<a href="http://vexdev.com/2015/05/06/unit-testing-android/">http://vexdev.com/2015/05/06/unit-testing-android/</a>
+
+And the whole project:
+<a href="https://github.com/vexdev/AndroidUnitTest">https://github.com/vexdev/AndroidUnitTest</a>
+

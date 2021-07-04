@@ -1,0 +1,117 @@
+https://stackoverflow.com/questions/8522268
+How should I iterate through a Nested Map with such declaration? 
+
+
+<code>
+Map</code>
+
+
+Please suggest if there are other hashmap/list that are more effective way of doing this hash population task?
+
+<code>
+import com.google.common.collect.Multiset;
+import com.google.common.collect.TreeMultiset;
+
+String[] foobarness = {"foo" , "bar", "ness", "foo", 
+    "bar", "foo", "ness", "bar", "foo", "ness", "foo", 
+    "bar", "foo", "ness", "bar", "ness", "foo", "bar", 
+    "foo", "ness"};
+String[] types = {"type::1", "type::2", "type::3", 
+    "type::4",};
+
+Map typeTextCount = 
+new HashMap();
+
+Multiset textAndCount 
+    = <API label="com.google.common.collect.TreeMultiset.create">TreeMultiset.create</API>();
+
+for (int i=0; i
+
+So now the hashmap is populated, how do i iterate through that complex nested map?
+I've tried the code below but I only got the 1st <API label="None">getValue</API>() from my Multiset: 
+
+<code>
+Iterator itTTC = 
+    <API label="None">typeTextCount.entrySet</API>().<API label="None">iterator</API>();
+while (<API label="None">itTTC.hasNext</API>()) {
+    Map.Entry textCt = (Map.Entry)<API label="None">itTTC.next</API>();
+    <API label="None">System.out.println</API>(<API label="None">textCt.getKey</API>() + " :\t" + <API label="None">textCt.getValue</API>());
+    <API label="None">itTTC.remove</API>();
+}
+</code>
+
+==========
+In your code you aren't adding your <code>Multiset</code> to your <code>Map</code>.  That's why you are not seeing any output.
+
+In your code I did this:
+
+<code>
+<API label="None">typeTextCount.put</API>(types[i], textAndCount);
+</code>
+
+inside the loop, and then with the same <API label="">iterator</API> I can see all the outputs like this :
+
+<code>
+type::3 :   [bar x 24, foo x 32, ness x 24]
+type::2 :   [bar x 24, foo x 32, ness x 24]
+type::4 :   [bar x 24, foo x 32, ness x 24]
+type::1 :   [bar x 24, foo x 32, ness x 24]
+</code>
+
+EDIT: Complete code for reference:
+
+<code>
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import com.google.common.collect.Multiset;
+import com.google.common.collect.TreeMultiset;
+
+public class TestIterator {
+
+   private static String[] foobarness  =
+                                   {
+            "foo", "bar", "ness", "foo", "bar", "foo", "ness", "bar", "foo", "ness", "foo", "bar", "foo", "ness",
+            "bar", "ness", "foo", "bar", "foo", "ness"
+                                   };
+    private static String[] types      =
+                                   {
+            "type::1", "type::2", "type::3", "type::4",
+                                   };
+    public static void <API label="">main</API>(String[] args) {
+        Map typeTextCount = new HashMap();
+
+       Multiset textAndCount = <API label="com.google.common.collect.TreeMultiset.create">TreeMultiset.create</API>();
+
+       for (int i = 0; i < types.length; i++) {
+            // I know it's kinda weird but in my task,
+            // I want to keep adding only 1 to the count for each entry.
+            // Please suggest if there is a better hashmap/list for such task.
+            if (("type::1".equals(types[i])) || ("type::3".equals(types[i]))) {
+                for (String text : foobarness) {
+                    // I don't worry too much about how i
+                    // populate the Map, it is iterating through
+                    // the Map that I have problem with.
+                    <API label="com.google.common.collect.TreeMultiset.add">textAndCount.add</API>(text, 1);
+                }
+            }
+
+           if (("type::2".equals(types[i])) || ("type::4".equals(types[i]))) {
+                for (String text : foobarness)
+                    <API label="com.google.common.collect.TreeMultiset.add">textAndCount.add</API>(text, 1);
+            }
+            <API label="None">typeTextCount.put</API>(types[i], textAndCount);
+        }
+
+       Iterator itTTC = <API label="None">typeTextCount.entrySet</API>().<API label="None">iterator</API>();
+        while (<API label="None">itTTC.hasNext</API>()) {
+            Map.Entry textCt = (Map.Entry) <API label="">itTTC.next</API>();
+            <API label="None">System.out.println</API>(<API label="None">textCt.getKey</API>() + " :\t" + <API label="None">textCt.getValue</API>());
+            <API label="None">itTTC.remove</API>();
+        }
+    }
+}
+</code>
+

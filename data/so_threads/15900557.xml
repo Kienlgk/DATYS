@@ -1,0 +1,31 @@
+https://stackoverflow.com/questions/15900557
+Is it possible, using Google Guava's Cache, to keep my cached value in the cache permanently?
+
+Below is how I <API label="">build</API> my cache:
+
+<pre><code>
+cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()               
+                .expireAfterWrite(60, TimeUnit.MINUTES)
+                .maximumSize(100)
+                .build(....);
+
+</code></pre>
+
+I want my cache to keep the value permanently (currently it's 60 minutes). Is there any method of doing so?
+
+==========
+Just <API label="">remove</API> <code><API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API></code> <API label="">from</API> builder (it's optional feature):
+
+<pre><code>
+cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+            .maximumSize(100)
+            .build(....);
+
+</code></pre>
+
+so that entries will be evicted only when <API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API> is reached.
+
+Guava's Cache is <a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/cache/CacheBuilder.html" rel="nofollow noreferrer">well documented</a> but you should probably read <a href="https://github.com/google/guava/wiki/CachesExplained" rel="nofollow noreferrer">Wiki page</a> too.
+
+P.S. If by "permanent" you meant "will be there after restart", Guava Cache isn't for you since it's in-memory cache.
+

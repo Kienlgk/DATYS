@@ -1,0 +1,57 @@
+https://stackoverflow.com/questions/26510255
+Actually, I would like to check if it has only alphanumeric <API label="">plus</API> these: .-_ [space]
+
+If using an external library I would like to use Guava since it's already included in my project...
+
+==========
+Regexp-free and somewhat more readable (?) solution could be using Guava's <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/CharMatcher.html" rel="nofollow"><code>CharMatcher</code></a> class:
+
+<pre><code>
+boolean matched = <API label="None">CharMatcher.JAVA_LETTER_OR_DIGIT.or</API>(CharMatcher.WHITESPACE)
+    .<API label="None">or</API>(<API label="com.google.common.base.CharMatcher.anyOf">CharMatcher.anyOf</API>("_.-")).<API label="None">matchesAllOf</API>(yourString);
+
+</code></pre>
+
+Maybe ASCII chars are OK for your use case? If so, use:
+
+<pre><code>
+boolean matched = <API label="None">CharMatcher.ASCII.matchesAllOf</API>(yourString);
+
+</code></pre>
+
+See <a href="https://code.google.com/p/guava-libraries/wiki/StringsExplained#CharMatcher" rel="nofollow">wiki page</a> for examples and description. 
+
+Also, you may want to extract your <API label="None">matcher</API> to <API label="None">constant</API> and precompute it:
+
+<pre><code>
+private static final CharMatcher CHAR_MATCHER = CharMatcher.JAVA_LETTER_OR_DIGIT
+    .<API label="">or</API>(CharMatcher.WHITESPACE)
+    .<API label="">or</API>(<API label="">CharMatcher.anyOf</API>("_.-"))
+    .<API label="">precomputed</API>();
+
+</code></pre>
+
+What's more interesting, if you read <code>CharMatcher</code>'s documentation you may find that <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/CharMatcher.html#JAVA_DIGIT" rel="nofollow">"digit"</a>, <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/CharMatcher.html#JAVA_LETTER" rel="nofollow">"letter"</a> and <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/CharMatcher.html#WHITESPACE" rel="nofollow">"whitespace"</a> in Java are quite ambigious terms:
+
+
+ Determines whether a character is a digit according to Java's definition. If you only care to match ASCII digits, you can use <code><API label="None">inRange</API>('0', '9')</code>.
+
+
+<API label="">or</API> 
+
+
+ Determines whether a character is a letter according to Java's definition. If you only care to match letters of the Latin alphabet, you can use <code><API label="None">inRange</API>('a', 'z').<API label="">or</API>(<API label="None">inRange</API>('A', 'Z'))</code>.
+
+
+so you may want use explicit char ranges:
+
+<pre><code>
+private static final CharMatcher CHAR_MATCHER_ASCII = 
+    <API label="">CharMatcher.inRange</API>('0', '9')
+        .<API label="com.google.common.base.CharMatcher.inRange">or</API>(<API label="">CharMatcher.inRange</API>('a', 'z'))
+        .<API label="com.google.common.base.CharMatcher.inRange">or</API>(<API label="">CharMatcher.inRange</API>('A', 'Z'))
+        .<API label="com.google.common.base.CharMatcher.inRange">or</API>(<API label=""></API>(" _.-")) // note space here
+        .<API label="None">precomputed</API>();
+
+</code></pre>
+

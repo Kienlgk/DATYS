@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/37907339
+I have a Node class as follows:
+
+<pre><code>
+public class Node{
+    Object data;
+    List <API label="None">children</API>;
+}
+
+</code></pre>
+
+I need to traverse this tree in post order and I am using <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/<API label="com.google.common.collect.TreeTraverser.TreeTraverser">TreeTraverser</API>.html" rel="nofollow">Guava <API label="com.google.common.collect.TreeTraverser.TreeTraverser">TreeTraverser</API></a> for for the same. 
+
+<pre><code>
+    <API label="com.google.common.collect.TreeTraverser.TreeTraverser">TreeTraverser</API> treeTraverser = new <API label="com.google.common.collect.TreeTraverser.TreeTraverser">TreeTraverser</API>() {
+                @Override
+                public Iterable <API label="com.google.common.collect.TreeTraverser.children">children</API>(Node node) {
+                    return <API label="None">node.children</API>;
+                }
+            };
+
+<API label="com.google.common.collect.TreeTraverser.postOrderTraversal">treeTraverser.postOrderTraversal</API>(node);
+
+</code></pre>
+
+The catch is that there chances that the given tree could have circular dependencies(means it could be a cyclic graph). What would be an efficient way to detect circular dependencies?
+
+==========
+By definition, a tree is an <a href="https://en.wikipedia.org/wiki/Acyclic" rel="noreferrer">acyclic</a> connected graph. Therefore, there is no such thing as a tree with circular dependencies.
+
+You can find cycles in a graph by applying depth-first traversal, and looking for <API label="None">nodes</API> that have been visited the way down. If you visit a node that you have seen during prior steps of DFS, the graph is not a tree.
+
+See this <a href="https://stackoverflow.com/q/261573/335858">Q&A</a> for advanced <API label="None">cycle</API> detection algorithms.
+

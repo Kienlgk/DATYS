@@ -1,0 +1,122 @@
+https://stackoverflow.com/questions/50457616
+I have a spring-boot app with this architecture:
+
+<pre><code>
+@Controller > @Service > @Component
+
+</code></pre>
+
+Here's my Component:
+
+<pre><code>
+@Component
+public class myComponent {
+
+   @Autowired
+    private ObjectMapper mapper;
+    //com.fasterxml.jackson.databind.ObjectMapper
+
+   @Autowired
+    private Component2 component2;
+    // some 3rd part REST service
+
+   @Autowired
+    private Component3 component3;
+    //database access
+
+   @Transactional(propagation = Propagation.REQUIRED)
+    public List method1(String otherString) {
+        String newOne = myString + otherString; //more logic here, but without components
+        return this.method2(newOne);
+    }
+
+   public List method2(String newOne){
+        String one = component3.methodX(newOne); //access database with component3
+        return component2.methodY(one); //more logic here, including component2 and mapper!
+    }
+
+}
+
+</code></pre>
+
+Using <code>Mockito</code> I implement this at my test class:
+
+<pre><code>
+@MockBean
+public myComponent component;
+
+@Before
+public void before() throws Exception {
+    <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    List someList = new ArrayList<>(); //list populated with some specific POJO's
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(component.method1("specificString")).
+        <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(someList);
+}
+
+@Test
+public void recuperaDados() throws Exception  {
+    String response = <API label="None">given</API>().authentication().preemptive().oauth2("loginInfo")
+            .<API label="None">get</API>("myComponent_method1_path/" + "specificString1").<API label="None">asString</API>();
+    //this specificString1 leads to myComponent.method1("specificString"), satisfying Mockito 
+}
+
+</code></pre>
+
+And with this I successfully accomplished my tests. But <API label="">when</API> I use 
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(component.method2("specificString2")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(someList);
+
+</code></pre>
+
+And then
+
+<pre><code>
+String response1 = <API label="None">given</API>().authentication().preemptive().oauth2("loginInfo")
+            .<API label="None">get</API>("myComponent_method1_path/" + "specificString1").<API label="None">asString</API>();
+// this specificString1 leads to myComponent.method2("specificString2"), also satisfying Mockito
+String response2 = component.method2("specificString2");
+String response3 = component.method2("randomString");
+
+</code></pre>
+
+response1 is <code>""</code>, response2 is <code>someList</code> correctly stringfied and response3 is <code>null</code>. <code>response2</code> and <code>response3</code> are expected. But I expected response1 to be same as <code>response2</code> or at least <code>null</code>. How can I correctly mock a method called by other inside same class and test calling the other?
+
+EDIT
+
+My test class extends this class:
+
+<pre><code>
+@ActiveProfiles("test")
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT)
+public abstract class AbstractRestTest {
+
+   @Autowired
+    private WebApplicationContext wac;
+
+   protected Dsl dsl = <API label="None">Dsl.getInstance</API>();
+
+   @Before
+    public void globalSetup() {
+        RestAssuredMockMvc.webAppContextSetup(wac);
+    }
+
+}
+
+</code></pre>
+
+==========
+Mockito works by proxying the object that you wish to stub, and as such your implementation code will never be executed <API label="">when</API> calling methods on a mocked object unless specifically defined to do so. Consequently by calling method1 on the mock object, method2 will never be called as a result. 
+
+There is however a way to achieve your desired affect, by partial mocking. In your test in which you wish to test method2, you can indicate that the real method1 should be executed:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(component.method1("specificString")).<API label="org.mockito.stubbing.OngoingStubbing.thenCallRealMethod">thenCallRealMethod</API>();
+
+</code></pre>
+
+It should be noted that the mockito <a href="https://static.javadoc.io/org.mockito/mockito-core/2.18.3/org/mockito/Mockito.html#16" rel="nofollow noreferrer">documentation</a> indicates that using partial mocks may be indicative of a code smell. In this cause the question is, does method2 really have to be public? If it is only public because you wished to mock it's implementation this is a mistake. With mocks you only wish to stub the public api of an object. Any private or helpers methods should be considered internal and ignored. The same goes for if you where testing that object, only the public methods should be tested, with helper methods tested indirectly.
+
+You are right that the first result being an empty string instead of null is odd. I assume that it may have to do with something in code that has not be provided, e.g the controller or service.
+

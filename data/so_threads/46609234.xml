@@ -1,0 +1,12 @@
+https://stackoverflow.com/questions/46609234
+I have around 1 million sets each with around 30 elements. For each set, I want to generate all subsets up to size "k" where k is going to be something like 3 or 4 or 5. I am new to Guava and decided to try it. I found the <API label="">powerSet</API> method (<a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/collect/Sets.html" rel="nofollow noreferrer">https://google.github.io/guava/releases/21.0/api/docs/com/google/common/collect/Sets.html</a>) which will generate all subsets for each of my sets. 
+
+I can loop through each power set and only take the subsets that have size less than or <API label="">equal</API> to "k". But since the power sets have size 2 ^ 30, this seems very inefficient. 
+
+I thought Guava would have a method that would allow me to generate a set of all subsets of size k but I can't find it. Am I missing something?
+
+==========
+"A set of all subsets of size k" is <a href="http://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Sets.html#<API label="com.google.common.collect.Sets.combinations">combinations</API>-java.util.Set-int-" rel="nofollow noreferrer"><code><API label="com.google.common.collect.Sets.combinations">Sets.combinations</API></code></a>.
+
+(I don't think we have a direct way to generate all subsets of size k or less, but as you point out, it's easy to build that from <code><API label="com.google.common.collect.Sets.combinations">combinations</API></code> -- though if you want it all in a single <code>Set</code>, as Xaerxess asks about, you'll need to build the <code>Set</code> yourself.)
+

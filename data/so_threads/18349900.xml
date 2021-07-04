@@ -1,0 +1,52 @@
+https://stackoverflow.com/questions/18349900
+Am trying to <API label="">merge</API> a couple <API label="">of</API> lists into one, eliminating the duplicates. <API label="None">mergeSorted</API> method in Guava seems to apply to my case. But when I do try it, i see to get a compilation error about the arguments that I pass to the method. My code is as simple as this, I have two lists, <API label="">concat</API> them into one and then try to mergeSort it, but I get a compilation error <API label="">on</API> line four.
+
+<pre><code>
+    final List first  = <API label="None">Lists.newArrayList</API>(1, 2, 3);
+    final List second = <API label="None">Lists.newArrayList</API>(4, 2, 5, 6);
+    Iterable some = <API label="None">Iterables.concat</API>(first, second);
+    final Iterable all = <API label="None">Iterables.mergeSorted</API>(some, comp);
+    <API label="None">System.out.println</API>(all);
+
+</code></pre>
+
+It looks like it is <API label="None">mergeSorted</API> is expecting Iterable> iterables but the method description seems to suggest that input can be the merged contents <API label="">of</API> all given iterables
+
+
+ @Beta public static  Iterable <API label="None">mergeSorted</API>(Iterable> iterables,
+                                 Comparator <API label="None">comparator</API>)
+  
+  Returns an iterable over the merged contents <API label="">of</API> all given iterables.
+  Equivalent <API label="">entries</API> will not be de-duplicated.
+  
+  Callers must ensure that the source iterables are in non-descending
+  order as this method does not sort its input.
+
+
+==========
+You're currently <API label="">concatenating</API> your iterables together before merging - at that point, the result isn't <API label="">sorted</API> <API label="">any</API> more, apart from anything else!
+
+As you've noted, <code><API label="com.google.common.collect.Iterables.mergeSorted">mergeSorted</API></code> needs an "iterable <API label="">of</API> iterables". Full sample:
+
+<pre><code>
+import java.util.List;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+
+public class Test {
+    public static void <API label="None">main</API>(String[] args) {
+
+       List first  = <API label="None">Lists.newArrayList</API>(1, 2, 3);
+        // Note that each input list has to be <API label="">sorted</API> already!
+        List second = <API label="None">Lists.newArrayList</API>(2, 4, 5, 6);
+        Iterable all = <API label="com.google.common.collect.Iterables.mergeSorted">Iterables.mergeSorted</API>(
+            <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(first, second), <API label="">Ordering.natural</API>());
+        <API label="None">System.out.println</API>(<API label="None">Joiner.on</API>(", ").<API label="">join</API>(all));
+    }
+}   
+
+</code></pre>
+

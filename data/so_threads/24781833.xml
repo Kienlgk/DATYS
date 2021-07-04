@@ -1,0 +1,265 @@
+https://stackoverflow.com/questions/24781833
+I work on an Eclipse 4 RCP project with one plugin bundle and a bundle fragment for unit tests. The target platform is defined with an Eclipse target definition (.target file). Maven with Tycho is used to build the project outside of Eclipse (manifest-first with the .target file defining the target platform).
+
+Now I want to include Mockito in the target platform for mocking. Eclipse Orbit provides an org.mockito (1.9.5) bundle. It depends among other things on org.hamcrest (which can also be found on the Orbit p2 site) so I added it to the target definition as well. When I set Eclipse's target platform from the target file the following shows up in the Target Platform State view:
+
+
+
+Even though both org.hamcrest.library and org.hamcrest.core are present (both bundles export the org.hamcrest 1.3.0 package) the org.mockito bundle claims to miss the org.hamcrest package.
+
+Nevertheless I added the org.mockito and org.hamcrest.library to the test plugin fragment's dependencies in the MANIFEST.MF. 
+
+<pre><code>
+Require-Bundle: org.junit;bundle-version="4.11.0",
+ org.hamcrest.library;bundle-version="1.3.0",
+ org.mockito;bundle-version="1.9.5"
+
+</code></pre>
+
+The fragment seems to compile but the tests cannot be <API label="">run</API>. The tycho-surefire-plugin reports: 
+
+<pre><code>
+An error has occurred. See the log file [...]\target\work\configuration\1405514016520.log.
+
+</code></pre>
+
+The log file reads:
+
+<pre><code>
+!SESSION 2014-07-16 14:33:34.053 -----------------------------------------------
+eclipse.buildId=unknown
+java.version=1.7.0_55
+java.vendor=Oracle Corporation
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=de_DE
+Framework arguments:  -application org.eclipse.tycho.surefire.osgibooter.headlesstest -testproperties F:\Users\Jakob\Documents\Bachelorprojekt\Code\myplugin.tests\target\surefire.properties
+Command-line arguments:  -data F:\Users\Jakob\Documents\Bachelorprojekt\Code\myplugin.tests\target\work\data -application org.eclipse.tycho.surefire.osgibooter.headlesstest -testproperties F:\Users\Jakob\Documents\Bachelorprojekt\Code\myplugin.tests\target\surefire.properties
+
+!ENTRY org.eclipse.osgi 2 0 2014-07-16 14:33:40.508
+!MESSAGE One or more bundles are not resolved because the following root constraints are not resolved:
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.508
+!MESSAGE Bundle initial@reference:file:../../../../../../.m2/repository/p2/osgi/bundle/org.eclipse.swt.gtk.linux.x86_64/3.102.1.v20130827-2048/org.eclipse.swt.gtk.linux.x86_64-3.102.1.v20130827-2048.jar was not resolved.
+!SUBENTRY 2 org.eclipse.swt.gtk.linux.x86_64 2 0 2014-07-16 14:33:40.508
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.508
+!MESSAGE Bundle initial@reference:file:../../../../../../.m2/repository/p2/osgi/bundle/org.eclipse.swt.cocoa.macosx.x86_64/3.102.1.v20130827-2048/org.eclipse.swt.cocoa.macosx.x86_64-3.102.1.v20130827-2048.jar was not resolved.
+!SUBENTRY 2 org.eclipse.swt.cocoa.macosx.x86_64 2 0 2014-07-16 14:33:40.508
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.508
+!MESSAGE Bundle initial@reference:file:../../../../../../.m2/repository/p2/osgi/bundle/org.mockito/1.9.5.v201311280930/org.mockito-1.9.5.v201311280930.jar was not resolved.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.509
+!MESSAGE Missing imported package org.hamcrest_[1.0.0,2.0.0).
+
+!ENTRY org.eclipse.osgi 2 0 2014-07-16 14:33:40.547
+!MESSAGE The following is a complete list of bundles which are not resolved, see the prior log entry for the root cause if it exists:
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.547
+!MESSAGE Bundle myplugin.tests_0.0.1.qualifier [2] was not resolved.
+!SUBENTRY 2 myplugin.tests 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing required bundle org.mockito_1.9.5.
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.547
+!MESSAGE Bundle org.mockito_1.9.5.v201311280930 [5] was not resolved.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing optionally imported package COM.jrockit.reflect_0.0.0.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing optionally imported package jrockit.vm_0.0.0.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.hamcrest_[1.0.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.mockito_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.mockito.configuration_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.mockito.exceptions_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.mockito.exceptions.base_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.mockito.exceptions.misusing_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.mockito.exceptions.stacktrace_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.547
+!MESSAGE Missing imported package org.mockito.exceptions.verification_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.exceptions.verification.junit_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.invocation_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.listeners_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.mock_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.plugins_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.runners_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.stubbing_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.stubbing.answers_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing imported package org.mockito.verification_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing optionally imported package sun.reflect_0.0.0.
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.548
+!MESSAGE Bundle org.eclipse.swt.gtk.linux.x86_64_3.102.1.v20130827-2048 [147] was not resolved.
+!SUBENTRY 2 org.eclipse.swt.gtk.linux.x86_64 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.548
+!MESSAGE Bundle org.eclipse.swt.cocoa.macosx.x86_64_3.102.1.v20130827-2048 [148] was not resolved.
+!SUBENTRY 2 org.eclipse.swt.cocoa.macosx.x86_64 2 0 2014-07-16 14:33:40.548
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+
+!ENTRY org.eclipse.osgi 2 0 2014-07-16 14:33:40.804
+!MESSAGE One or more bundles are not resolved because the following root constraints are not resolved:
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.804
+!MESSAGE Bundle initial@reference:file:../../../../../../.m2/repository/p2/osgi/bundle/org.eclipse.swt.gtk.linux.x86_64/3.102.1.v20130827-2048/org.eclipse.swt.gtk.linux.x86_64-3.102.1.v20130827-2048.jar was not resolved.
+!SUBENTRY 2 org.eclipse.swt.gtk.linux.x86_64 2 0 2014-07-16 14:33:40.804
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.804
+!MESSAGE Bundle initial@reference:file:../../../../../../.m2/repository/p2/osgi/bundle/org.eclipse.swt.cocoa.macosx.x86_64/3.102.1.v20130827-2048/org.eclipse.swt.cocoa.macosx.x86_64-3.102.1.v20130827-2048.jar was not resolved.
+!SUBENTRY 2 org.eclipse.swt.cocoa.macosx.x86_64 2 0 2014-07-16 14:33:40.804
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.804
+!MESSAGE Bundle initial@reference:file:../../../../../../.m2/repository/p2/osgi/bundle/org.mockito/1.9.5.v201311280930/org.mockito-1.9.5.v201311280930.jar was not resolved.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.804
+!MESSAGE Missing imported package org.hamcrest_[1.0.0,2.0.0).
+
+!ENTRY org.eclipse.osgi 2 0 2014-07-16 14:33:40.833
+!MESSAGE The following is a complete list of bundles which are not resolved, see the prior log entry for the root cause if it exists:
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.833
+!MESSAGE Bundle myplugin.tests_0.0.1.qualifier [2] was not resolved.
+!SUBENTRY 2 myplugin.tests 2 0 2014-07-16 14:33:40.833
+!MESSAGE Missing required bundle org.mockito_1.9.5.
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.833
+!MESSAGE Bundle org.mockito_1.9.5.v201311280930 [5] was not resolved.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.833
+!MESSAGE Missing optionally imported package COM.jrockit.reflect_0.0.0.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.833
+!MESSAGE Missing optionally imported package jrockit.vm_0.0.0.
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.833
+!MESSAGE Missing imported package org.hamcrest_[1.0.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.configuration_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.exceptions_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.exceptions.base_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.exceptions.misusing_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.exceptions.stacktrace_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.exceptions.verification_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.exceptions.verification.junit_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.invocation_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.834
+!MESSAGE Missing imported package org.mockito.listeners_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing imported package org.mockito.mock_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing imported package org.mockito.plugins_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing imported package org.mockito.runners_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing imported package org.mockito.stubbing_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing imported package org.mockito.stubbing.answers_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing imported package org.mockito.verification_[1.9.0,2.0.0).
+!SUBENTRY 2 org.mockito 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing optionally imported package sun.reflect_0.0.0.
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.835
+!MESSAGE Bundle org.eclipse.swt.gtk.linux.x86_64_3.102.1.v20130827-2048 [147] was not resolved.
+!SUBENTRY 2 org.eclipse.swt.gtk.linux.x86_64 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+!SUBENTRY 1 org.eclipse.osgi 2 0 2014-07-16 14:33:40.835
+!MESSAGE Bundle org.eclipse.swt.cocoa.macosx.x86_64_3.102.1.v20130827-2048 [148] was not resolved.
+!SUBENTRY 2 org.eclipse.swt.cocoa.macosx.x86_64 2 0 2014-07-16 14:33:40.835
+!MESSAGE Missing required capability Require-Capability: osgi.ee; <API label="">filter</API>="(|(&(osgi.ee=CDC/Foundation)(version=1.0))(&(osgi.ee=JavaSE)(version=1.3)))".
+
+!ENTRY org.eclipse.osgi 4 0 2014-07-16 14:33:40.857
+!MESSAGE Application error
+!STACK 1
+java.lang.RuntimeException: Bundle myplugin.tests is not found
+    at org.eclipse.tycho.surefire.osgibooter.OsgiSurefireBooter.getBundleClassLoader(OsgiSurefireBooter.java:149)
+    at <API label="">org.eclipse.tycho.surefire.osgibooter.OsgiSurefireBooter.run</API>(OsgiSurefireBooter.java:67)
+    at <API label="">org.eclipse.tycho.surefire.osgibooter.HeadlessTestApplication.run</API>(HeadlessTestApplication.java:21)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at org.eclipse.equinox.internal.app.EclipseAppContainer.callMethodWithException(EclipseAppContainer.java:587)
+    at <API label="">org.eclipse.equinox.internal.app.EclipseAppHandle.run</API>(EclipseAppHandle.java:198)
+    at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:110)
+    at <API label="">org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start</API>(EclipseAppLauncher.java:79)
+    at <API label="">org.eclipse.core.runtime.adaptor.EclipseStarter.run</API>(EclipseStarter.java:354)
+    at <API label="">org.eclipse.core.runtime.adaptor.EclipseStarter.run</API>(EclipseStarter.java:181)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:636)
+    at org.eclipse.equinox.launcher.Main.basicRun(Main.java:591)
+    at <API label="">org.eclipse.equinox.launcher.Main.run</API>(Main.java:1450)
+    at <API label="">org.eclipse.equinox.launcher.Main.main</API>(Main.java:1426)
+
+</code></pre>
+
+Launching the plugin test from Eclipse PDE yields effectively the same mockito-related errors (the SWT-related ones are missing but instead there are other bundle resolution errors since I do not usually <API label="">run</API> these tests from Eclipse and did not eliminate some conflicting bundles from the launch configuration).
+
+What are probable causes for the missing imported-package error even though the package is definitely exported by another required bundle from the target platform and how can I fix this setup?
+
+==========
+The root cause of your problem is that org.hamcrest is a split package. There is obviously a bug in tycho or in eclipse, that prevents that from working. See the followings for details:
+
+<a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=334540" rel="nofollow">https://bugs.eclipse.org/bugs/show_bug.cgi?id=334540</a>
+<a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=403196" rel="nofollow">https://bugs.eclipse.org/bugs/show_bug.cgi?id=403196</a>
+
+Please give a try to my re-packaged version of Hamcrest and Mockito (Powermock-OSGI). In my version the Mockito manifest specifies, that only the "core" part of the <code>org.hamcrest</code> package is needed by Mockito:
+
+Orbit version:
+
+<pre><code>
+Import-Package: COM.jrockit.reflect;resolution:=optional,jrockit.vm;re
+ solution:=optional,junit.framework;resolution:=optional,org.apache.to
+ ols.ant;resolution:=optional,org.apache.tools.ant.types;resolution:=o
+ ptional,org.hamcrest;version="[1.0,2.0)"
+
+</code></pre>
+
+My version:
+
+<pre><code>
+Import-Package: org.hamcrest;core=split,junit.framework,org.junit,org.ju
+ nit.internal.runners,org.junit.runner,org.junit.runner.manipulation,org
+ .junit.runner.notification,org.junit.runners,org.junit.runners.model,or
+ g.objenesis;version="[2.1,3)"
+
+</code></pre>
+
+The update site can be found at <a href="http://powermock-osgi.googlecode.com/svn/updateSite/1.5.4.1/" rel="nofollow">http://powermock-osgi.googlecode.com/svn/updateSite/1.5.4.1/</a>
+
+Project home: <a href="https://code.google.com/p/powermock-osgi/" rel="nofollow">https://code.google.com/p/powermock-osgi/</a>
+
+Before taking my update site, you might need to delete Eclipse and Tycho bundle pools as written at Powermock-OSGI site:
+First Time Usage
+
+
+ Tycho and Eclipse PDE caches the bundles based on symbolic name and
+  version. So if the user already had a 4.11 version of Junit anytime in
+  the past, our hacked powermock version will not be taken.
+  
+  So before first usage inside Eclipse the user has to delete the
+  .metadata.plugins\org.eclipse.pde.core.bundle_pool and
+  .metadata.plugins\org.eclipse.pde.core.external_libraries in ALL
+  workspaces of the specific Eclipse installation (bundles are looked up
+  cross workspace way). BE SURE, that when you <API label="">run</API> the unit tests in
+  eclipse the plugins tab in the launch config REALLY contains the
+  JUnit, Mockito and Hamcrest plugins of the Powermock feature, and not
+  some other version. Before first usage with Tycho delete the .meta
+  .cache and p2 folders from the maven local repository
+
+
+Please send me a feedback if it works.
+

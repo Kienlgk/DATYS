@@ -1,0 +1,26 @@
+https://stackoverflow.com/questions/42974151
+Is there a utility class in Google Guava which allows me to <API label="">decorate</API> a <code>Map</code> to make it peform like a <code>Set</code>?
+
+<code>HashSet</code> is implemented using a <code>HashMap</code> where the value is always the same instance of <code>Object</code>. I would like to do the same with a <code>Map</code> returned from <code>LoadingCache</code>:
+
+<pre><code>
+Set mySet = <API label="None">XXX.decorate</API>(<API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(10, TimeUnit.SECONDS).<API label="None">build</API>().<API label="None">asMap</API>())
+
+</code></pre>
+
+In order to give me a <code>Set</code> whose data expires 10 seconds after I insert it.
+
+Is there such a class in Guava? I have seen <code>ForwardingSet</code> but that only works with another <code>Set</code> instance.
+
+==========
+You can use JDK's <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Collections.html#<API label="com.google.common.collect.Sets.newSetFromMap">newSetFromMap</API>-java.util.Map-" rel="nofollow noreferrer"><code>Collections#<API label="com.google.common.collect.Sets.newSetFromMap">newSetFromMap</API>(Map)</code></a>:
+
+<pre><code>
+Set mySet = <API label="None">Collections.newSetFromMap</API>(
+            <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+                    .<API label="expireAfterWrite">expireAfterWrite</API>(10, TimeUnit.SECONDS)
+                    .<API label="None">build</API>()
+                    .<API label="None">asMap</API>());
+
+</code></pre>
+

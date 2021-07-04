@@ -1,0 +1,85 @@
+https://stackoverflow.com/questions/19916136
+I have a Junit test that I inherited that is no longer working. It is using PowerMock 1.4.12, Mockito 1.9.0 and Junit 4.8.2.  It was working awhile back but stopped and I am trying to get it to work again.  
+
+<pre><code>
+Wanted but not invoked:
+clerkReviewPackageHelper.addSubmissionQueue(
+    ,
+    ,
+    ,
+    
+);
+-> at icis.cr.approvefilingdetail.CRFilingToQueuesActionTest.test_post_handled_add_submission_queue(CRFilingToQueuesActionTest.java:47)
+Actually, there were zero interactions with this mock.
+
+   at icis.cr.approvefilingdetail.CRFilingToQueuesActionTest.test_post_handled_add_submission_queue(CRFilingToQueuesActionTest.java:47)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:39)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:592)
+    at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:66)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:312)
+    at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:86)
+    at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:94)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:296)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:284)
+    at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:84)
+    at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:209)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:148)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:122)
+    at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+    at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:102)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+    at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:42)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:49)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:197)
+
+</code></pre>
+
+Here is the code for this test:
+
+<pre><code>
+@Test
+public void test_post_handled_add_submission_queue() throws Exception {
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">request.getMethod</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(BaseCRAction.POST);
+    <API label="org.mockito.Mockito.when">when</API>(sessionInfo.getSubmissionId()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(SUBMISSION_ID);
+    <API label="org.mockito.Mockito.when">when</API>(crFilingToQueuesForm.getAction()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(null);
+    crFilingToQueuesAction.executeProcess(actionMapping, crFilingToQueuesForm, request, response);
+    <API label="org.mockito.Mockito.verify">verify</API>(clerkReviewPackageHelper, <API label="None">times</API>(0)).removeSubmissionQueue(null);
+    **<API label="org.mockito.Mockito.verify">verify</API>(clerkReviewPackageHelper).addSubmissionQueue(<API label="org.mockito.Mockito.any">any</API>(String.class), <API label="org.mockito.Mockito.any">any</API>(String.class), <API label="org.mockito.Mockito.any">any</API>(String.class), <API label="org.mockito.Mockito.any">any</API>(String.class));**
+    <API label="org.mockito.Mockito.verify">verify</API>(actionMapping).findForward(<API label="org.mockito.Mockito.eq">eq</API>(BaseCRAction.FORWARD_SUCCESS_REDIRECT));
+}
+
+</code></pre>
+
+And this is the method that it calls from the line in the exception:
+
+<pre><code>
+public void addSubmissionQueue(String submissionId, String queueId, String reviewOn, String employeeId) throws BadDBConnection {
+Session session = <API label="None">injector.inject</API>();
+session.executeNonSelectingCall(clerkReviewPackage.addQueue(submissionId, queueId, reviewOn, employeeId));
+<API label="None">session.release</API>();
+}
+
+</code></pre>
+
+Any help would be appreciated!
+
+Thanks,
+
+Tom
+
+==========
+It looks like <code>executeProcess</code> used to call <code>addSubmissionQueue</code> but doesn't anymore, but without the code of <code>executeProcess</code> it's hard to say for sure.
+
+If it's appropriate not to call <code>addSubmissionQueue</code>, you can simply delete the reference to that verification line. If it is important to call it, or call it under specific circumstances, edit the test so the <code><API label="org.mockito.Mockito.verify">verify</API></code> line only happens in test cases where a call to that method is required.
+
+Note that because Mockito is involved, your test isn't calling the actual code for <code>addSubmissionQueue</code>, but a mock instead. Read more about how Mockito works in <a href="https://github.com/mockito/mockito#how-do-i-drink-it" rel="nofollow">the examples on the Mockito homepage</a>.
+

@@ -1,0 +1,23 @@
+https://stackoverflow.com/questions/43330764
+I am Looking for canonical code to replace Guava's <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/Futures.html#<API label="com.google.common.util.concurrent.Futures.successfulAsList">successfulAsList</API>(com.google.common.util.concurrent.ListenableFuture...)" rel="nofollow noreferrer"><code><API label="com.google.common.util.concurrent.Futures.successfulAsList">Futures.successfulAsList</API>()</code></a> with Java 8's <code>CompletableFuture</code> code.
+
+I think <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html#<API label="None">allOf</API>-java.util.concurrent.CompletableFuture...-" rel="nofollow noreferrer"><code><API label="None">CompletableFuture.allOf</API>()</code></a> seems like a replacement for <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/Futures.html#<API label="">allAsList</API>(com.google.common.util.concurrent.ListenableFuture...)" rel="nofollow noreferrer"><code><API label="com.google.common.util.concurrent.Futures.allAsList">Futures.allAsList</API>()</code></a>, but I don't see anything quite like <code><API label="com.google.common.util.concurrent.Futures.successfulAsList">successfulAsList</API>()</code>.
+
+==========
+<code><API label="">CompletableFuture.allOf</API>(…)</code> is actually closer to <code><API label="com.google.common.util.concurrent.Futures.successfulAsList">successfulAsList</API>()</code> than <code><API label="None">allAsList</API>()</code>.
+
+Indeed, <code><API label="None">allOf</API>()</code> only completes after all the given futures have completed, be it with a value or an exception. You can then inspect each future to check how it completed (e.g. in a following <code>thenAccept()</code>/<code>thenApply()</code>).
+
+<code><API label="None">allAsList</API>()</code> does not have a <API label="">close</API> equivalent in <code>CompletableFuture</code> because it should fail as soon as any <API label="">of</API> the input futures fails. However, you could implement it with a combination <API label="">of</API> <code><API label="">allOf</API>()</code> and chaining each input future with an <code>exceptionally()</code> that would make the future returned by <code><API label="">allOf</API>()</code> immediately fail:
+
+<pre><code>
+CompletableFuture a = …, b = …, c = …;
+CompletableFuture allWithFailFast = <API label="None">CompletableFuture.allOf</API>(a, b, c);
+<API label="None">Stream.of</API>(a, b, c)
+    .<API label="None">forEach</API>(f -> f.exceptionally(e -> {
+        allWithFailFast.completeExceptionally(e);
+        return null;
+    }));
+
+</code></pre>
+

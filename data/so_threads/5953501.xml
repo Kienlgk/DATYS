@@ -1,0 +1,61 @@
+https://stackoverflow.com/questions/5953501
+I'm trying to import Mockito into a Maven Java project. In order to build, I need to use artifacts in my companies Maven repository.
+
+Fortunately, I do find a Mockito artifact in the repository:
+
+<pre><code>
+[my-company]/org/mockito/mockito-all/1.8.0/mockito-all-1.8.0-jvm15.jar.
+
+</code></pre>
+
+If I add the following dependency to my POM:
+
+<pre><code>
+
+   org.mockito
+    mockito-all
+     1.8.0-jvm15
+
+
+</code></pre>
+
+then maven tries to find the jar in a non-existent directory:
+
+<pre><code>
+[my-company]/org/mockito/mockito-all/1.8.0-jvm15/mockito-all-1.8.0-jvm15.jar
+
+</code></pre>
+
+If I <API label="">remove</API> the <code>-jvm15</code>, like this:
+
+<pre><code>
+
+   org.mockito
+    mockito-all
+     1.8.0
+
+
+</code></pre>
+
+then (naturally) maven tries to find the a nonexistent jar in the right directory:
+
+<pre><code>
+[my-company]/org/mockito/mockito-all/1.8.0/mockito-all-1.8.0.jar
+
+</code></pre>
+
+Is there a way to specify the path that works around the seemingly non-standard naming in my companies repository? I need the artifact in our internal repository.
+
+==========
+The part after the version is called the classifier. Try this:
+
+<pre><code>
+
+   org.mockito
+    mockito-all
+    1.8.0
+    jvm15
+
+
+</code></pre>
+

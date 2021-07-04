@@ -1,0 +1,12 @@
+https://stackoverflow.com/questions/4381759
+I have a Maven-managed project that uses Mockito mocking in its unit tests.  I can run all the tests within a Maven build, and they run without error (and pass!).  However, if I right-click a single test function, and choose "Run As -> JUnit Test", I get an exception <code>java.lang.NoSuchMethodError: <API label="org.mockito.Mockito.doAnswer">org.mockito.Mockito.doAnswer</API>(Lorg/mockito/stubbing/Answer;)Lorg/mockito/stubbing/Stubber;</code>.  Of course, the "missing" method is there if I look at the sources, and like I said the tests compile and run from the command line.
+
+Best I can think of is if Eclipse is trying to "help" me by providing an outdated Mockito artifact (I'm using 1.8.5 in my Maven dependencies) for the JUnit plugin, akin to how the Maven plugin can stick you with an oddball version of the Maven runtime for certain tasks.
+
+Is this the problem?  Is it something else?  Can I fix this?
+
+ETA: Apparently this may relate to a <a href="http://code.google.com/p/mockito/issues/detail?id=106" rel="nofollow">known issue</a>.  There's a good chance that it stems from having multiple versions of Mockito in my classpath (thanks, Maven :-/ ).  I seem to have my house in order -- Eclipse can run the tests now -- but unfortunately the bug has bitten my Hudson.  I have to track down how to <API label="">remove</API> the old JAR from the classpath there as well.
+
+==========
+Make sure the unit-test classpath has the correct mockito. You can check this from the run dialog. Btw, Eclipse does not ship with mockito, so perhaps you are having two versions of it. Take a look at your maven dependency graph and search for duplicates.
+

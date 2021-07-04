@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/41039844
+I am learning to use guava library and referred to <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ImmutableMap.html" rel="nofollow noreferrer">this</a> I see use of builder to construct an instance of immutable <API label="">map</API>. How is the builder constructor able to create an abstract class instance?
+
+<pre><code>
+   static final ImmutableMap WORD_TO_INT =
+       new ImmutableMap.Builder()
+           .<API label="com.google.common.collect.ImmutableMap.put">put</API>("one", 1)
+           .<API label="com.google.common.collect.ImmutableMap.put">put</API>("two", 2)
+           .<API label="com.google.common.collect.ImmutableMap.put">put</API>("three", 3)
+           .<API label="com.google.common.cache.CacheBuilder.build">build</API>();
+
+</code></pre>
+
+==========
+<a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ImmutableMap.html" rel="nofollow noreferrer"><code>ImmutableMap (Guava: Google Core Libraries for Java 21.0-SNAPSHOT API)</code></a> states that it is "a <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Map.html?is-external=true" rel="nofollow noreferrer"><code>Map</code></a> whose contents will never change, with many other important properties detailed at <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ImmutableCollection.html" rel="nofollow noreferrer"><code>ImmutableCollection</code></a>".
+
+The "other important properties detailed at <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ImmutableCollection.html" rel="nofollow noreferrer"><code>ImmutableCollection</code></a>" include the following guarantees:
+
+
+ Each makes the following guarantees:
+  
+  
+  Shallow immutability. Elements can never be added, removed or replaced in this collection. This is a stronger guarantee than that of <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Collections.html?is-external=true#unmodifiableCollection-java.util.Collection-" rel="nofollow noreferrer"><code>Collections.unmodifiableCollection(java.util.Collection)</code></a>, whose contents change whenever the wrapped collection is modified.
+  Null-hostility. This collection will never contain a null element.
+  Deterministic iteration. The iteration order is always well-defined, depending on how the collection was created (see the appropriate factory method for details). View collections such as <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Multiset.html#<API label="">elementSet</API>--" rel="nofollow noreferrer"><code><API label="com.google.common.collect.Multiset.elementSet">Multiset.elementSet</API>()</code></a> iterate in the same order as the <API label="">parent</API>, except as noted.
+  Thread safety.  It is safe to access this collection concurrently from multiple threads.
+  Integrity. This type cannot be subclassed outside this package (which would allow these guarantees to be violated).
+  
+
+
+The <API label="">last</API> guarantee, integrety, alludes to the fact that internally Guava has concrete implementations (non-abstract) of <code>ImmutableMap</code> and other immutable objects which is what is actually returned by these builders.
+
+Furthermore, the source is open; you can go find out for yourself how the builder is able to do it (e.g. you might start <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/collect/ImmutableMap.java#L191-L362" rel="nofollow noreferrer">here</a>).
+

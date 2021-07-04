@@ -1,0 +1,56 @@
+https://stackoverflow.com/questions/14795561
+I have a List of File object I want to <API label="">filter</API> according to some rules like typology (audio, video, photo) or capture date/time, or Exif informations (in case of photos). I can do it with some for cicles for example.
+
+There's a smart way to do it? I read somewhere that the solution probably is to use Predicates from Google Guava, but I can't understand how it works. Any suggestion? Thanks
+
+==========
+Using Guava Predicates you would do something along the lines of
+
+<pre><code>
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+
+import javax.annotation.Nullable;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.io.Files;
+
+public class FileFiltering {
+
+   public static void <API label="None">main</API>(String[] args) {
+        List files = <API label="None">getFiles</API>();
+        Collection audioFiles = <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(files,
+                new AudioPredicate());
+
+       Collection videoFiles = <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(files,
+                new VideoPredicate());
+    }
+
+   private static List <API label="None">getFiles</API>() {
+        // TODO Auto-generated <API label="None">method</API> stub
+        return null;
+    }
+}
+
+class AudioPredicate implements Predicate {
+
+   @Override
+    public boolean <API label="None">apply</API>(@Nullable File file) {
+        return <API label="com.google.common.io.Files.getFileExtension">Files.getFileExtension</API>(<API label="com.google.common.io.Files.getName">file.getName</API>()).<API label="com.google.common.base.Ascii.equalsIgnoreCase">equalsIgnoreCase</API>("mp3");
+    }
+}
+
+class VideoPredicate implements Predicate {
+
+   @Override
+    public boolean <API label="">apply</API>(@Nullable File file) {
+        return <API label="com.google.common.io.Files.getFileExtension">Files.getFileExtension</API>(<API label="com.google.common.io.Files.getName">file.getName</API>()).<API label="">equalsIgnoreCase</API>("mkv");
+    }
+}
+
+</code></pre>
+
+In the <API label="None">apply</API> <API label="">method</API>(s) you will need to <API label="">write</API> code that will return true for the kind of file you want.
+

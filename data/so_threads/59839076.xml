@@ -1,0 +1,25 @@
+https://stackoverflow.com/questions/59839076
+I <API label="">have</API> JSONObject <API label="">instance</API> which <API label="">contains</API> some property,
+
+<pre><code>
+{
+"name":"testName",
+"age":"23"
+}
+
+</code></pre>
+
+i use the following assert, but it fails. Is this correct approach <API label="">to</API> test JSON <API label="">in</API> assertj.
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(jsonObject).<API label="org.assertj.core.api.ObjectAssert.hasFieldOrProperty">hasFieldOrProperty</API>("name");
+
+</code></pre>
+
+==========
+I think it <API label="">has</API> <API label="">to</API> do <API label="">with</API> the fact the <code>JSONObject</code> is like a <API label="">map</API> which <API label="">has</API> key-<API label="">value</API> pairs, while AssertJ expects Java bean-style objects <API label="">to</API> check if a property <API label="">exists</API>. I understood this <API label="">from</API> the document at <a href="https://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/AbstractObjectAssert.html#<API label="">hasFieldOrProperty</API>(java.lang.String)" rel="nofollow noreferrer">https://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/AbstractObjectAssert.html#<API label="org.assertj.core.api.AbstractObjectAssert.hasFieldOrProperty">hasFieldOrProperty</API>(java.lang.String)</a>. Hope I am looking at the right place.
+
+I mean <API label="">to</API> say that a <API label="">map</API> or <code>JSONObject</code> doesn't <API label="">have</API> fields declared <API label="">in</API> it for AssertJ <API label="">to</API> look for.
+
+You may use <code><API label="None">JSONObject.has</API>( String key )</code> instead, I think.
+

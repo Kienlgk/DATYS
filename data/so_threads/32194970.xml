@@ -1,0 +1,66 @@
+https://stackoverflow.com/questions/32194970
+I am trying to output the result of the a <code><API label="com.google.common.collect.Multimap.get">Multimap.get</API>()</code> to a file. However I <API label="">get</API> the <code>[</code> and <code>]</code> characters appear as the first and last character respectively. 
+
+I tried to use this program, but it doesn't print any separators between the integers. How can I solve this problem?
+
+<pre><code>
+package <API label="None">main</API>;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Scanner;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+
+public class App {
+
+public static void <API label="None">main</API>(String[] args) {
+
+   File file = new File("test.txt");
+    ArrayList list = new ArrayList();
+    Multimap newSortedMap = <API label="com.google.common.collect.ArrayListMultimap.create">ArrayListMultimap.create</API>();
+
+   try {
+        Scanner s = new Scanner(file);
+        while (<API label="None">s.hasNext</API>()) {
+            <API label="None">list.add</API>(<API label="">s.next</API>());
+        }
+        <API label="">s.close</API>();
+    } catch (FileNotFoundException e) {
+        <API label="None">System.out.println</API>("File cannot be found in root folder");
+        ;
+    }
+
+   for (String word : list) {
+        int key = findKey.convertKey(word);
+        <API label="None">newSortedMap.put</API>(key, word);
+    }
+
+   // Overwrites old output.txt
+    try {
+        PrintWriter writer = new PrintWriter("output.txt", "UTF-8");
+        for (Integer key: <API label="None">newSortedMap.keySet</API>()) {
+            <API label="None">writer.println</API>(<API label="None">newSortedMap.get</API>(key));
+        }
+        <API label="None">writer.close</API>(); 
+    } catch (FileNotFoundException e) {
+        <API label="None">System.out.println</API>("FileNotFoundException e should not occur");
+    } catch (UnsupportedEncodingException e) {
+        <API label="None">System.out.println</API>("UnsupportedEncodingException has occured");
+    }
+}
+
+</code></pre>
+
+==========
+You may assign <code><API label="None">newSortedMap.get</API>(key).<API label="None">toString</API>()</code> to a variable, lets say <code>stringList</code>. Now call <code><API label="None">writer.println</API>(stringList.substring(1,<API label="">stringList.length</API>()-1));</code>
+
+Understand that when you pass a list into <code><API label="None">writer.println</API></code> method, it will invoke the <code><API label="None">toString</API>()</code> method of the object and <API label="None">write</API> the output. The <code><API label="None">list.toString</API>()</code> method returns a string with all values separated by <code>,</code> and adds <code>[</code> and <code>]</code> to the beginning and end of the string.
+

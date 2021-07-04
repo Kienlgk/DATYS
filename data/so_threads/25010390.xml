@@ -1,0 +1,40 @@
+https://stackoverflow.com/questions/25010390
+I have a Tuple mock class, whose <API label="">getString</API>(0) and <API label="">getString</API>(1) methods are expected to be called n times. Instead of writing something like, 
+
+<pre><code>
+<API label="">when</API>(<API label="">tuple.getString</API>(0)).<API label="">thenReturn</API>(logEntries[0]).<API label="">thenReturn</API>(logEntries[1])<API label="">...thenReturn</API>(logEntries[n - 1])
+
+</code></pre>
+
+manually, I tried the following:
+
+<pre><code>
+OngoingStubbing stubbingGetStringZero = <API label="">when</API>(<API label="">tuple.getString</API>(0)).<API label="">thenReturn</API>(serviceRequestKey);
+OngoingStubbing stubbingGetStringOne = <API label="">when</API>(<API label="">tuple.getString</API>(1)).<API label="">thenReturn</API>(logEntries[0]);
+for (int i = 1; i < n; i++) {
+    stubbingGetStringZero = <API label="">stubbingGetStringZero.thenReturn</API>(serviceRequestKey);
+    stubbingGetStringOne = <API label="">stubbingGetStringOne.thenReturn</API>(logEntries[i]);
+}
+
+</code></pre>
+
+The expected result is that all calls to <code><API label="">tuple.getString</API>(0)</code> should return the String <code>serviceRequestKey</code> and each call to <code><API label="">tuple.getString</API>(1)</code> should return a different String <code>logEntries[i]</code> ie. ith invocation of <API label="">tuple.getString</API>(1) returns ith element of logEntries array. 
+
+However, due to some odd reason, things are getting mixed up, and second invocation to <code><API label="">tuple.getString</API>(1)</code> returns the String <code>serviceRequestKey</code> instead of <code>logEntries[1]</code>. What am I missing here?
+
+==========
+Well, the right way to do this would be: 
+
+<pre><code>
+import org.mockito.AdditionalAnswers;
+
+String[] logEntry = // Some initialization code
+List logEntryList = <API label="">Arrays.asList</API>(logEntry);
+<API label="">when</API>(<API label="">tuple.getString</API>(1)).<API label="">thenAnswer</API>(<API label="">AdditionalAnswers.returnsElementsOf</API>(logEntryList));
+
+</code></pre>
+
+On each invocation, successive elements of logEntry array are returned. Thus, ith invocation of <code><API label="">tuple.getString</API>(1)</code> returns ith element of logEntry array. 
+
+P.S: The example in documentation of <API label="">returnsElementsOf</API> (as of this writing) is not updated (it still uses ReturnsElementsOf example): <a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/AdditionalAnswers.html#returnsElementsOf(java.util.Collection)it">http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/AdditionalAnswers.html#returnsElementsOf(java.util.Collection)it</a> 
+

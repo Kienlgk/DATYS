@@ -1,0 +1,75 @@
+https://stackoverflow.com/questions/35066742
+I'm doing a project with gwt at the moment. I have to test a presenter using Eclipse Luna, JUnit and Mockito and have problems doing anything.
+
+After I failed with mockito I discovered GwtMockito and tried that. I used this example to get started: <a href="https://github.com/google/gwtmockito/blob/master/gwtmockito-sample/src/test/java/sample/MyWidgetTest.java" rel="nofollow">Github GwtMockito example</a>
+
+My Test class looks like this:
+
+<pre><code>
+@RunWith(GwtMockitoTestRunner.class)
+public class GamePresenterTest {
+
+@GwtMock private GameServiceAsync gameService;
+@GwtMock private LobbyPresenter lobbyPresenter;
+@GwtMock private EventBus eventBus;
+@GwtMock private Display gameView;
+@GwtMock private User user;
+@GwtMock private Player player;
+@GwtMock private ClickEvent event;
+
+private GamePresenter presenter;
+private String username = "name";
+private String gameTitle = "title";
+
+@Before
+public void setUp() {
+    <API label="None">System.out.println</API>("TODO: set up");
+}
+
+@Test
+public void testActionTableClicked() {
+    <API label="None">System.out.println</API>("TODO: add test");
+}
+}
+
+</code></pre>
+
+When I <API label="">run</API> it I get this 
+
+<pre><code>
+java.lang.NoClassDefFoundError: javassist/NotFoundException
+at java.lang.Class.getDeclaredConstructors0(Native Method)
+at java.lang.Class.privateGetDeclaredConstructors(Class.java:2671)
+at java.lang.Class.getConstructor0(Class.java:3075)
+at <API label="">java.lang.Class.getConstructor</API>(Class.java:1825)
+at org.junit.internal.builders.AnnotatedBuilder.buildRunner(AnnotatedBuilder.java:29)
+at org.junit.internal.builders.AnnotatedBuilder.runnerForClass(AnnotatedBuilder.java:21)
+at org.junit.runners.model.RunnerBuilder.safeRunnerForClass(RunnerBuilder.java:59)
+at org.junit.internal.builders.AllDefaultPossibilitiesBuilder.runnerForClass(AllDefaultPossibilitiesBuilder.java:26)
+at org.junit.runners.model.RunnerBuilder.safeRunnerForClass(RunnerBuilder.java:59)
+at org.junit.internal.requests.ClassRequest.getRunner(ClassRequest.java:26)
+at org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.(JUnit4TestReference.java:33)
+at org.eclipse.jdt.internal.junit4.runner.JUnit4TestClassReference.(JUnit4TestClassReference.java:25)
+at org.eclipse.jdt.internal.junit4.runner.JUnit4TestLoader.createTest(JUnit4TestLoader.java:48)
+at org.eclipse.jdt.internal.junit4.runner.JUnit4TestLoader.loadTests(JUnit4TestLoader.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:444)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+Caused by: java.lang.ClassNotFoundException: javassist.NotFoundException
+at <API label="">java.net.URLClassLoader.findClass</API>(URLClassLoader.java:381)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:424)
+    at <API label="">sun.misc.Launcher$AppClassLoader.loadClass</API>(Launcher.java:331)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:357)
+        ... 18 more
+
+</code></pre>
+
+When I <API label="">remove</API> the <code>@RunWith(GwtMockitoTestRunner.class)</code> I get another message that tells me I should use <API label="org.mockito.MockitoAnnotations.initMocks">initMocks</API>, but I don't how to do that, too.
+Without <code>@RunWith(GwtMockitoTestRunner.class)</code> and the <code>@GwtMock</code> stuff everything works fine of course.
+
+I hope someone can help, because my project ends in a few weeks.
+
+==========
+Looks like you need <code>javassist-.jar</code>. Add it to your classpath and it should work
+

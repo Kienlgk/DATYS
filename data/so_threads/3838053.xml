@@ -1,0 +1,25 @@
+https://stackoverflow.com/questions/3838053
+I was impressed by google's <a href="http://www.google.com/codesearch/p?hl=en#UKMs0lhE9bg/trunk/src/com/google/common/collect/<API label="">MapMaker</API>.java&q=<API label="">MapMaker</API>%20package%3ahttp://guava-libraries%5C.googlecode%5C.com&exact_package=http://guava-libraries.googlecode.com/svn&sa=N&cd=1&ct=rc" rel="nofollow"><API label="">MapMaker</API></a> design.I would like to know what is the name of the pattern that is used here ?
+
+( What i think is it's somewhat like decorator pattern but in which we don't have to wrap the object in other object to extend the functionality,but I can't figure out exactly what sort of pattern it is. )
+
+<API label="">MapMaker</API> Object Creation:-
+
+<pre><code>
+ConcurrentMap graphs = new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>()
+      .<API label="com.google.common.collect.MapMaker.concurrencyLevel">concurrencyLevel</API>(32)
+      .softKeys()
+      .<API label="com.google.common.collect.MapMaker.weakValues">weakValues</API>()
+      .expiration(30, TimeUnit.MINUTES)
+      .makeComputingMap(
+          new Function() {
+            public Graph <API label="None">apply</API>(Key key) {
+              return createExpensiveGraph(key);
+            }
+          });
+
+</code></pre>
+
+==========
+It is a <a href="http://en.wikipedia.org/wiki/Builder_pattern" rel="noreferrer">Builder</a> with a <a href="http://en.wikipedia.org/wiki/Fluent_interface" rel="noreferrer">Fluent</a> api
+

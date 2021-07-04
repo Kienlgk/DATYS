@@ -1,0 +1,114 @@
+https://stackoverflow.com/questions/37244721
+I am working on a library where I make Http <API label="">call</API> to my service and if my service machine doesn't respond back (there is a socket timeout or connect timeout), I add them to my local <code>blockList</code> and if machine is blocked 5 times then I don't make <API label="">call</API> to them.
+
+So let's say if  <code>machineA</code> is not responding <code>(throwing RestClientException)</code>, I will <API label="">call</API> <code><API label="None">onFailure</API></code> method everytime and keep incrementing the counter and then while making <API label="">call</API> to <code>machineA</code> again, I check <code>isBlocked</code> method by passing <code>machineA</code> as hostname and 5 as threshold so if <code>machineA</code> has been blocked 5 times then I don't make <API label="">call</API> to them at all. My library is multithreaded so that's why I am using volatile here as I want all threads to see same value.
+
+Below is what I have in <code>DataMapping</code> class:
+
+<pre><code>
+public static volatile ConcurrentHashMap blockedHosts =
+      new ConcurrentHashMap();
+
+boolean isBlocked(String hostname, int threshold) {
+    AtomicInteger count = <API label="None">blockedHosts.get</API>(hostname);
+    return count != null && <API label="None">count.get</API>() >= threshold;
+}
+
+void <API label="">onFailure</API>(String hostname) {
+    AtomicInteger newValue = new AtomicInteger();
+    AtomicInteger val = <API label="None">blockedHosts.putIfAbsent</API>(hostname, newValue);
+    // no need to care about over-reaching 5 here
+    (val == null ? newValue : val).<API label="None">incrementAndGet</API>();
+}
+
+void <API label="">onSuccess</API>(String hostname) {
+    <API label="None">blockedHosts.remove</API>(hostname);
+}
+
+</code></pre>
+
+Problem Statement:-
+
+Now I want to add one more feature which is - If <code>machineA</code> is blocked (since its blocking count is >= 5) then I want to keep it block for x interval. I will be having another parameter <code>(key.getInterval())</code> which will tell us for how long I want to keep this machine blocked and after that interval is elapsed, then only I will start making <API label="">call</API> to them. I am not able to understand how to add this feature?
+
+Below is my main thread code where I am using <code>DataMapping</code> methods to check whether hostname is blocked or not and also to block hostnames.
+
+<pre><code>
+@Override
+public DataResponse <API label="None">call</API>() {
+    ResponseEntity response = null;
+
+   List hostnames = some_code_here;
+
+   for (String hostname : hostnames) {
+        // If hostname is in block list, skip sending request to this host
+        if (DataMapping.isBlocked(hostname)) {
+            continue;
+        }
+        try {
+            String url = createURL(hostname);
+            response = restTemplate.exchange(url, HttpMethod.GET, key.getEntity(), String.class);
+            <API label="None">DataMapping.onSuccess</API>(hostname);
+
+           // some code here to return the response if successful
+        } catch (RestClientException ex) {
+            // adding to block list
+            <API label="None">DataMapping.onFailure</API>(hostname);
+        }
+    }
+
+   return new DataResponse(DataErrorEnum.SERVER_UNAVAILABLE, DataStatusEnum.ERROR);        
+}
+
+</code></pre>
+
+How can I block a particular machine for a particular period of time and as soon as that interval is elapsed then only start making calls to them?
+
+==========
+You can use a <a href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ScheduledExecutorService.html" rel="nofollow">ScheduledExecutorService</a> and <code><API label="">schedule</API></code> the reset of the counter after a certain timeout.
+
+You can declare this within your <code>DataMapping</code> class:
+
+<pre><code>
+private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(); // or perhaps the thread pool version ?
+
+</code></pre>
+
+And within your <code><API label="None">onFailure</API>()</code> method you can decide whether you want to reset or just <API label="">decrement</API> the counter after a certain timeout:
+
+<pre><code>
+void <API label="">onFailure</API>(String hostname) {
+    // you can use `<API label="None">computeIfAbsent</API>` in java8
+    AtomicInteger val = <API label="None">blockedHosts.computeIfAbsent</API>(hostname, key -> new AtomicInteger());
+    int count = <API label="None">val.incrementAndGet</API>();
+    // the test here is `==` to make sure the task is scheduled only once
+    if (count == threshold) {
+        <API label="None">scheduler.schedule</API>(() -> <API label="None">blockedHosts.remove</API>(hostname), 5L, TimeUnit.MINUTES);  // or you may choose to just <API label="">decrement</API> the counter
+    }
+}
+
+</code></pre>
+
+As a side note, there's no reason to make <code>blockedHosts</code> <code>volatile</code>. That reference never changes; it should be <code>final</code> instead; and probably <code>private</code>.
+
+
+
+In java7, the above code would look like this:
+
+<pre><code>
+void <API label="">onFailure</API>(String hostname) {
+    AtomicInteger newValue = new AtomicInteger();
+    AtomicInteger val = <API label="None">blockedHosts.putIfAbsent</API>(hostname, newValue);
+    int count = (val == null ? newValue : val).<API label="None">incrementAndGet</API>();
+    // the test here is `==` to make sure the task is scheduled only once
+    if (count == threshold) {
+        <API label="None">scheduler.schedule</API>(new Runnable() {
+            @Override public void <API label="None">run</API>() {
+                <API label="None">blockedHosts.remove</API>(hostname);  // or you may choose to just <API label="">decrement</API> the counter
+            }
+        }, 5L, TimeUnit.MINUTES);
+    }
+}
+
+</code></pre>
+

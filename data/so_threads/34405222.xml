@@ -1,0 +1,46 @@
+https://stackoverflow.com/questions/34405222
+I have a ConcurrentHashMap which I am populating from multiple threads as shown below:
+
+<pre><code>
+private static Map holder = new ConcurrentHashMap();
+
+public static void addError(ErrorData error) {
+    if (<API label="None">holder.keySet</API>().<API label="None">contains</API>(error)) {
+        <API label="None">holder.put</API>(error, <API label="None">holder.get</API>(error) + 1);
+    } else {
+        <API label="None">holder.put</API>(error, 1L);
+    }
+}
+
+</code></pre>
+
+Is there any possibility of race condition in above code and it can skip updates? Also how can I use Guava <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/AtomicLongMap.html" rel="nofollow">AtomicLongMap</a> here if that can give better performance?
+
+I am on Java 7.
+
+==========
+Yes, there is a possibility of a race because you are not checking <API label="">contains</API> and putting atomically.
+
+You can use <code>AtomicLongMap</code> as follows, which does this check atomically:
+
+<pre><code>
+private static final AtomicLongMap holder = <API label="com.google.common.util.concurrent.AtomicLongMap.create">AtomicLongMap.create</API>();
+
+public static void addError(ErrorData error) {
+  <API label="com.google.common.util.concurrent.AtomicLongMap.getAndIncrement">holder.getAndIncrement</API>(error);
+}
+
+</code></pre>
+
+As described in the javadoc:
+
+
+ [T]he typical mechanism for writing to this map is <API label="com.google.common.util.concurrent.AtomicLongMap.addAndGet">addAndGet</API>(K, long), which adds a long to the value currently associated with K. If a key has not yet been associated with a value, its implicit value is zero.
+
+
+and
+
+
+ All operations are atomic unless otherwise noted.
+
+

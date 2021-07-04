@@ -1,0 +1,51 @@
+https://stackoverflow.com/questions/24618035
+So, I'm trying to test my POST REST METHOD which takes in an argument with Mokcito:
+
+<pre><code>
+@Test
+public testRestAdd(){
+RESTResource mockResource = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(RESTResource.class);
+    String goodInput = "good input";
+    Response mockOutput = null; //just for testing
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(RESTResource.addCustomer(Customer.class)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockOutput);
+}
+
+</code></pre>
+
+And the REST Call is:
+
+<pre><code>
+@POST
+@Path("Add")
+@Produces({MediaType.APPLICATION_JSON})
+@Consumes(MediaType.APPLICATION_JSON)
+ public Response addCustomer(final Customer CustomerTemp) throws Throwable {
+//Code to add Customer
+}
+
+</code></pre>
+
+I get an error on the <API label="org.mockito.Mockito.when">Mockito.when</API> line where I'm prompted with a wrong input for addCustomer. Can someone please tell me what I'm doing wrong here? 
+
+==========
+In this line:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(RESTResource.addCustomer(Customer.class)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockOutput);
+
+</code></pre>
+
+You call addCustomer passing Customer class, while addCustomer method should receive a Customer object. If you want to return the <API label="">mock</API> for all Cusotmer instances use Mockito's <a href="http://docs.mockito.googlecode.com/hg/org/mockito/Matchers.html#<API label="">isA</API>%28java.lang.Class%29" rel="nofollow"><API label="org.mockito.Matchers.isA">isA</API> Matcher</a> like this:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(RESTResource.addCustomer(<API label="org.mockito.Matchers.isA">org.mockito.Matchers.isA</API>(Customer.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockOutput);
+
+</code></pre>
+
+Or if you don't really care of which Customer you receive in addCustomer you can use: 
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(RESTResource.addCustomer(<API label="org.mockito.Matchers.any">org.mockito.Matchers.any</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockOutput);
+
+</code></pre>
+

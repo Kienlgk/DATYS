@@ -1,0 +1,15 @@
+https://stackoverflow.com/questions/8924871
+I was wondering if there is any place where I can find validation methods similar to this one I've created:  
+
+<pre><code>
+public static  Boolean checkNullOrNonPositiveArgument(T object) {
+    return <API label="None">Boolean.valueOf</API>(object == null || ((Number)object).<API label="None">doubleValue</API>() <= 0f);
+}
+
+</code></pre>
+
+Guava or Apache Commons... Any clue?
+
+==========
+Speaking as a Guava developer, our policy is that if you really, really want to have null objects floating around -- which you almost certainly shouldn't -- then you should write your own helper methods.
+

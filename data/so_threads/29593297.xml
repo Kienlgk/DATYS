@@ -1,0 +1,41 @@
+https://stackoverflow.com/questions/29593297
+I'm developing an android application, and I'm using guava eventbus.
+I get ambiguous errors about not being able to <API label="">dispatch</API> events. 
+How can I investigate such problems ? and how can I get more information about the exception ?
+
+this is a sample exception message :
+
+<pre><code>
+04-12 20:46:35.829   9971-11208/xxx.android.init E/default﹕ Could not <API label="">dispatch</API> event: xxx.android.presentation.control.MainActivity@21139768 to public void xxx.android.presentation.control.MainActivity.showToast(xxx.core.event.EventShowToast)
+
+</code></pre>
+
+ps: I replaced our company class path prefix with <code>xxx</code>.
+
+==========
+This happens if a subscriber throws an exception.
+
+You can replace the default logger with your own, by providing an implementation of <code>com.google.common.eventbus.SubscriberExceptionHandler</code> to your <code><API label="">EventBus</API></code> during construction.
+
+For example:
+
+<pre><code>
+import com.google.common.eventbus.SubscriberExceptionContext;
+import com.google.common.eventbus.SubscriberExceptionHandler;
+
+class CustomExceptionHandler implements SubscriberExceptionHandler {
+    @Override
+    public void <API label="">handleException</API>(Throwable exception, SubscriberExceptionContext context) {
+        <API label="None">System.out.println</API>("Handler '"+<API label="com.google.common.eventbus.SubscriberExceptionContext.getSubscriber">context.getSubscriber</API>()+"' could not handle '"+<API label="com.google.common.eventbus.SubscriberExceptionContext.getEvent">context.getEvent</API>().<API label="None">getClass</API>().<API label="None">getName</API>()+"'["+<API label="com.google.common.eventbus.SubscriberExceptionContext.getEvent">context.getEvent</API>()+"]: " + <API label="None">exception.getMessage</API>());
+    }
+}
+
+</code></pre>
+
+And use it like this
+
+<pre><code>
+<API label="">EventBus</API> eventBus = new <API label="">EventBus</API>(new CustomExceptionHandler());
+
+</code></pre>
+

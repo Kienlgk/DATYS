@@ -1,0 +1,141 @@
+https://stackoverflow.com/questions/9110125
+Imagine following code:
+
+<pre><code>
+List list = .....
+List <API label="None">spy</API> = <API label="">spy</API>(list);
+<API label="org.mockito.Mockito.doThrow">doThrow</API>(new NullpointerException()).<API label="org.mockito.stubbing.Stubber.when">when</API>(<API label="None">spy</API>).<API label="None">get</API>(0);
+
+</code></pre>
+
+<code><API label="org.mockito.Mockito.doThrow">doThrow</API>(....)</code> executes <code><API label="None">list.get</API>(0)</code> - this makes no sense at all. I would like to define mock behaviour and not to call a method here..... am I missing something?
+
+EDIT:
+List is decorated by CGLIB. When I remove CGLIB proxy Mockito works as expected. Any Idea how to solve such problem <API label="">when</API> using CGLIB proxies? 
+
+==========
+<pre><code>
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
+
+import java.lang.reflect.Method;
+
+import org.junit.Test;
+
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
+
+public class MockitoSpyTest {
+
+   @Test
+    public void execTest() {
+
+       <API label="None">System.out.println</API>("*** TEST 1 ***");
+        <API label="None">System.out.println</API>("Test on unmodified object");
+        MySet ms = new MySetImpl();
+        <API label="None">ms.set</API>("test value");
+        <API label="None">System.out.println</API>("Set contains: " + <API label="None">ms.get</API>());
+
+       // decorate ms1 with easymock
+        <API label="None">System.out.println</API>("\n*** TEST 2 ***");
+        MySet spyMs = <API label="org.mockito.Mockito.spy">spy</API>(ms);
+        <API label="org.mockito.Mockito.doThrow">doThrow</API>(new NullPointerException("my test nullpointer")).<API label="org.mockito.internal.stubbing.StubberImpl.when">when</API>(spyMs).<API label="None">get</API>();
+        <API label="None">System.out.println</API>("Test decorated object with SPY");
+        <API label="None">spyMs.set</API>("test value");
+        try {
+            <API label="None">System.out.println</API>("Set contains: " + <API label="None">spyMs.get</API>());
+        } catch (NullPointerException e) {
+            <API label="None">System.out.println</API>("NullPointerException - as expected");
+        }
+
+       // Enhance call with CGLIB
+        <API label="None">System.out.println</API>("\n*** TEST 3 ***");
+        <API label="None">System.out.println</API>("Test on CGLIB decorated object");
+        <API label="">Enhancer</API> enc = new <API label="None">Enhancer</API>();
+        <API label="None">enc.setSuperclass</API>(MySetImpl.class);
+        <API label="None">enc.setInterfaces</API>(new Class[] { MySet.class });
+        <API label="None">enc.setCallback</API>(new MethodInterceptor() {
+
+           @Override
+            public Object <API label="">intercept</API>(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+                if ("get".equals(<API label="None">method.getName</API>())) {
+                    <API label="None">System.out.println</API>("CGLIB decorated GET call");
+                }
+                return <API label="None">proxy.invokeSuper</API>(obj, args);
+            }
+        });
+        MySet ms1 = (MySet) <API label="None">enc.create</API>();
+        <API label="None">ms1.set</API>("test value");
+        <API label="None">System.out.println</API>("Set contains: " + <API label="None">ms1.get</API>());
+
+       // decorate ms1 with easymock
+        <API label="None">System.out.println</API>("\n*** TEST 4 ***");
+        <API label="None">System.out.println</API>("Test on CGLIB decorated object with SPY");
+        MySet spyMs1 = <API label="org.mockito.Mockito.spy">spy</API>(ms1);
+        <API label="org.mockito.Mockito.doThrow">doThrow</API>(new NullPointerException("my test nullpointer")).<API label="org.mockito.internal.stubbing.StubberImpl.when">when</API>(spyMs1).<API label="None">get</API>();
+        <API label="None">spyMs1.set</API>("test value");
+        <API label="None">System.out.println</API>("Set contains: " + <API label="None">spyMs1.get</API>());
+    }
+
+   public interface MySet {
+        void <API label="None">set</API>(String val);
+
+       String <API label="None">get</API>();
+    }
+
+   public static class MySetImpl implements MySet {
+        String val;
+
+       public void <API label="None">set</API>(String val) {
+            this.val = val;
+            <API label="None">System.out.println</API>("Original SET call:" + val);
+        }
+
+       public String <API label="None">get</API>() {
+
+           <API label="None">System.out.println</API>("Original GET call:" + val);
+            return val;
+        }
+
+   }
+}
+
+</code></pre>
+
+Example above produces output:
+
+<pre><code>
+*** TEST 1 ***
+Test on unmodified object
+Original SET call:test value
+Original GET call:test value
+Set contains: test value
+
+*** TEST 2 ***
+Test decorated object with SPY
+Original SET call:test value
+NullPointerException - as expected
+
+*** TEST 3 ***
+Test on CGLIB decorated object
+Original SET call:test value
+CGLIB decorated GET call
+Original GET call:test value
+Set contains: test value
+
+*** TEST 4 ***
+Test on CGLIB decorated object with SPY
+CGLIB decorated GET call
+Original GET call:test value
+Original SET call:test value
+CGLIB decorated GET call
+Original GET call:test value
+Set contains: test value
+
+</code></pre>
+
+Now the <code>TEST 2</code> and <code>TEST 4</code> should throw <code>NullPointerException</code> on <code><API label="">get</API></code> call - based on mockito <API label="">spy</API>: <code><API label="org.mockito.Mockito.doThrow">doThrow</API>(new NullPointerException("my test nullpointer")).<API label="org.mockito.stubbing.Stubber.when">when</API>(spyMs1).<API label="None">get</API>();</code>
+
+The "TEST 4" does not throw expected exception because it is already decorated with CGLIB - we can also see on the console that CGLIb call is being executed: <code>GLIB decorated GET call</code> and not call on <API label="">spy</API> object. The same effect can be achived <API label="">when</API> using Spring AOP with CGLIB proxies.
+

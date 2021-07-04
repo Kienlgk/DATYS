@@ -1,0 +1,57 @@
+https://stackoverflow.com/questions/38344157
+I just ran into a code like this:
+
+<pre><code>
+ExecutorService executorService = MoreExecutors.sameThreadExecutor();
+
+for (int i = 0; i < 10; i++) {
+  <API label="None">executorService.submit</API>(new Callable() {
+    @Override
+    public Void <API label="None">call</API>() throws Exception {
+      try {
+        Do some work here...
+        return null;
+      } catch (final Exception e) {
+        throw e;
+      } finally {
+        //
+      }
+    }
+  });
+}
+
+</code></pre>
+
+Any <API label="">difference</API> between this and the code snippet below? If I understand it correctly, sameThreadExecutor uses the same thread that calls <API label="None">submit</API>(), which means all these 10 "jobs" are run one by one on the main thread.
+
+<pre><code>
+for (int i = 0; i < 10; i++) {
+      try {
+        Do some work here...
+      } catch (final Exception e) {
+        throw e;
+      } finally {
+        //
+      }
+}
+
+</code></pre>
+
+Thanks!
+
+==========
+First, <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/MoreExecutors.html#sameThreadExecutor()" rel="nofollow noreferrer"><code>MoreExecutors#sameThreadExecutor</code></a> is deprecated:
+
+
+ Deprecated. Use <code><API label="None">directExecutor</API>()</code> if you only require an <code>Executor</code> and <code><API label="com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService">newDirectExecutorService</API>()</code> if you need a <code>ListeningExecutorService</code>. This method will be removed in August 2016.
+
+
+So question is: when do you need <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/MoreExecutors.html#<API label="com.google.common.util.concurrent.MoreExecutors.directExecutor">directExecutor</API>()" rel="nofollow noreferrer"><code>MoreExecutors#<API label="com.google.common.util.concurrent.MoreExecutors.directExecutor">directExecutor</API></code></a> or <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/MoreExecutors.html#<API label="com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService">newDirectExecutorService</API>()" rel="nofollow noreferrer"><code>MoreExecutors#<API label="">newDirectExecutorService</API></code></a> (<API label="">difference</API> between those two is mentioned above - <code>ListeningExecutorService</code> is Guava's extension for <code>ListenableFuture</code>s). Answers are: 
+
+
+use it when you need <code>Executor</code> / <code>ExecutorService</code> (ex. your interface requires it) and don't want concurrency but rather run your multi-threaded code synchronously
+(implied by above) use it in tests for predictable results
+when you'd want to implement simple <code>ExecutorService</code> like <code><API label="com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService">newDirectExecutorService</API></code> by yourself, but don't want to reinvent the wheel (see <a href="https://google.github.io/guava/releases/19.0/api/docs/src-html/com/google/common/util/concurrent/MoreExecutors.html#line.286" rel="nofollow noreferrer">its source code</a>)
+if you're using <a href="http://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/Futures.html#<API label="None">addCallback</API>(com.google.common.util.concurrent.ListenableFuture,%20com.google.common.util.concurrent.FutureCallback)" rel="nofollow noreferrer"><code>ListenableFuture##<API label="None">addCallback</API>(ListenableFuture, FutureCallback)</code></a>, <code><API label="com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService">newDirectExecutorService</API></code> is used by default (<a href="https://github.com/google/guava/wiki/ListenableFutureExplained#adding-callbacks" rel="nofollow noreferrer">"for use when the callback is fast and lightweight"</a>, also mentions it's "a dangerous choice in some cases" (see <a href="http://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/Futures.html#<API label="None">addCallback</API>(com.google.common.util.concurrent.ListenableFuture,%20com.google.common.util.concurrent.FutureCallback)" rel="nofollow noreferrer">javadoc</a>)).
+
+

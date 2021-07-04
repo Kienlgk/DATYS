@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/29277173
+I am trying to update a property of bean (if it satisfies a condition) while iterating over list of it. To enhance the performance I am using <API label="com.google.common.collect.Lists.transform">Lists.transform</API>
+
+<pre><code>
+private void populate(final WorkFlowDataBean workFlowDataBean, final List items) {
+        <API label="com.google.common.collect.Lists.transform">Lists.transform</API>(items, new Function() {
+            @Override
+            public ApplicationDataBean <API label="None">apply</API>(ApplicationDataBean input) {
+                if (<API label="None">String.valueOf</API>(<API label="None">workFlowDataBean.getId</API>().<API label="None">intValue</API>()).<API label="com.google.common.base.Ascii.equalsIgnoreCase">equalsIgnoreCase</API>(<API label="None">String.valueOf</API>(input.getWorkflowId().<API label="">intValue</API>()))) {
+                    input.setWorkflowName(<API label="None">workFlowDataBean.getName</API>());
+                    input.setWorkflowVersion(workFlowDataBean.getVersion());
+                    <API label="None">logger.info</API>("---finally----");
+                }
+                <API label="None">logger.info</API>(<API label="None">String.valueOf</API>(<API label="None">workFlowDataBean.getId</API>().<API label="None">intValue</API>()) + "===" + <API label="None">String.valueOf</API>(input.getWorkflowId().<API label="None">intValue</API>()));
+                return input;
+            }
+        });
+
+   }
+
+</code></pre>
+
+I cannot use foreach loop as it will slow down my application.
+
+==========
+<a href="http://google-collections.googlecode.com/svn-history/r90/trunk/javadoc/com/google/common/collect/Lists.html#<API label="com.google.common.collect.Lists.transform">transform</API>(java.util.List,%20com.google.common.base.Function)" rel="nofollow"><API label="com.google.common.collect.Lists.transform">Lists.transform</API>()</a> will actually return a lazily-computed view of the list, which means that everything that you have in <code><API label="">apply</API>()</code>, only happens when you start iterating the transformed collection. So you cannot use the method in the way you're using it now, because <code><API label="">apply</API>()</code> never gets called if you're not using the transformed List for anything.
+
+For working around the problem you could try creating a new list (which you also discard) based on the transformed collection:
+
+<pre><code>
+<API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(<API label="com.google.common.collect.Lists.transform">Lists.transform</API>(
+    /*Your transformation code*/
+));
+
+</code></pre>
+
+A better longer term solution would be to re-think the method overall. That is, you should simply use a for-each loop in the method and not wrap the code into a function. Normal, imperative code will be easier to read and also perform better in this case.
+

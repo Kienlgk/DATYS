@@ -1,0 +1,53 @@
+https://stackoverflow.com/questions/37377110
+I'm trying to <API label="">copy</API> a resource in my project onto another location on the disk. So far, I have this code:
+
+<pre><code>
+if (!<API label="">file.exists</API>()){
+    try {
+        file.createNewFile();
+        <API label="com.google.common.io.Files.copy">Files.copy</API>(new InputSupplier() {
+            public InputStream <API label="">getInput</API>() throws IOException {
+                return <API label="None">Main.class.getResourceAsStream</API>("/" + name);
+            }
+        }, file);                   
+    } catch (IOException e) {
+        file = null;
+        return null;
+    }
+}
+
+</code></pre>
+
+And it works fine, but the <code>InputSupplier</code> class is deprecated, so I was wondering if there was a better way to do what I'm trying to do.
+
+==========
+See the documentation for the Guava <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/io/InputSupplier.html" rel="nofollow"><code>InputSupplier</code> class</a>:
+
+
+ For <code>InputSupplier</code>, use <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/io/ByteSource.html" rel="nofollow"><code>ByteSource</code></a> instead. For <code>InputSupplier</code>, use <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/io/CharSource.html" rel="nofollow"><code>CharSource</code></a>. Implementations of <code>InputSupplier</code> that don't fall into one of those categories do not benefit from any of the methods in <code>common.io</code> and should use a different interface. This interface is scheduled for removal in December 2015.
+
+
+So in your case, you're looking for <code>ByteSource</code>:
+
+<pre><code>
+<API label="com.google.common.io.Resources.asByteSource">Resources.asByteSource</API>(url).<API label="com.google.common.io.ByteSource.copyTo">copyTo</API>(<API label="com.google.common.io.Files.asByteSink">Files.asByteSink</API>(file));
+
+</code></pre>
+
+See <a href="https://github.com/google/guava/wiki/IOExplained" rel="nofollow">this section</a> of the Guava Wiki for more information.
+
+
+
+If you're looking for a pure Java (no external libraries) version, you can do the following:
+
+<pre><code>
+try (InputStream is = <API label="None">this.getClass</API>().<API label="None">getClassLoader</API>().<API label="None">getResourceAsStream</API>("/" + name)) {
+    <API label="None">Files.copy</API>(is, <API label="None">Paths.get</API>("C:\\some\\file.txt"));
+} catch (IOException e) {
+    // An error occurred copying the resource
+}
+
+</code></pre>
+
+Note that this is only valid for Java 7 and <API label="">higher</API>.
+

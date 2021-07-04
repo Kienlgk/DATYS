@@ -1,0 +1,279 @@
+https://stackoverflow.com/questions/59129497
+I am using mockito to test a controller. That controller uses a repository that connects to database. I want to mock userRepository and inject it in usercontroller, but <API label="">when</API> I <API label="">run</API> the test a NullPointerException is thrown at <code><API label="org.mockito.Mockito.when">when</API>(userRepository.addUser(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.anyString">anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);</code> in the test. Also <API label="">when</API> I removed this line to see whether mockMvc also gives this error and indeed it did just that. 
+
+Thus I think the problem causer is the <code><API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);</code> that it somehow doesn't enable the annotations.
+
+I did some research about why this is happening on Google but none of the solutions solved this problem and I don't know why this is not working.
+
+My Controller that I want to test:
+
+<pre><code>
+@RestController
+public class UserController {
+
+   @Autowired
+    private transient userRepository userRepository;
+
+   @PostMapping("/user/add")
+    public ResponseEntity addUser(@RequestBody User user) {
+        String firstname = user.getUsername();
+        String lastname = user.getLastName();
+
+       boolean added = userRepository.addUser(firstname , lastname );
+
+       if(added){
+            return new ResponseEntity<>(true, HttpStatus.OK);
+        }
+
+       return new ResponseEntity<>(HttpStatus.CONFLICT);
+    }
+
+</code></pre>
+
+My test so far:
+
+<pre><code>
+@RunWith(SpringRunner.class)
+class UserControllerTest {
+
+   private MockMvc mockMvc;
+
+   @MockBean
+    private UserRepository userRepository;
+
+   @InjectMocks
+    private UserController userController;
+
+   @BeforeEach
+    public void <API label="">init</API>() {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(userController)
+                .<API label="None">build</API>();
+    }
+
+   @Test
+    void testAddUserToDb() throws Exception {
+        User user = new User();
+        User.setFirstName("first");
+        User.setLastName("last");
+
+       Gson gson = new Gson();
+        String request = gson.toJson(user);
+
+       //HERE I GET NULLPOINTEREXCEPTION
+        <API label="org.mockito.Mockito.when">when</API>(userRepository.addUser(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.anyString">anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+
+       mockMvc.perform(<API label="None">post</API>("user/add")
+                .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8));
+
+
+       <API label="org.mockito.Mockito.verify">verify</API>(userRepository, <API label="org.mockito.Mockito.times">times</API>(1)).addUser(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.anyString">anyString</API>());
+        <API label="org.mockito.Mockito.verifyNoMoreInteractions">verifyNoMoreInteractions</API>(userRepository);
+    }
+
+</code></pre>
+
+My user repository:
+
+<pre><code>
+@Repository
+public class UserRepository {
+
+   @Autowired
+    private transient JdbcTemplate jdbcTemplate;
+
+   public boolean addUser(String firstName, String lastName){
+        boolean added = false;
+
+       String ADD_USER = "INSERT INTO Users(firstName, lastname) VALUES(?, ?)";
+
+       //<API label="">execute</API> sql query and retrieve result set
+        int rowsHit = <API label="None">jdbcTemplate.update</API>(ADD_USER, firstName, lastName);
+
+       if (rowsHit == 1) {
+            added = true;
+        }
+
+       return added;
+    }
+
+</code></pre>
+
+ERROR MESSAGE:
+
+<pre><code>
+java.lang.NullPointerException
+    at server.controller.UserControllerTest.testAddUserToDb(UserControllerTest.java:21)
+    at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at java.base/<API label="">jdk.internal.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at java.base/<API label="">jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at java.base/<API label="">java.lang.reflect.Method.invoke</API>(Method.java:567)
+    at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:436)
+    at <API label="">org.junit.jupiter.engine.execution.ExecutableInvoker.invoke</API>(ExecutableInvoker.java:115)
+    at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$6(TestMethodTestDescriptor.java:170)
+    at <API label="">org.junit.jupiter.engine.execution.ThrowableCollector.execute</API>(ThrowableCollector.java:40)
+    at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:166)
+    at <API label="">org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute</API>(TestMethodTestDescriptor.java:113)
+    at <API label="">org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute</API>(TestMethodTestDescriptor.java:58)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.lambda$executeRecursively$3(HierarchicalTestExecutor.java:112)
+    at org.junit.platform.engine.support.hierarchical.SingleTestExecutor.executeSafely(SingleTestExecutor.java:66)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.executeRecursively(HierarchicalTestExecutor.java:108)
+    at <API label="">org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.execute</API>(HierarchicalTestExecutor.java:79)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.lambda$executeRecursively$2(HierarchicalTestExecutor.java:120)
+    at java.base/<API label="">java.util.stream.ForEachOps$ForEachOp$OfRef.accept</API>(ForEachOps.java:183)
+    at java.base/<API label="">java.util.stream.ReferencePipeline$2$1.accept</API>(ReferencePipeline.java:177)
+    at java.base/java.util.Iterator.forEachRemaining(Iterator.java:133)
+    at java.base/java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1801)
+    at java.base/<API label="">java.util.stream.AbstractPipeline.copyInto</API>(AbstractPipeline.java:484)
+    at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:474)
+    at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+    at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+    at java.base/<API label="">java.util.stream.AbstractPipeline.evaluate</API>(AbstractPipeline.java:234)
+    at java.base/<API label="">java.util.stream.ReferencePipeline.forEach</API>(ReferencePipeline.java:497)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.lambda$executeRecursively$3(HierarchicalTestExecutor.java:120)
+    at org.junit.platform.engine.support.hierarchical.SingleTestExecutor.executeSafely(SingleTestExecutor.java:66)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.executeRecursively(HierarchicalTestExecutor.java:108)
+    at <API label="">org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.execute</API>(HierarchicalTestExecutor.java:79)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.lambda$executeRecursively$2(HierarchicalTestExecutor.java:120)
+    at java.base/<API label="">java.util.stream.ForEachOps$ForEachOp$OfRef.accept</API>(ForEachOps.java:183)
+    at java.base/<API label="">java.util.stream.ReferencePipeline$2$1.accept</API>(ReferencePipeline.java:177)
+    at java.base/java.util.Iterator.forEachRemaining(Iterator.java:133)
+    at java.base/java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1801)
+    at java.base/<API label="">java.util.stream.AbstractPipeline.copyInto</API>(AbstractPipeline.java:484)
+    at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:474)
+    at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+    at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+    at java.base/<API label="">java.util.stream.AbstractPipeline.evaluate</API>(AbstractPipeline.java:234)
+    at java.base/<API label="">java.util.stream.ReferencePipeline.forEach</API>(ReferencePipeline.java:497)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.lambda$executeRecursively$3(HierarchicalTestExecutor.java:120)
+    at org.junit.platform.engine.support.hierarchical.SingleTestExecutor.executeSafely(SingleTestExecutor.java:66)
+    at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.executeRecursively(HierarchicalTestExecutor.java:108)
+    at <API label="">org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor$NodeExecutor.execute</API>(HierarchicalTestExecutor.java:79)
+    at <API label="">org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute</API>(HierarchicalTestExecutor.java:55)
+    at <API label="">org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute</API>(HierarchicalTestEngine.java:43)
+    at <API label="">org.junit.platform.launcher.core.DefaultLauncher.execute</API>(DefaultLauncher.java:220)
+    at org.junit.platform.launcher.core.DefaultLauncher.lambda$<API label="">execute</API>$6(DefaultLauncher.java:188)
+    at org.junit.platform.launcher.core.DefaultLauncher.withInterceptedStreams(DefaultLauncher.java:202)
+    at <API label="">org.junit.platform.launcher.core.DefaultLauncher.execute</API>(DefaultLauncher.java:181)
+    at <API label="">org.junit.platform.launcher.core.DefaultLauncher.execute</API>(DefaultLauncher.java:128)
+    at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.processAllTestClasses(JUnitPlatformTestClassProcessor.java:102)
+    at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.access$000(JUnitPlatformTestClassProcessor.java:82)
+    at <API label="">org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor.stop</API>(JUnitPlatformTestClassProcessor.java:78)
+    at <API label="">org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.stop</API>(SuiteTestClassProcessor.java:61)
+    at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at java.base/<API label="">jdk.internal.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at java.base/<API label="">jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at java.base/<API label="">java.lang.reflect.Method.invoke</API>(Method.java:567)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:36)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:24)
+    at <API label="">org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch</API>(ContextClassLoaderDispatch.java:33)
+    at <API label="">org.gradle.internal.dispatch</API><API label="">.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke</API>(ProxyDispatchAdapter.java:94)
+    at <API label="">com.sun.proxy.$Proxy5.stop</API>(Unknown Source)
+    at <API label="">org.gradle.api.internal.tasks.testing.worker.TestWorker.stop</API>(TestWorker.java:132)
+    at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at java.base/<API label="">jdk.internal.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at java.base/<API label="">jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at java.base/<API label="">java.lang.reflect.Method.invoke</API>(Method.java:567)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:36)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:24)
+    at <API label="">org.gradle.internal.remote.internal.hub.MessageHubBackedObjectConnection$DispatchWrapper.dispatch</API>(MessageHubBackedObjectConnection.java:182)
+    at <API label="">org.gradle.internal.remote.internal.hub.MessageHubBackedObjectConnection$DispatchWrapper.dispatch</API>(MessageHubBackedObjectConnection.java:164)
+    at <API label="">org.gradle.internal.remote.internal.hub.MessageHub$Handler.run</API>(MessageHub.java:412)
+    at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+    at <API label="">org.gradle.internal.concurrent.ManagedExecutorImpl$1.run</API>(ManagedExecutorImpl.java:48)
+    at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+    at java.base/<API label="">java.util.concurrent.ThreadPoolExecutor$Worker.run</API>(ThreadPoolExecutor.java:628)
+    at <API label="">org.gradle.internal.concurrent.ThreadFactoryImpl$ManagedThreadRunnable.run</API>(ThreadFactoryImpl.java:56)
+    at java.base/<API label="">java.lang.Thread.run</API>(Thread.java:835)
+
+</code></pre>
+
+==========
+Edit your test class to the code below and it should not throw any <code>NullPointerException</code> anymore (though you have some other compile-time errors in your code, like in the controller mixing <code>firstname</code> with <code>username</code>).
+
+<pre><code>
+@SpringBootTest
+@AutoConfigureMockMvc
+@RunWith(SpringRunner.class)
+public class UserControllerTest {
+
+   @Autowired
+    private MockMvc mockMvc;
+
+   @Mock
+    private UserRepository userRepository;
+
+   @Test
+    public void testAddUserToDb() throws Exception {
+        User user = new User();
+        user.setFirstName("first");
+        user.setLastName("last");
+
+       Gson gson = new Gson();
+        String request = gson.toJson(user);
+
+       //HERE I GET NULLPOINTEREXCEPTION
+        <API label="org.mockito.Mockito.when">when</API>(userRepository.addUser(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.anyString">anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+
+       mockMvc.perform(<API label="None">post</API>("user/add")
+                .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8));
+
+
+       <API label="org.mockito.InOrder.verify">verify</API>(userRepository, <API label="org.mockito.Mockito.times">times</API>(1)).addUser(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.anyString">anyString</API>());
+        <API label="org.mockito.Mockito.verifyNoMoreInteractions">verifyNoMoreInteractions</API>(userRepository);
+    }
+}
+
+</code></pre>
+
+In your gradle file you are mixing Spring (Boot) versions and some other, transient dependencies of Spring. Could you also <API label="">update</API> your Gradle file to this:
+
+<pre><code>
+plugins {
+    id 'org.springframework.boot' version '2.2.1.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+    id 'java'
+}
+
+sourceCompatibility = 12
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+test {
+    useJUnitPlatform()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
+
+   components {
+        withModule('org.springframework:spring-beans') {
+            allVariants {
+                withDependencyConstraints {
+                    it.findAll { it.name == 'snakeyaml' }.each { it.version { strictly '1.19' } }
+                }
+            }
+        }
+    }
+}
+
+bootJar {
+    mainClassName = 'server.Application'
+}
+
+</code></pre>
+
+If you'll get Exceptions complaining about a datasource, then <API label="">remove</API> <code>implementation 'org.springframework.boot:spring-boot-starter-jdbc'</code> from the Gradle configuration (or import a datasource dependency and configure it in Gradle, if you are using a database).
+

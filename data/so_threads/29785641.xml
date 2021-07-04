@@ -1,0 +1,61 @@
+https://stackoverflow.com/questions/29785641
+I've spent the last little while pulling out my hair trying to find the problem in my test, and eventually figured out it has to do with mocking a method that takes primitive arguments.  Here's a sample test that demos the problem:
+
+<pre><code>
+import static <API label="org.mockito.Matchers.any">org.mockito.Matchers.any</API>;
+import static <API label="org.mockito.Mockito.mock">org.mockito.Mockito.mock</API>;
+import static <API label="org.mockito.Mockito.times">org.mockito.Mockito.times</API>;
+import static <API label="org.mockito.Mockito.verify">org.mockito.Mockito.verify</API>;
+
+import org.junit.Test;
+
+public class MockitoTest {
+    public static interface Foo {
+        public Object causeProblems(long arg);
+    }
+
+   @Test
+    public void testFoo() {
+        Foo foo = <API label="org.mockito.Mockito.mock">mock</API>(Foo.class);
+        foo.causeProblems(123);
+        <API label="org.mockito.Mockito.verify">verify</API>(foo, <API label="org.mockito.Mockito.times">times</API>(1)).causeProblems(<API label="org.mockito.Matchers.any">any</API>());
+    }
+}
+
+</code></pre>
+
+When running this test (I'm using Mockito 1.10 and Java8), and for some reason my stack trace is showing an NPE on the <code><API label="org.mockito.Mockito.verify">verify</API></code> line:
+
+<pre><code>
+java.lang.NullPointerException
+    at <API label="">com.amazon.jetstream.executor.worker.invoke</API>.MockitoTest.testFoo(MockitoTest.java:19)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+....
+
+</code></pre>
+
+I think part of my stack trace is being suppressed (?) Digging into it a bit further, I can get slightly more info out of it if I run it in Eclipse and "inspect" the line, which tells me simply: 
+
+<pre><code>
+java.lang.NullPointerException at <API label="">longValue</API>()
+
+</code></pre>
+
+Questions: 
+
+
+Does anyone know how to workaround this bug? 
+If you can reproduce this, can you get more info out of your stack trace?
+
+
+==========
+You should matcher that matches long not <API label="">any</API> object:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(foo, <API label="org.mockito.Mockito.times">times</API>(1)).causeProblems(<API label="org.mockito.Matchers.anyLong">anyLong</API>());
+
+</code></pre>
+
+I checked that it runs correctly.
+

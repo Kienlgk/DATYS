@@ -1,0 +1,115 @@
+https://stackoverflow.com/questions/2955043
+I am going through the code which uses <code>Predicate</code> in Java. I have never used <code>Predicate</code>. Can someone guide me to any tutorial or conceptual explanation of <code>Predicate</code> and its implementation in Java?
+
+==========
+I'm assuming you're talking about <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/base/Predicate.html" rel="noreferrer"><code>com.google.common.base.Predicate</code></a> from Guava.
+
+From the API:
+
+
+ Determines a <code>true</code> or <code>false</code> value for a given input. For example, a <code>RegexPredicate</code> might implement <code>Predicate</code>, and return true for any string that matches its given regular expression. 
+
+
+This is essentially an OOP abstraction for a <code>boolean</code> test.
+
+For example, you may have a helper method like this:
+
+<pre><code>
+static boolean <API label="">isEven</API>(int num) {
+   return (num % 2) == 0; // simple
+}
+
+</code></pre>
+
+Now, given a <code>List</code>, you can <API label="">process</API> only the even numbers like this:
+
+<pre><code>
+    List numbers = <API label="None">Arrays.asList</API>(1,2,3,4,5,6,7,8,9,10);
+    for (int number : numbers) {
+        if (<API label="">isEven</API>(number)) {
+            <API label="None">process</API>(number);
+        }
+    }
+
+</code></pre>
+
+With <code>Predicate</code>, the <code>if</code> test is abstracted out as a type. This allows it to interoperate with the rest of the API, such as <a href="http://guava-libraries.googlecode.com/svn-history/r13/trunk/javadoc/com/google/common/collect/Iterables.html" rel="noreferrer"><code>Iterables</code></a>, which have many utility methods that takes <code>Predicate</code>.
+
+Thus, you can now write something like this:
+
+<pre><code>
+    Predicate <API label="">isEven</API> = new Predicate() {
+        @Override public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(Integer number) {
+            return (number % 2) == 0;
+        }               
+    };
+    Iterable evenNumbers = <API label="com.google.common.collect.Iterables.filter">Iterables.filter</API>(numbers, <API label="">isEven</API>);
+
+   for (int number : evenNumbers) {
+        <API label="None">process</API>(number);
+    }
+
+</code></pre>
+
+Note that now the for-each loop is much simpler without the <code>if</code> test. We've reached a <API label="">higher</API> level of abtraction by defining <code>Iterable evenNumbers</code>, by <code><API label="">filter</API></code>-ing using a <code>Predicate</code>.
+
+API links
+
+
+<a href="http://guava-libraries.googlecode.com/svn-history/r13/trunk/javadoc/com/google/common/collect/Iterables.html#<API label="">filter</API>%28java.lang.Iterable,%20java.lang.Class%29" rel="noreferrer"><code><API label="com.google.common.collect.Iterables.filter">Iterables.filter</API></code></a>
+
+
+Returns the elements that satisfy a predicate. 
+
+
+
+
+
+On <API label="">higher</API>-order function
+
+<code>Predicate</code> allows <code><API label="com.google.common.collect.Iterables.filter">Iterables.filter</API></code> to serve as what is called a <API label="">higher</API>-order function. On its own, this offers many advantages. Take the <code>List numbers</code> example above. Suppose we want to test if <API label="">all</API> numbers are positive. We can write something like this:
+
+<pre><code>
+static boolean isAllPositive(Iterable numbers) {
+    for (Integer number : numbers) {
+        if (number < 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+//...
+if (isAllPositive(numbers)) {
+    <API label="None">System.out.println</API>("Yep!");
+}
+
+</code></pre>
+
+With a <code>Predicate</code>, and interoperating with the rest of the libraries, we can instead write this:
+
+<pre><code>
+Predicate isPositive = new Predicate() {
+    @Override public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(Integer number) {
+        return number > 0;
+    }       
+};
+
+//...
+if (<API label="com.google.common.collect.Iterables.all">Iterables.all</API>(numbers, isPositive)) {
+    <API label="None">System.out.println</API>("Yep!");
+}
+
+</code></pre>
+
+Hopefully you can now see the value in <API label="">higher</API> abstractions for routines like "<API label="">filter</API> <API label="">all</API> elements by the given predicate", "check if <API label="">all</API> elements satisfy the given predicate", etc make for better code.
+
+Unfortunately Java doesn't have first-class methods: you can't pass methods around to <code><API label="com.google.common.collect.Iterables.filter">Iterables.filter</API></code> and <code><API label="com.google.common.collect.Iterables.all">Iterables.all</API></code>. You can, of course, pass around objects in Java. Thus, the <code>Predicate</code> type is defined, and you pass objects implementing this interface instead.
+
+See also
+
+
+<a href="http://en.wikipedia.org/wiki/Higher-order_function" rel="noreferrer">Wikipedia/Higher-order function</a>
+<a href="http://en.wikipedia.org/wiki/Filter_%28higher-order_function%29" rel="noreferrer">Wikipedia/Filter (<API label="">higher</API>-order function)</a>
+
+

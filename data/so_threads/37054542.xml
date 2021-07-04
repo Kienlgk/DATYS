@@ -1,0 +1,53 @@
+https://stackoverflow.com/questions/37054542
+I have an object whose method functionality I want to replace by just incrementing a counter <API label="">when</API> its called. The method has a <code>void</code> return type though, so I've been looking into how to stub void methods using mockito, but have not found a solution that works. From what I read I thought I could do something like this:
+
+<pre><code>
+int count = 0;
+<API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(++count).<API label="org.mockito.stubbing.Stubber.when">when</API>(mockObject).mockObjectMethod(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>());
+
+</code></pre>
+
+When I run this, I get 
+
+
+ org.mockito.exceptions.misusing.CannotStubVoidMethodWithReturnValue
+
+
+So I believe I found two solutions: use <code>doThrow</code>, where I could catch the exception and increment the counter OR use <code><API label="None">toAnswer</API></code> and increment the counter in the implementation of the <code>Answer</code>. Are there other solutions?
+
+==========
+<code>doThrow</code> is a really unconventional way to handle this, and I very much recommend against it—especially because it's an unusual code path, and one that will prevent the rest of your method-under-test from working after the thrown exception.
+
+<code>doAnswer</code> is a much more appropriate way to make arbitrary behavior happen as the result of a void method, including counting.
+
+However, if the purpose of the counter is to simply ensure that a method is called an exact number of <API label="">times</API>, then you don't want stubbing at all; Mockito's default for void methods is to do nothing except for recording the invocation, which is fine for this case. Instead, use verification:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(mockObject, <API label="org.mockito.Mockito.times">times</API>(EXPECTED_COUNT)).mockObjectMethod(<API label="org.mockito.Mockito.anyString">anyString</API>());
+
+</code></pre>
+
+
+
+As a side note, be very careful not to confuse this:
+
+<pre><code>
+<API label="org.mockito.Mockito.doReturn">doReturn</API>(++count).<API label="org.mockito.stubbing.Stubber.when">when</API>(mockObject).mockObjectMethod(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>());
+
+</code></pre>
+
+with (hypothetical) syntax like this:
+
+<pre><code>
+<API label="org.mockito.Mockito.doReturn">doReturn</API>(() -> ++count).<API label="org.mockito.stubbing.Stubber.when">when</API>(mockObject).mockObjectMethod(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>());
+//       ^---lambda--^
+
+</code></pre>
+
+Other than with Mockito matchers (through really counterintuitive hacks), Mockito doesn't get special treatment in its Java syntax. If <code>count = 0</code> and you run what you have, then this is exactly and only what Mockito will see:
+
+<pre><code>
+<API label="org.mockito.Mockito.doReturn">doReturn</API>(1).<API label="org.mockito.stubbing.Stubber.when">when</API>(mockObject).mockObjectMethod(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>());
+
+</code></pre>
+

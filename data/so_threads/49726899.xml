@@ -1,0 +1,109 @@
+https://stackoverflow.com/questions/49726899
+Here I have wrote a simple test case using Junit and Mockito.
+
+<pre><code>
+import org.jbehave.core.annotations.Given;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
+
+import com.test.dao.login.LoginDao;
+import com.test.mapping.user.User;
+import com.test.service.login.LoginService;
+import com.test.service.login.impl.LoginServiceImpl;
+import com.test.util.common.Common;
+
+public class UserLoginSteps {
+    @Mock
+    Common common;
+
+   @Mock
+    LoginDao loginDao;
+
+   @InjectMocks
+    LoginService loginService =new LoginServiceImpl();
+
+   @BeforeClass
+    public static void beforeClass() {
+        <API label="None">System.out.println</API>("@BeforeClass");
+    }
+
+   @Before
+    public void before() {
+        <API label="None">System.out.println</API>("@Before");
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    }
+
+   @After
+    public void <API label="">after</API>() {
+        <API label="None">System.out.println</API>("@After");
+    }
+
+   @AfterClass
+    public static void afterClass() {
+        <API label="None">System.out.println</API>("@AfterClass");
+    }
+
+
+   @Given("$username username and $password password")
+    @Test
+    public void checkUser(String username, String password) throws Exception{
+
+       <API label="org.mockito.Mockito.when">when</API>(common.checkNullAndEmpty("admin")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+        <API label="org.mockito.Mockito.when">when</API>(common.checkNullAndEmpty("password")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+        <API label="org.mockito.Mockito.when">when</API>(loginDao.getUser("admin","password")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new User());
+
+       assertEquals(true,loginService.checkValidUser(username, password));
+    }
+}
+
+</code></pre>
+
+I have initialize the Mock objects inside the before() function.
+But that function is not triggered out in running the test case.
+
+I am using following dependencies.
+
+<pre><code>
+
+   junit
+    junit
+    4.11
+    test
+
+
+
+   org.mockito
+    mockito-core
+    2.8.9
+    test
+
+
+</code></pre>
+
+I have seen similar questions to this scenario.
+But the following suggestions does not fix the issue.
+
+Is any one can <API label="">describe</API> why it happen and how to fix this issue it will be great helpful.
+Thanks in advance.
+
+<a href="https://stackoverflow.com/questions/10580613/<API label="">after</API>-before-not-working-in-testcase">After-before-not-working-in-testcase</a>
+
+<a href="https://stackoverflow.com/questions/45350131/simple-junit-class-is-not-calling-the-before-method?noredirect=1&lq=1">Simple-junit-class-is-not-calling-the-before-method</a>
+
+<a href="https://stackoverflow.com/questions/733037/why-isnt-my-beforeclass-method-running">Why-isnt-my-beforeclass-method-running</a>
+
+==========
+You should annotate your class with <code>@RunWith(MockitoJUnitRunner.class)</code> So the MickitoJunitRunner will take care of your Mocks and tests. But it will not work like this together with JBehave. You have to decide if you want to use JBehave or MockitoJUnitRunner.
+
+In JBehave the correct annotations to use are: <code>@BeforeScenario</code> <code>@AfterScenario</code> <code>@BeforeStory</code> <code>@AfterStory</code> Please take a look at jbehave doc: <a href="http://jbehave.org/reference/stable/annotations.html" rel="nofollow noreferrer">http://jbehave.org/reference/stable/annotations.html</a>
+

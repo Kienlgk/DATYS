@@ -1,0 +1,74 @@
+https://stackoverflow.com/questions/23812105
+In an effort to generate less boilerplate code I'm using lombok annotations.  I had hoped to create even less boilerplate code by annotating a list of fields like so
+
+<pre><code>
+@Getter @Setter
+private String a, b, c, d, e ... z;
+
+</code></pre>
+
+But the annotation only appears to affect the first field in the list.  Is there a way to make it affect the whole list without seperating it out like
+
+<pre><code>
+@Getter @Setter
+private String a;
+
+@Getter @Setter
+private String b;
+
+</code></pre>
+
+Note that I can't annotate the class as there are a bunch of fields that need limited access and and some fields that I only want getter access for.  Basically, I'm looking for some analog in java to ruby's <code>attr_accessor</code> type list which is pretty awesome. 
+
+UPDATE
+
+This is failing on the ant build with the 1.12.6 lombok.  I tested a simple case with the 1.12.6 lombok version and it works.  It's hard to tell where in my code this is being tickled as we use lombok extensively throughout the project and the stack trace doesn't mention anything in our code. 
+
+java versions:
+
+<pre><code>
+jimi@Immaculate:/web/project/XXXXX.com$ javac -version
+javac 1.6.0-internal
+jimi@Immaculate:/web/project/XXXXX.com$ java -version
+java version "1.6.0"
+Java(TM) SE Runtime Environment (build pxi3260sr13ifix-20130303_02(SR13+IV37419))
+IBM J9 VM (build 2.4, JRE 1.6.0 IBM J9 2.4 Linux x86-32 jvmxi3260sr13-20130114_134867 (JIT enabled, AOT enabled)
+J9VM - 20130114_134867
+JIT  - r9_20130108_31100
+GC   - 20121212_AA)
+JCL  - 20130303_02
+
+</code></pre>
+
+Stack trace:
+
+<pre><code>
+    [javac] Consult the following stack trace for details.
+    [javac] java.lang.NullPointerException
+    [javac]     at <API label="None">java.util.IdentityHashMap$IdentityHashMapEntry.setValue</API>(IdentityHashMap.java:135)
+    [javac]     at <API label="None">lombok.javac.apt.Processor.process</API>(Processor.java:261)
+    [javac]     at <API label="None">lombok.core.AnnotationProcessor$JavacDescriptor.process</API>(AnnotationProcessor.java:117)
+    [javac]     at <API label="None">lombok.core.AnnotationProcessor.process</API>(AnnotationProcessor.java:167)
+    [javac]     at com.sun.tools.javac.processing.JavacProcessingEnvironment.callProcessor(JavacProcessingEnvironment.java:639)
+    [javac]     at com.sun.tools.javac.processing.JavacProcessingEnvironment.discoverAndRunProcs(JavacProcessingEnvironment.java:568)
+    [javac]     at com.sun.tools.javac.processing.JavacProcessingEnvironment.doProcessing(JavacProcessingEnvironment.java:713)
+    [javac]     at <API label="None">com.sun.tools.javac.main</API>.JavaCompiler.processAnnotations(JavaCompiler.java:999)
+    [javac]     at <API label="None">com.sun.tools.javac.main</API><API label="">.JavaCompiler.compile</API>(JavaCompiler.java:739)
+    [javac]     at <API label="None">com.sun.tools.javac.main</API><API label="">.Main.compile</API>(Main.java:365)
+    [javac]     at <API label="None">com.sun.tools.javac.main</API><API label="">.Main.compile</API>(Main.java:291)
+    [javac]     at <API label="None">com.sun.tools.javac.main</API><API label="">.Main.compile</API>(Main.java:282)
+    [javac]     at <API label="None">com.sun.tools.javac.Main.compile</API>(Main.java:81)
+    [javac]     at <API label="None">com.sun.tools.javac.Main.main</API>(Main.java:66)
+
+</code></pre>
+
+==========
+I'd bet it's meant to apply to all the fields. And for me it indeed works like this: I've got a bunch of getters and setters when I copied your example.
+There may be a Lombok bug for the compiler you're using. File a bug with all the details.
+UPDATE
+Chapter 8.3 of the <a href="http://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.3" rel="nofollow noreferrer">JLS</a> says it clearly:
+
+More than one field may be declared in a single field declaration by using more than one declarator; the FieldModifiers and Type apply to all the declarators in the declaration.
+
+It works for me with both Eclipse and Gradle. I'm using Lombok 1.12.7 (more precisely, commit e890428 from 2014-05-01), but this really shouldn't matter. I can't see any such change since 1.12.6 and I'd bet it's been always meant to work the "right" way.
+

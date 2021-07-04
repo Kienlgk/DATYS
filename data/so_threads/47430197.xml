@@ -1,0 +1,74 @@
+https://stackoverflow.com/questions/47430197
+I'm following a combination of code that I see many <API label="">times</API> online, <a href="https://stackoverflow.com/a/5243249/39371">including examples here on SO</a>, etc. but it just won't compile for me. 
+
+<pre><code>
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+public class TimeLimit
+{
+    public static void <API label="None">main</API>(String[] args)
+    {
+        SimpleTimeLimiter limiter = new SimpleTimeLimiter();
+        String result = <API label="None">limiter.callWithTimeout</API>(new Callable()
+        {
+            public String <API label="None">call</API>()
+            {
+                return longTimeExecutingMethod();
+            }
+        }, 3, TimeUnit.SECONDS, false);
+    }
+
+   public static String longTimeExecutingMethod()
+    {
+        return "long time executing method";
+    }
+}
+
+</code></pre>
+
+The errors I'm getting are: 
+
+<pre><code>
+Error:(10, 45) java: constructor SimpleTimeLimiter in class com.google.common.util.concurrent.SimpleTimeLimiter cannot be applied to given types;
+  required: java.util.concurrent.ExecutorService
+  found: no arguments
+  reason: actual and formal argument lists differ in <API label="">length</API>
+
+</code></pre>
+
+And:
+
+<pre><code>
+Error:(11, 40) java: method <API label="com.google.common.util.concurrent.TimeLimiter.callWithTimeout">callWithTimeout</API> in class com.google.common.util.concurrent.SimpleTimeLimiter cannot be applied to given types;
+  required: java.util.concurrent.Callable,long,java.util.concurrent.TimeUnit
+  found: ,int,java.util.concurrent.TimeUnit,boolean
+  reason: cannot infer type-variable(s) T
+    (actual and formal argument lists differ in <API label="">length</API>)
+
+</code></pre>
+
+For the first Error I tried to <API label="">create</API> a Single Thread Executor:
+
+<pre><code>
+SimpleTimeLimiter limiter = new SimpleTimeLimiter(Executors.newSingleThreadExecutor());
+
+</code></pre>
+
+But that only resulted in changing the first compiler error with:
+
+<pre><code>
+Error:(10, 45) java: SimpleTimeLimiter(java.util.concurrent.ExecutorService) has private access in com.google.common.util.concurrent.SimpleTimeLimiter
+
+</code></pre>
+
+==========
+Use the <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/util/concurrent/SimpleTimeLimiter.html#<API label="None">create</API>-java.util.concurrent.ExecutorService-" rel="nofollow noreferrer">static factory method</a>:
+
+<pre><code>
+SimpleTimeLimiter limiter = <API label="com.google.common.util.concurrent.SimpleTimeLimiter.create">SimpleTimeLimiter.create</API>(executor);
+
+</code></pre>
+

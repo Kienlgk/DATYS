@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/43354567
+I have this code:
+
+<pre><code>
+private Range datesRange;
+
+</code></pre>
+
+and
+
+<pre><code>
+<API label="com.google.common.collect.Range.intersection">intersection</API> = !<API label="None">this.datesRange.isConnected</API>(otherConditionBl.datesRange) ?
+                    null :
+                    <API label="None">this.datesRange.intersection</API>(otherConditionBl.datesRange);
+
+</code></pre>
+
+how come there is an <API label="com.google.common.collect.Range.intersection">intersection</API> for this input?
+
+<pre><code>
+this.datesRange = {Range@5802} "[2017-04-11..2017-04-12)"
+otherConditionBl.datesRange = {Range@5801} "[2017-04-12..2017-04-14]"
+<API label="com.google.common.collect.Range.intersection">this.datesRange.intersection</API>(otherConditionBl.datesRange) = {Range@7036} "[2017-04-12..2017-04-12)"
+
+</code></pre>
+
+Where can i report a bug for this?
+
+==========
+This is <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/collect/Range.html#<API label="com.google.common.collect.Range.intersection">intersection</API>(com.google.common.collect.Range)" rel="nofollow noreferrer">documented behaviour</a>. 
+
+
+ The resulting range may be empty; for example, [1..5) intersected with [5..7) yields the empty range [5..5)
+
+
+If you look closely, the range returned is actually empty. It consists of <API label="">all</API> dates <code>x</code> such, that <code>2017-04-12</code> ≤ <code>x</code> < <code>2017-04-12</code>, which is impossible to satisfy.
+

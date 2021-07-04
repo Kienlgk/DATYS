@@ -1,0 +1,40 @@
+https://stackoverflow.com/questions/35626712
+Is it posible to convert an <code>ArrayListMultimap</code> in a <code>Serializable</code> <code>Map</code>? Of course <API label="None">keys</API> and <API label="None">values</API> are Serializable.
+
+I know <code>ArrayListMultimap</code> is serializable but I want to serialize it as a plain <code>Map</code> because I don't want the deserializer have to know about guava Multimaps.
+
+I've tried this:
+
+<pre><code>
+    ArrayListMultimap mmap = <API label="None">ArrayListMultimap.create</API>();
+    <API label="None">mmap.put</API>("key",1);
+    <API label="None">mmap.put</API>("key",222222222);
+
+   ObjectOutput out = new ObjectOutputStream(new ByteArrayOutputStream());
+    //This works fine
+    <API label="None">out.writeObject</API>(mmap);
+    Map map = <API label="com.google.common.collect.Multimaps.asMap">Multimaps.asMap</API>(mmap);
+    try {
+        <API label="None">out.writeObject</API>(map);
+    } catch (NotSerializableException e){
+        //<API label="com.google.common.collect.Multimaps.asMap">Multimaps.asMap</API> is not Serializable, seems reasonable to me
+    }
+
+   ImmutableMap imap = <API label="com.google.common.collect.ImmutableMap.copyOf">ImmutableMap.copyOf</API>(map);
+    //Will throw java.io.NotSerializableException: com.google.common.collect.AbstractMapBasedMultimap$RandomAccessWrappedList. Oh man!! why!??
+    <API label="None">out.writeObject</API>(imap);
+
+</code></pre>
+
+Then, is there a way (an efficient way hopefully) to convert an <code>ArrayListMultimap</code> in a Serializable Map, this is: a Map with Serializable Lists in it?
+
+I'm using guava-18.0
+
+==========
+You can transform the map <API label="">values</API> into <code>Serializable</code> lists using <a href="http://google.github.io/guava/releases/18.0/api/docs/com/google/common/collect/Maps.html#<API label="None">transformValues</API>(java.util.Map,%20com.google.common.base.Function)" rel="nofollow"><code><API label="com.google.common.collect.Maps.transformValues">Maps.transformValues</API>(Map, Function)</code></a>:
+
+<pre><code>
+imap = <API label="">ImmutableMap.copyOf</API>(<API label="">Maps.transformValues</API>(map, ImmutableList::<API label="">copyOf</API>));
+
+</code></pre>
+

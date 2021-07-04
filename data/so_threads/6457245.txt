@@ -1,0 +1,56 @@
+https://stackoverflow.com/questions/6457245
+I'm learning Mockito at the moment and one of the things I'm doing to consolidate my learning is converting an old JUnit test from using a hand rolled <API label="">mock</API> class to one which uses Mockito mocks instead.  However, I've run into a situation I'm not sure how to handle.  
+
+Specifically, my unit under test constructs a <code>String</code> which gets passed to the mocked object as a parameter in a method call on it.  I'd like to test that the <code>String</code> is constructed correctly.  The challenge is that part of the <code>String</code> is a hash key which is generated internally and changes on every invocation.  One solution that would work would be to get the hash generation under my control and inject a dummy generator for test execution.  However, this is a fair bit of work.
+
+My old hand rolled <API label="">mock</API> class would store the arguments passed to it which I could query in my test.  This allowed me to query the start and end of the <code>String</code> via the following:
+
+<code>
+assertTrue(mockFtpClient.getFilePathAndName().<API label="None">startsWith</API>("/data/inbound/XJSLGG."));
+assertTrue(mockFtpClient.getFilePathAndName().<API label="None">endsWith</API>(".pdf"));
+</code>
+
+This was a sufficent enough test for my taste.  So my question is, is it possible using Mockito to query or get a hold of the arguments passed to a method so that i can perform something similiar to the above?
+
+UPDATE 24/06/2011:
+At this point I have excepted Gnon's answer.  However, I have since discovered something which works better for me.  Namely <code>ArgumentCaptor</code>.  Here's how it works:
+
+<code>
+ArgumentCaptor fileNameArgument = <API label="org.mockito.ArgumentCaptor.forClass">ArgumentCaptor.forClass</API>(String.class);
+<API label="org.mockito.Mockito.verify">verify</API>(mockFtpClient).putFileOnServer(<API label="org.mockito.ArgumentCaptor.capture">fileNameArgument.capture</API>());
+assertTrue(<API label="org.mockito.ArgumentCaptor.getValue">fileNameArgument.getValue</API>().<API label="None">startsWith</API>(START_FILE_NAME) &&
+           <API label="org.mockito.ArgumentCaptor.getValue">fileNameArgument.getValue</API>().<API label="None">endsWith</API>(END_FILE_NAME));
+</code>
+
+The javadoc for Mockito state that <code>ArgumentCaptor</code> is generally a better choice when you have a one-off specific argument matching requirement, as I do here.
+
+==========
+Basically you need to use <API label="org.mockito.Mockito.argThat">argThat</API>() in Mockito, that lets you treat a Hamcrest Matcher as a verification argument.  Here is the code you use to make custom assertions about a passed-in argument:
+
+<code>
+@Test
+public void testname() throws Exception {
+    HashReceiver receiver = <API label="org.mockito.Mockito.mock">mock</API>(HashReceiver.class);
+    <API label="None">receiver.set</API>("hash");
+    <API label="org.mockito.Mockito.verify">verify</API>(receiver).<API label="None">set</API>(argThat(new HashMatcher()));
+}
+
+class HashMatcher extends BaseMatcher {
+    @Override
+    public boolean <API label="">matches</API>(Object item) {
+        String hash = (String) item;
+        if (<API label="None">hash.startsWith</API>("/data/inbound/XJSLGG.") && <API label="None">hash.endsWith</API>(".pdf"))
+            return true;
+        return false;
+    }
+}
+
+// Mocked
+class HashReceiver {
+    public void <API label="">set</API>(String hash) {
+    }
+}
+</code>
+
+You may be able to use a generic matcher instead, or a combination of generic matchers.
+

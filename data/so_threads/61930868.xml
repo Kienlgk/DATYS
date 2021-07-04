@@ -1,0 +1,268 @@
+https://stackoverflow.com/questions/61930868
+I want to write unit test cases for the following spring MVC controller using mockito and powermockito.
+
+<pre><code>
+@Controller
+@Configuration
+@PropertySource("classpath:project/web/properties/RealTimeAPI.properties")
+@RequestMapping("/learnon")
+public class ClassManagerController {
+
+   private final Logger logger = <API label="None">Logger.getLogger</API>(ClassManagerController.class);
+    @Autowired
+    private ClassManagerService classManagerService;
+
+   @Autowired
+    private GroupUserService groupUserService;
+
+   @RequestMapping(value = "/teacher", method = RequestMethod.GET)
+    public ModelAndView showClassDetail(HttpServletRequest request, HttpSession httpSession,
+                                        @RequestParam(value = "isbn", required = false) String isbn13,
+                                        @RequestParam(value = "classId", required = false) Long classId) {
+
+       String redirectUrl = "https://example.com/jsp/Login.jsp?reason=failedLogin&redirectUri=https://example.com/secure/Bookshelf";
+        String accessDeniedUri = "https://example.com/jsp/AccessDenied.jsp";
+
+       if (httpSession.getAttribute("USERID") == null) {
+            return new ModelAndView("redirect:" + redirectUrl);
+        }
+        try {
+            long userId = Long.parseLong(httpSession.getAttribute("USERID").<API label="None">toString</API>());
+            UserBean user = classManagerService.getUser(userId);
+            if (httpSession.getAttribute("SCHOOLID") == null) {
+                httpSession.setAttribute("SCHOOLID", user.getSchoolId());
+            }
+            if (httpSession.getAttribute("FULLFILLMENT_YEAR") == null) {
+                httpSession.setAttribute("FULLFILLMENT_YEAR", user.getFulfillmentYear());
+            }
+            String isbn10 = ISBNUtil.convertIsbn13ToIsbn10(isbn13);
+            String title = "";
+
+           ModelAndView mav = null;
+            ClassManagerBean classBean = null;
+
+           if(classId == null && httpSession.getAttribute("classId") != null){
+                classId = (Long)httpSession.getAttribute("classId");
+            }
+
+           if(classId != null && classId > 0) {
+                List userBeanList = classManagerService.getUserList(user.getSchoolId(), classId, isbn10);
+                classBean = classManagerService.getClassById(classId);
+                classBean.setUserNumber(<API label="None">userBeanList.size</API>());
+                title = classBean.getTitle();
+                //Set the view to ClassManager.jsp
+                mav = new ModelAndView("ClassManager");
+                mav.addObject("userList", userBeanList);
+                boolean authorized = <API label="None">userBeanList.stream</API>().<API label="None">anyMatch</API>(u->u.getUserId() == userId);
+                if(!authorized){
+                    ModelAndView modelAndView = new ModelAndView("redirect:" + accessDeniedUri);
+                    modelAndView.addObject("accessDenied", "true");
+                    return modelAndView;
+                }
+            }else{
+                title = classManagerService.getTitle(isbn10);
+                //Set the view to createNewClass.jsp
+                mav = new ModelAndView("CreateNewClass");
+                classBean = new ClassManagerBean();
+                classBean.setLo2Flag(true);
+                classBean.setIsbn(isbn10);
+                classBean.setTitle(title);
+            }
+            httpSession.setAttribute("searchTitle", title);
+            httpSession.setAttribute("selectedIsbn", isbn10);
+            httpSession.setAttribute("classId", classId);
+            mav.addObject("user", user);
+            mav.addObject("classBean", classBean);
+            return mav;
+        } catch (Exception ex) {
+            ModelAndView mav2 = new ModelAndView("redirect:" + accessDeniedUri);
+            mav2.addObject("accessDenied", "true");
+            <API label="None">logger.error</API>("Exception Occurred, Redirecting to Access Denied...", ex);
+            return mav2;
+        }
+    }
+
+}
+
+</code></pre>
+
+I have written the following unit test case for the above class and I'm getting an UnfinishedStubbingException exception at runtime <API label="">when</API> I try to <API label="">run</API> the test.
+
+<pre><code>
+@Test
+    public void testShowClassDetail1() throws Exception {
+
+
+       HttpServletRequest httpRequest = <API label="org.mockito.Mockito.mock">mock</API>(HttpServletRequest.class);
+        HttpSession httpSession = <API label="org.mockito.Mockito.mock">mock</API>(HttpSession.class);
+
+       <API label="org.mockito.Mockito.when">Mockito.when</API>(httpSession.getAttribute("USERID")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new String("<API label="org.mockito.Mockito.anyString">anyString</API>"));
+
+
+       List list = new ArrayList();
+        List spyList = <API label="org.mockito.Mockito.spy">Mockito.spy</API>(list);
+
+       <API label="org.mockito.Mockito.when">Mockito.when</API>(classManagerService.getUserList(<API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>(), <API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>(), <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(spyList);
+
+
+
+       <API label="org.mockito.Mockito.doReturn">doReturn</API>(false).<API label="org.mockito.Mockito.when">when</API>(<API label="None">spyList.stream</API>().<API label="None">anyMatch</API>(u->u.getUserId() == <API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>()));
+
+       RequestBuilder request = MockMvcRequestBuilders
+                .<API label="None">get</API>("/learnon/teacher")
+                .param("isbn", "1234567890123")
+                .param("classId", "1")  
+                .<API label="None">accept</API>(MediaType.APPLICATION_JSON);
+
+
+       String modalView = "redirect:" + "https://www.example.com/jsp/AccessDenied.jsp";
+
+       ResultActions result = mockMvc.perform(request)
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().<API label="None">name</API>(modalView));
+
+      }
+
+</code></pre>
+
+Exception:
+
+<pre><code>
+org.mockito.exceptions.misusing.UnfinishedStubbingException: 
+Unfinished stubbing detected here:
+-> at learnonclassmanager.spring.web.controller.ClassManagerControllerTest.testShowClassDetail1(ClassManagerControllerTest.java:98)
+
+E.g. <API label="">thenReturn</API>() may be missing.
+Examples of correct stubbing:
+    <API label="">when</API>(<API label="">mock</API>.isOk()).<API label="">thenReturn</API>(true);
+    <API label="">when</API>(<API label="">mock</API>.isOk()).<API label="">thenThrow</API>(exception);
+    <API label="">doThrow</API>(exception).<API label="">when</API>(<API label="">mock</API>).someVoidMethod();
+Hints:
+ 1. missing <API label="">thenReturn</API>()
+ 2. you are trying to stub a final method, you naughty developer!
+ 3: you are stubbing the behaviour of another <API label="">mock</API> inside before '<API label="">thenReturn</API>' instruction if completed
+
+   at learnonclassmanager.spring.web.controller.ClassManagerControllerTest.testShowClassDetail1(ClassManagerControllerTest.java:98)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:68)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:316)
+    at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:89)
+    at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:97)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:300)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:131)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.access$100(PowerMockJUnit47RunnerDelegateImpl.java:59)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner$TestExecutorStatement.evaluate</API>(PowerMockJUnit47RunnerDelegateImpl.java:147)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.evaluateStatement(PowerMockJUnit47RunnerDelegateImpl.java:107)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:82)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:288)
+    at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:87)
+    at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:50)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:208)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:147)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:121)
+    at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+    at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:123)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:121)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+    at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:59)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:89)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:41)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:541)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:763)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:463)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:209)
+
+</code></pre>
+
+I tried to resolve the exception but still no luck. Help me to resolve this exception.
+
+Edit:
+
+I removed the following line 
+<API label="org.mockito.Mockito.doReturn">doReturn</API>(false).<API label="org.mockito.stubbing.Stubber.when">when</API>(<API label="None">spyList.stream</API>().<API label="None">anyMatch</API>(u->u.getUserId() == <API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>()));
+
+and update the test as follow.
+
+<pre><code>
+@Test
+    public void testShowClassDetail1() throws Exception {
+
+
+       HttpServletRequest httpRequest = <API label="org.mockito.Mockito.mock">mock</API>(HttpServletRequest.class);
+        HttpSession httpSession = <API label="org.mockito.Mockito.mock">mock</API>(HttpSession.class);
+
+       <API label="org.mockito.Mockito.when">Mockito.when</API>(httpSession.getAttribute("USERID")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(1l);
+
+       UserBean beanMock = <API label="org.mockito.Mockito.mock">mock</API>(UserBean.class);
+
+       <API label="org.mockito.Mockito.when">Mockito.when</API>(classManagerService.getUser(1l)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(beanMock);
+
+       List beanList = new ArrayList<>(); 
+        <API label="None">beanList.add</API>(beanMock); 
+
+
+       <API label="org.mockito.Mockito.when">Mockito.when</API>(classManagerService.getUserList(<API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>(), <API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>(), <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(beanList);
+
+       <API label="org.mockito.Mockito.when">Mockito.when</API>(beanMock.getUserId()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(2l);
+
+
+       RequestBuilder request = MockMvcRequestBuilders
+                .<API label="None">get</API>("/learnon/teacher")
+                .param("isbn", "1234567890123")
+                .param("classId", "1")  
+                .<API label="None">accept</API>(MediaType.APPLICATION_JSON);
+
+
+       String modalView = "redirect:" + "https://example.com/jsp/AccessDenied.jsp";
+
+       ResultActions result = mockMvc.perform(request)
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().<API label="None">name</API>(modalView));
+
+      }
+
+</code></pre>
+
+now i am getting following AssetionError.
+
+
+ java.lang.AssertionError: View <API label="">name</API>
+  expected:https://example.com/jsp/AccessDenied.jsp> but
+  was:https://example.com/jsp/Login.jsp?reason=failedLogin&redirectUri=https:/
+
+
+==========
+Let's look at the following line (formatted for legibility):
+
+<pre><code>
+<API label="org.mockito.Mockito.doReturn">doReturn</API>(false).<API label="org.mockito.Mockito.when">when</API>(
+    <API label="None">spyList.stream</API>()
+           .<API label="None">anyMatch</API>(u->u.getUserId() == <API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>())
+);
+
+</code></pre>
+
+It contains two errors, one is reported by the exception, but I'll also explain the other
+
+Error 1: Method call on real object passed to <code><API label="">when</API></code>
+
+In order to record the method call, you must pass the result of a method call on a <API label="">mock</API> to <API label="org.mockito.Mockito.when">when</API> function. This is not the case in your code, as <code><API label="None">stream</API>()</code> returns real object
+
+See <a href="https://stackoverflow.com/questions/14440270/how-does-mockito-<API label="">when</API>-invocation-work">How does mockito <API label="org.mockito.Mockito.when">when</API>() invocation work?</a>
+
+Error 2: Invalid use of ArgumentMatchers
+
+You cannot use <code><API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>()</code> as an arbitrary value. This compiles, as ArgumentMatchers return dummy value (zero), but does not work as intended (comparison with <API label="org.mockito.Mockito.anyLong">anyLong</API>() is not always true).
+
+See <a href="https://stackoverflow.com/questions/22822512/how-do-mockito-matchers-work">How do Mockito matchers work?</a>
+
+Solution
+
+The goal of mocking is to force certain conditions to be met in your method under test.
+Your goal is to return false <API label="">when</API> looking for users by id. 
+To achieve it, simply use empty list. This means that entire problematic line can be deleted.
+

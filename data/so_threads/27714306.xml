@@ -1,0 +1,80 @@
+https://stackoverflow.com/questions/27714306
+I am having hard time looking for constructor to build mutable <code>Multimap</code>. My code is:
+
+<pre><code>
+Multimap multimapByKey = <API label="com.google.common.collect.Multimaps.index">Multimaps.index</API>(goodHosts, instanceGetKeyfunction);
+
+...
+
+<API label="">multimapByKey.removeAll</API>(someKey); 
+// throws 
+// java.lang.UnsupportedOperationException
+//     at <API label="com.google.common.collect.ImmutableListMultimap.removeAll">com.google.common.collect.ImmutableListMultimap.removeAll</API>(Unknown Source)
+//     at <API label="com.google.common.collect.ImmutableListMultimap.removeAll">com.google.common.collect.ImmutableListMultimap.removeAll</API>(Unknown Source)
+
+</code></pre>
+
+Since <API label="">index</API> returns <code>ImmutableListMultimap</code> I really cannot modify it. However, I cannot see other options to do group by keyFunction for Multimaps on <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Multimaps.html" rel="nofollow noreferrer">the official documentation</a>.
+
+==========
+You can <API label="">create</API> a method that return a mutable <code>Multimap</code>, like the <API label="">index</API> function, like this:
+
+<pre><code>
+public static  Multimap indexMutable(Iterable values,
+        Function function) {
+
+   // check null value, function
+    Multimap map = <API label="com.google.common.collect.ArrayListMultimap.create">ArrayListMultimap.create</API>();
+
+   for (V v : values) {
+        // check null V
+        <API label="">map.put</API>(<API label="None">function.apply</API>(v), v);
+    }
+
+   return map;
+}
+
+</code></pre>
+
+And use like this:
+
+<pre><code>
+@Test
+public void testMutableMap() throws Exception {
+
+   List badGuys = <API label="None">Arrays.asList</API>("Inky", "Blinky", "Pinky",
+            "Pinky", "Clyde");
+    Function stringLengthFunction = new Function() {
+
+       public Integer <API label="None">apply</API>(String input) {
+            return <API label="None">input.length</API>();
+        }
+    };
+
+   Multimap multipmap = indexMutable(badGuys,
+            stringLengthFunction);
+
+   <API label="None">System.out.println</API>(multipmap);
+    <API label="None">multipmap.clear</API>();
+    <API label="None">System.out.println</API>("It's mutable!");
+
+   for (String guy : badGuys) {
+        <API label="None">multipmap.get</API>(<API label="None">stringLengthFunction.apply</API>(guy)).<API label="None">add</API>(guy);
+    }
+
+   <API label="None">System.out.println</API>(multipmap);
+}
+
+</code></pre>
+
+It's output:
+
+<pre><code>
+{4=[Inky], 5=[Pinky, Pinky, Clyde], 6=[Blinky]}
+It's mutable!
+{4=[Inky], 5=[Pinky, Pinky, Clyde], 6=[Blinky]}
+
+</code></pre>
+
+This example, is the same for the Javadoc of <code>Multimaps#<API label="">index</API></code>.
+

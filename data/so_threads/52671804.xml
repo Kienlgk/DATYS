@@ -1,0 +1,69 @@
+https://stackoverflow.com/questions/52671804
+I am trying to <API label="">set</API> up Mockito 2.22 and have downloaded <a href="https://bintray.com/mockito/maven/mockito-development/2.22.2#files/org%2Fmockito%2Fmockito-core%2F2.22.2" rel="nofollow noreferrer"><code>mockito-core-2.22.2.jar</code></a> and <a href="https://bintray.com/raphw/maven/ByteBuddy/1.9.0#files/net%2Fbytebuddy%2Fbyte-buddy%2F1.9.0" rel="nofollow noreferrer"><code>byte-buddy-1.9.0.jar</code></a> and, in the Netbeans 8.2 project, I have added those two jar files, <code>JUnit 4.12</code> and <code>Hamcrest 1.3</code> to the test libraries.
+
+When I try to run the MCVE:
+
+<pre><code>
+package com.stackoverflow.test;
+
+import org.junit.Test;
+import static <API label="org.mockito.Mockito.mock">org.mockito.Mockito.mock</API>;
+
+public class SimpleMockTest {
+    public static class A{
+        public String <API label="">value</API>(){ return "A"; }
+    }
+    @Test
+    public void testASimpleMock()
+    {
+        A mocked = <API label="org.mockito.Mockito.mock">mock</API>( A.class );
+    }
+}
+
+</code></pre>
+
+When I try to run the test, I <API label="">get</API> the error:
+
+<pre><code>
+Could not <API label="">initialize</API> plugin: interface org.mockito.plugins.InstantiatorProvider2 (alternate: interface org.mockito.plugins.InstantiatorProvider)
+java.lang.IllegalStateException
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader$1.invoke</API>(PluginLoader.java:74)
+    at <API label="">com.sun.proxy.$Proxy12.getInstantiator</API>(Unknown Source)
+    at <API label="">org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker.createMock</API>(SubclassByteBuddyMockMaker.java:44)
+    at <API label="">org.mockito.internal.creation.bytebuddy.ByteBuddyMockMaker.createMock</API>(ByteBuddyMockMaker.java:25)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:35)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:69)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1895)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1804)
+    at com.stackoverflow.test.SimpleMockTest.testASimpleMock(SimpleMockTest.java:13)
+    at org.mockito.internal.creation.instance.ObjenesisInstantiator.(ObjenesisInstantiator.java:16)
+    at java.lang.Class.forName0(Native Method)
+    at java.lang.Class.forName(Class.java:264)
+    at <API label="">org.mockito.internal.configuration.plugins.DefaultMockitoPlugins.create</API>(DefaultMockitoPlugins.java:66)
+    at org.mockito.internal.configuration.plugins.DefaultMockitoPlugins.getDefaultPlugin(DefaultMockitoPlugins.java:43)
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader.loadPlugin</API>(PluginLoader.java:67)
+    at org.mockito.internal.configuration.plugins.PluginRegistry.(PluginRegistry.java:32)
+    at <API label="">org.mockito.internal.util.MockCreationValidator.validateType</API>(MockCreationValidator.java:22)
+    at org.mockito.internal.creation.MockSettingsImpl.validatedSettings(MockSettingsImpl.java:238)
+    at <API label="">org.mockito.internal.creation.MockSettingsImpl.build</API>(MockSettingsImpl.java:226)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:68)
+    at <API label="">java.net.URLClassLoader.findClass</API>(URLClassLoader.java:381)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:424)
+    at <API label="">sun.misc.Launcher$AppClassLoader.loadClass</API>(Launcher.java:349)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:357)
+
+</code></pre>
+
+Is there another dependency that I am missing? Or some other configuration/annotiation/setup that needs to be done to fix the error and allow the object to be mocked?
+
+==========
+@JBNizet's suggestion to use Maven led me to <a href="https://search.maven.org/remotecontent?filepath=org/mockito/mockito-core/2.23.0/mockito-core-2.23.0.pom" rel="nofollow noreferrer">Mockito's maven pom</a> which lists the dependencies as:
+
+
+byte-buddy 1.9.0
+byte-buddy-agent 1.9.0
+objenesis 2.6
+
+
+Downloading <a href="http://objenesis.org/download.html" rel="nofollow noreferrer"><code>objenesis</code></a> and adding it to the project fixed the issue.
+

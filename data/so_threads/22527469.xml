@@ -1,0 +1,25 @@
+https://stackoverflow.com/questions/22527469
+I'd like to <API label="">verify</API> using Mockito that a string argument satisfies two conditions:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(mockClass).doSomething(<API label="org.mockito.Matchers.startsWith">Matchers.startsWith</API>("prefix"));
+<API label="org.mockito.Mockito.verify">verify</API>(mockClass).doSomething(<API label="org.mockito.Matchers.endsWith">Matchers.endsWith</API>("suffix"));
+
+</code></pre>
+
+How to combine those two into one statement?
+
+==========
+This is possible using <code>org.mockito.AdditionalMatchers</code>:
+
+<pre><code>
+import static org.mockito.AdditionalMatchers.and;
+
+<API label="org.mockito.Mockito.verify">verify</API>(mockClass).doSomething(
+         <API label="org.mockito.AdditionalMatchers.and">and</API>(<API label="org.mockito.Matchers.startsWith">Matchers.startsWith</API>("prefix"), 
+             <API label="org.mockito.Matchers.endsWith">Matchers.endsWith</API>("suffix"));
+
+</code></pre>
+
+There are also <code><API label="">org.mockito.AdditionalMatchers.or</API></code> <API label="">and</API> <code><API label="">org.mockito.AdditionalMatchers.not</API></code>.
+

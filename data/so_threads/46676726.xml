@@ -1,0 +1,243 @@
+https://stackoverflow.com/questions/46676726
+While developing a Java desktop application with Swing, I encountered the need to test the UI directly, and not just the underlying controller/model classes via unit tests.
+
+This <a href="https://stackoverflow.com/a/80222/5127499">answer (on "What is the best testing tool for Swing-based applications?")</a> suggested using <a href="https://code.google.com/archive/p/fest/" rel="nofollow noreferrer">FEST</a>, which is unfortunately discontinued.
+However, there are a few projects that continued from where FEST left of. One in particular (mentioned in this <a href="https://stackoverflow.com/questions/91179/automated-tests-for-java-swing-guis/32771043">answer</a>) caught my attention, as I used it before in unit tests: <a href="https://joel-costigliola.github.io/assertj/" rel="nofollow noreferrer">AssertJ</a>.
+
+Apparently there is <a href="https://joel-costigliola.github.io/assertj/assertj-swing.html" rel="nofollow noreferrer">AssertJ Swing</a>, which is based on FEST and offers some easy to use ways of writing your Swing UI tests.
+But still, getting to an initial/working setup is cumbersome as it's hard to say where to start.
+
+
+
+How do I create a minimal test setup for the following example UI, consisting of only two classes?
+
+Constraints: Java SE, Swing UI, Maven Project, JUnit
+
+<pre><code>
+public class MainApp {
+
+   /**
+     * Run me, to use the app yourself.
+     *
+     * @param args ignored
+     */
+    public static void <API label="">main</API>(String[] args) {
+        MainApp.showWindow().setSize(600, 600);
+    }
+
+   /**
+     * Internal standard method to <API label="">initialize</API> the view, returning the <API label="">main</API> JFrame (also to be used in automated tests).
+     *
+     * @return initialized JFrame instance
+     */
+    public static MainWindow showWindow() {
+        MainWindow mainWindow = new MainWindow();
+        mainWindow.setVisible(true);
+        return mainWindow;
+    }
+}
+
+</code></pre>
+
+
+
+<pre><code>
+public class MainWindow extends JFrame {
+
+   public MainWindow() {
+        super("MainWindow");
+        this.setContentPane(this.createContentPane());
+    }
+
+   private JPanel createContentPane() {
+        JTextArea centerArea = new JTextArea();
+        centerArea.setName("Center-Area");
+        centerArea.setEditable(false);
+        JButton northButton = this.createButton("North", centerArea);
+        JButton southButton = this.createButton("South", centerArea);
+        JPanel contentPane = new JPanel(new BorderLayout());
+        <API label="None">contentPane.add</API>(centerArea);
+        <API label="None">contentPane.add</API>(northButton, BorderLayout.NORTH);
+        <API label="None">contentPane.add</API>(southButton, BorderLayout.SOUTH);
+        return contentPane;
+    }
+
+   private JButton createButton(final String text, final JTextArea centerArea) {
+        JButton button = new JButton(text);
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                centerArea.setText(<API label="None">centerArea.getText</API>() + text + ", ");
+            }
+        });
+        return button;
+    }
+}
+
+</code></pre>
+
+
+
+I'm aware that the question itself is very broad, therefore I provide an answer myself - show-casing this particular example.
+
+==========
+TL;DR: the example project can be found on <a href="https://github.com/CarstenWickner/assertj-swing-example" rel="nofollow noreferrer">GitHub</a>.
+
+
+
+Assuming this is a maven project, you'll firstly need to <API label="">add</API> at least two dependencies:
+
+
+A unit test framework (e.g. here <code>junit</code> – but could also use <code>testng</code>)
+The <API label="">matching</API> <code>AssertJ Swing</code> library (e.g. here <code>assertj-swing-junit</code>)
+
+
+It could look like this (in your <code>pom.xml</code>:
+
+<pre><code>
+
+   junit
+    junit
+    4.12
+    test
+
+
+   org.assertj
+    assertj-swing-junit
+    1.2.0
+    test
+
+
+</code></pre>
+
+Secondly, I usually go for one base test class to separate most of the test setup from the actual tests:
+
+<pre><code>
+/**
+ * Base class for all my UI tests taking care of the basic setup.
+ */
+public class AbstractUiTest extends AssertJSwingTestCaseTemplate {
+
+   /**
+     * The <API label="">main</API> <API label="">entry</API> point for <API label="">any</API> tests: the wrapped MainWindow.
+     */
+    protected FrameFixture frame;
+
+   /**
+     * Installs a {@link FailOnThreadViolationRepaintManager} to catch violations of Swing threading rules.
+     */
+    @BeforeClass
+    public static final void setUpOnce() {
+        // avoid UI test execution in a headless environment (e.g. when building in CI environment like Jenkins or TravisCI)
+        Assume.assumeFalse("Automated UI Test cannot be executed in headless environment", GraphicsEnvironment.isHeadless());
+        FailOnThreadViolationRepaintManager.install();
+    }
+
+   /**
+     * Sets up this test's fixture, starting from creation of a new <code>{@link Robot}</code>.
+     *
+     * @see #setUpRobot()
+     * @see #onSetUp()
+     */
+    @Before
+    public final void setUp() {
+        // call provided AssertJSwingTestCaseTemplate.setUpRobot()
+        this.setUpRobot();
+        // <API label="">initialize</API> the graphical user interface
+        MainWindow mainWindow = <API label="None">GuiActionRunner.execute</API>(new GuiQuery() {
+
+           @Override
+            protected MainWindow executeInEDT() throws Exception {
+                return MainApp.showWindow();
+            }
+        });
+        this.frame = new FrameFixture(this.robot(), mainWindow);
+        this.frame.show();
+        this.frame.resizeTo(new Dimension(600, 600));
+        onSetUp();
+    }
+
+   /**
+     * Subclasses that need to set up their own test fixtures in this method. Called as <API label="">last</API> action during {@link #setUp()}.
+     */
+    protected void onSetUp() {
+        // default: everything is already set up
+    }
+
+   /*****************************************************************************************
+     * Here you could <API label="">insert</API> further helper methods, e.g. frequently used component matchers *
+     *****************************************************************************************/
+
+   /**
+     * Cleans up <API label="">any</API> resources used in this test. After calling <code>{@link #onTearDown()}</code>, this method cleans up resources used by this
+     * test's <code>{@link Robot}</code>.
+     *
+     * @see #<API label="">cleanUp</API>()
+     * @see #onTearDown()
+     */
+    @After
+    public final void tearDown() {
+        try {
+            onTearDown();
+            this.frame = null;
+        } finally {
+            <API label="None">cleanUp</API>();
+        }
+    }
+
+   /**
+     * Subclasses that need to <API label="">clean</API> up resources can do so in this method. Called as first action during {@link #tearDown()}.
+     */
+    protected void onTearDown() {
+        // default: nothing more to tear down
+    }
+}
+
+</code></pre>
+
+The actual test class could look like this then:
+
+<pre><code>
+public class MainWindowTest extends AbstractUiTest {
+
+   private JButtonFixture northButtonFixture;
+    private JButtonFixture southButtonFixture;
+
+   @Override
+    protected void onSetUp() {
+        this.northButtonFixture = this.frame.button(JButtonMatcher.withText("North"));
+        this.southButtonFixture = this.frame.button(JButtonMatcher.withText("South"));
+    }
+
+   @Test
+    public void testWithDifferingComponentMatchers() {
+        // use <API label="">JTextComponentMatcher.any</API>() as there is only one text input
+        this.frame.textBox(<API label="None">JTextComponentMatcher.any</API>()).requireVisible().requireEnabled().requireNotEditable().requireEmpty();
+        this.northButtonFixture.requireVisible().requireEnabled().click();
+        // use value assigned in MainWindow class via JTextArea.setName("Center-Area") to identify component here
+        this.frame.textBox("Center-Area").requireText("North, ");
+
+       this.southButtonFixture.requireVisible().requireEnabled().click();
+        // write our own matcher
+        JTextComponentFixture centerArea = this.frame.textBox(new GenericTypeMatcher(JTextArea.class, true) {
+            @Override
+            protected boolean isMatching(Component component) {
+                return true;
+            }
+        });
+        centerArea.requireVisible().requireEnabled().requireText("North, South, ");
+    }
+
+   @Override
+    protected void onTearDown() {
+        this.northButtonFixture = null;
+        this.southButtonFixture = null;
+    }
+}
+
+</code></pre>
+
+
+
+Once you have such a basic setup in your project, you might want to look into the various kinds of component matcher there are and potentially introduce a couple <code>setName()</code> calls on various of your components you want to test, in order to make your life a bit easier.
+

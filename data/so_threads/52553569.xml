@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/52553569
+Is there a concurrent version of this definition Guava collections Map ?
+
+<pre><code>
+ListMultimap <API label="">map</API> =
+    <API label="com.google.common.collect.Multimaps.newListMultimap">Multimaps.newListMultimap</API>(
+    <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>(),
+    new Supplier() {
+        public List <API label="com.google.common.base.Supplier.get">get</API>() {
+            return <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>();
+        }
+    });
+
+</code></pre>
+
+==========
+There's no concurrent multimap implementation, but you can <API label="">wrap</API> it with <a href="https://google.github.io/guava/releases/26.0-jre/api/docs/com/google/common/collect/Multimaps.html#<API label="">synchronizedListMultimap</API>-com.google.common.collect.ListMultimap-" rel="nofollow noreferrer"><code><API label="com.google.common.collect.Multimaps.synchronizedListMultimap">Multimaps.synchronizedListMultimap</API></code></a> view, which:
+
+
+ Returns a synchronized (thread-safe) multimap backed by the specified multimap.
+
+
+In your case:
+
+<pre><code>
+ListMultimap <API label="">synchronizedMultimap</API> = 
+    <API label="com.google.common.collect.Multimaps.synchronizedListMultimap">Multimaps.synchronizedListMultimap</API>(<API label="">map</API>);
+
+</code></pre>
+
+Read <a href="https://google.github.io/guava/releases/26.0-jre/api/docs/com/google/common/collect/Multimaps.html#<API label="">synchronizedMultimap</API>-com.google.common.collect.Multimap-" rel="nofollow noreferrer">complete javadoc</a> for caveats regarding synchronized access to views:
+
+
+ In order to guarantee serial access, it is critical that all access to the backing multimap is accomplished through the returned multimap.
+
+
+Note that there'll be no general-purpose concurrent multimap implementation in Guava itself, according to <a href="https://github.com/google/guava/issues/135" rel="nofollow noreferrer">issue #135 on Github</a>. 
+

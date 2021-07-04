@@ -1,0 +1,30 @@
+https://stackoverflow.com/questions/63506943
+In a critical part of my project which basically allows objects to be received by a controller asynchronously, put into a <code>Queue</code>, processed sequencially from the queue one at a time by a thread, then service responds, older processed objects are kept in the queue until newer item insertion.
+Back in time (months ago), my <code>Queue</code> implementation for solving this particular business specific issue behind this was to use guava's <code>EvictingQueue</code>, which now is marked as <code>@Beta</code>, and so this part of the application can break in future guava releases.
+<code>private final Queue items = <API label="com.google.common.collect.Queues.synchronizedQueue">Queues.synchronizedQueue</API>(<API label="com.google.common.collect.EvictingQueue.create">EvictingQueue.create</API>(queueSize));</code>
+Is there any thread safe and size fixed alternatives to <code>EvictingQueue</code> to achieve this goal ?
+
+==========
+There are couple of inaccuracies / mistakes in your post, so let's just try to find common ground.
+First, any new feature in Guava is annotated as <code>@Beta</code> from the beginning, same is true for <a href="https://guava.dev/releases/15.0/api/docs/com/google/common/collect/EvictingQueue.html" rel="nofollow noreferrer"><code>EvictingQueue</code> in 15.0</a> (this links to 15.0 docs). So you probably missed that fact couple months ago, but that's OK, because...
+...<code>@Beta</code> doesn't really mean it'll be changed without any notice -- on the contrary, some time ago, after some feedback from the community, Guava devs established pretty strict policy about what and when can be changed. See <a href="https://github.com/google/guava/wiki/PhilosophyExplained#beta-apis" rel="nofollow noreferrer">PhilosophyExplained wiki page</a>, which says (emphasis mine):
+
+Beta APIs
+Beta APIs represent Guava features that we aren't ready to freeze for whatever reason: because the methods might not find enough users, because they might be moved, because their uses might be too narrow to include them in Guava.
+That said, <code>@Beta</code> APIs are fully tested and supported, and treated with all the care and affection that the rest of Guava receives.
+
+This means <code>EvictingQueue</code> quality is not worse than if it wasn't a "beta feature".
+
+The biggest connotation of the <code>@Beta</code> annotation is that annotated classes or methods are subject to change. They can be modified in any way, or even removed, at any time. If your code is a library itself (i.e. it is used on the CLASSPATH of users outside your own control), you should not use beta APIs, unless you repackage them (e.g. using ProGuard).
+
+This could be the concern you brought up when talking about "braking up in the future", but...
+
+All this said, <code>@Beta</code> features tend to remain relatively <API label="">stable</API>. If we decide to delete a <code>@Beta</code> feature, we will typically deprecate it for one release before deleting it.
+
+So it won't happen silently (as far as I observed, usually there's more than one release with deprecating though).
+Which brings me the the last point:
+
+On the other hand, if you want something taken out of <code>@Beta</code>, file an issue. We generally promote features out of <code>@Beta</code> only when it's specifically requested, so if you don't ask, it won't happen.
+
+To sum up: I'd suggest you to file a ticket to promote <code>EvictingQueue</code> and make it non-<code>@Beta</code>, which would <API label="">remove</API> any doubts about it. On the other hand, the <code>EvictingQueue</code>'s implementation is quite simple and standalone, so if it's removed (unlikely) you can repakckage it (i.e. use ProGuard) or even copy the code to your project (with all the licenses).
+

@@ -1,0 +1,133 @@
+https://stackoverflow.com/questions/46384217
+I am running a war on Heroku using <code>webapp-runner</code>. I deploy the application using the <code>heroku-maven-plugin</code> version 1.2 via the following command: <code>mvn heroku:deploy-war</code>. Initially, the app works and all endpoints return valid responses. However, if I allow the app to idle long enough for Heroku to put it to sleep and then invoke an endpoint which calls into guava I receive a <code>NoSuchMethodError</code>:
+
+<pre><code>
+2017-09-23T19:19:45.388865+00:00 app[web.1]: SEVERE: Servlet.service() for servlet [jersey-serlvet] in context with path [] threw exception [org.glassfish.jersey.server.ContainerException: java.lang.NoSuchMethodError: <API label="">com.google.common.base.CharMatcher.ascii</API>()Lcom/google/common/base/CharMatcher;] with root cause
+2017-09-23T19:19:45.388866+00:00 app[web.1]: java.lang.NoSuchMethodError: <API label="">com.google.common.base.CharMatcher.ascii</API>()Lcom/google/common/base/CharMatcher;
+2017-09-23T19:19:45.388867+00:00 app[web.1]:    at com.google.common.io.BaseEncoding$Alphabet.(BaseEncoding.java:453)
+2017-09-23T19:19:45.388868+00:00 app[web.1]:    at com.google.common.io.BaseEncoding$Base64Encoding.(BaseEncoding.java:892)
+2017-09-23T19:19:45.388869+00:00 app[web.1]:    at com.google.common.io.BaseEncoding.(BaseEncoding.java:317)
+...application specific stack trace
+
+</code></pre>
+
+All subsequent calls to the same API produce a <code>NoClassDefFoundError</code> at the same point
+
+<pre><code>
+2017-09-23T19:22:24.454901+00:00 app[web.1]: SEVERE: Servlet.service() for servlet [jersey-serlvet] in context with path [] threw exception [org.glassfish.jersey.server.ContainerException: java.lang.NoClassDefFoundError: Could not <API label="">initialize</API> class com.google.common.io.BaseEncoding] with root cause
+2017-09-23T19:22:24.454903+00:00 app[web.1]: java.lang.NoClassDefFoundError: Could not <API label="">initialize</API> class com.google.common.io.BaseEncoding 
+...application specific stack trace
+
+</code></pre>
+
+These issues seem to suggest that the guava jar is present at compile time but not present at runtime. However, I logged-in to the web dyno and verified that the guava jar was included in my <code>warfile</code>
+
+<pre><code>
+my-mbp:TrickServer me$ heroku ps:exec
+Establishing credentials... done
+Connecting to web.1 on ⬢ myapp...
+~ $ cd target/
+~/target $ ls
+MyApp.war  dependency  mvn-dependency-list.log  tomcat.52079
+~/target $ jar -tf MyApp.war
+...lots of dependencies...
+WEB-INF/lib/google-oauth-client-1.20.0.jar
+WEB-INF/lib/gson-2.2.4.jar
+WEB-INF/lib/guava-23.0.jar      <---guava
+WEB-INF/lib/guava-jdk5-13.0.jar
+...lots more dependencies...
+
+</code></pre>
+
+I am struggling to explain why the endpoints work immediately after the app is deployed but later produce these errors. To me this behavior seems to suggest that Heroku is potentially supplying a different classpath when my app wakes up from sleep than when it is initially run or that Heroku is moving/cleaning up the guava jarfile.  
+
+Contents of my <code>Procfile</code>:
+
+<pre><code>
+web:    java $JAVA_OPTS -jar target/dependency/webapp-runner.jar --port $PORT --expand-war target/MyApp.war
+
+</code></pre>
+
+Java Processes runnning on my web dyno:
+
+<pre><code>
+~/target $ ps -ef | grep java
+u30439       4     1  0 18:50 ?        00:00:44 java -Xmx300m -Xss512k -Dfile.encoding=UTF-8 -Duser.timezone=UTC -jar target/dependency/webapp-runner.jar --port 52079 target/MyApp.war
+u30439      27     4  0 18:50 ?        00:00:00 bash --login -c java $JAVA_OPTS -jar target/dependency/webapp-runner.jar $WEBAPP_RUNNER_OPTS --port 52079 target/MyApp.war
+
+</code></pre>
+
+Update 1
+
+Since I am invoking my webapp with the <code>--expand-war</code> argument I also checked the jarfiles in the expanded directory to <API label="">verify</API> that guava was present. It is:
+
+<pre><code>
+~/target/tomcat.55320/webapps/expanded/WEB-INF/lib $ ls
+...dependencies...
+google-oauth-client-1.20.0.jar
+gson-2.2.4.jar
+guava-23.0.jar
+guava-jdk5-13.0.jar
+...more dependencies...
+
+</code></pre>
+
+Update 2
+
+I added the following logic to the problematic web service to printout the classpath and the resources on it:
+
+<pre><code>
+<API label="None">logger.info</API>("System Classpath: " + System.getProperty("java.class.path"));
+<API label="None">logger.info</API>("Runtime Classes...");
+    ClassLoader cl = <API label="None">UserService.class.getClassLoader</API>();
+    URL[] urls = ((URLClassLoader) cl).getURLs();
+    for(URL url: urls){
+        <API label="None">logger.info</API>(<API label="None">url.getFile</API>());
+    }
+
+</code></pre>
+
+The next time the error occurred I examined the logs and to my surprise found that the guava jar was present on the runtime classpath!
+
+<pre><code>
+2017-09-24T12:07:40.843438+00:00 app[web.1]: [heroku-exec] ERROR: Could not connect to proxy:
+2017-09-24T12:07:40.844145+00:00 app[web.1]: [heroku-exec] ERROR: Too many reconnect attempts. Waiting 30 seconds...
+2017-09-24T12:07:52.671620+00:00 app[web.1]: Sep 24, 2017 12:07:52 PM org.myorg.server.web.services.MyService authenticate
+2017-09-24T12:07:52.671631+00:00 app[web.1]: INFO: System Classpath: target/dependency/webapp-runner.jar
+2017-09-24T12:07:52.671931+00:00 app[web.1]: Sep 24, 2017 12:07:52 PM org.myorg.server.web.services.MyService authenticate
+2017-09-24T12:07:52.671932+00:00 app[web.1]: INFO: Runtime Classes...
+2017-09-24T12:07:52.672277+00:00 app[web.1]: Sep 24, 2017 12:07:52 PM org.myorg.server.web.services.MyService authenticate
+2017-09-24T12:07:52.672279+00:00 app[web.1]: INFO: /app/target/tomcat.28304/webapps/expanded/WEB-INF/classes/
+....
+2017-09-24T12:07:52.690304+00:00 app[web.1]: Sep 24, 2017 12:07:52 PM org.myorg.server.web.services.MyService authenticate
+2017-09-24T12:07:52.690306+00:00 app[web.1]: INFO: /app/target/tomcat.28304/webapps/expanded/WEB-INF/lib/google-oauth-client-1.20.0.jar
+2017-09-24T12:07:52.690501+00:00 app[web.1]: Sep 24, 2017 12:07:52 PM org.myorg.server.web.services.MyService authenticate
+2017-09-24T12:07:52.690503+00:00 app[web.1]: INFO: /app/target/tomcat.28304/webapps/expanded/WEB-INF/lib/guava-23.0.jar <--- Guava!!!
+....
+
+</code></pre>
+
+What is going on here? How do I debug this?
+
+==========
+After some debugging, I discovered that my program had two different versions of Guava on the classpath (<code>guava-23.0.jar</code> & <code>guava-jdk5-13.0.jar</code>). The debugging tip suggested <a href="https://stackoverflow.com/questions/29474509/how-to-debug-nosuchmethoderror-exception">here</a> was necessary but not sufficient for me to get to the bottom of this.
+
+When working with ClassLoaders it's important to remember that the <code><API label="None">getClassLoader</API></code> method defined in the <code>.class</code> object returns a reference to the ClassLoader that originally loaded the class. To find the duplicate jar, it was crucial to invoke <code><API label="None">classLoader.getResource</API>("/com/google/common/base/CharMatcher.class")</code> on the same ClassLoader which loaded the class that later failed with the <code>NoSuchMethodError</code>.
+
+For posterity, the specific dependency which caused the conflict was <code>com.google.api-client</code>. I resolved it by adding the following <code>exclusion</code> to the dependency in my <code>pom.xml</code>
+
+<pre><code>
+
+   com.google.api-client
+    google-api-client
+    1.22.0
+    
+        
+            com.google.guava
+            guava-jdk5
+        
+    
+
+
+</code></pre>
+

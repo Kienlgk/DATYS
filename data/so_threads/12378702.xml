@@ -1,0 +1,55 @@
+https://stackoverflow.com/questions/12378702
+The regex <code>\w</code> <API label="">matches</API> exactly the characters <code>[A-Za-z0-9_]</code>, which <API label="">is</API> exactly what I need now.
+I wonder if there's any simple way how to create a corresponding Guava's <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/<API label="">CharMatcher</API>.html" rel="nofollow"><API label="">CharMatcher</API></a>.
+I did the following (I don't like static imports):
+
+<pre><code>
+private final static <API label="">CharMatcher</API> IDENTIFIER_CHAR = <API label="">CharMatcher</API>.<API label="com.google.common.base.CharMatcher.is">is</API>('_')
+    .<API label="com.google.common.base.CharMatcher.or">or</API>(<API label="">CharMatcher</API>.<API label="com.google.common.base.CharMatcher.inRange">inRange</API>('A', 'Z'))
+    .<API label="com.google.common.base.CharMatcher.or">or</API>(<API label="">CharMatcher</API>.<API label="com.google.common.base.CharMatcher.inRange">inRange</API>('a', 'z'))
+    .<API label="com.google.common.base.CharMatcher.or">or</API>(<API label="">CharMatcher</API>.<API label="com.google.common.base.CharMatcher.inRange">inRange</API>('0', '9'))
+    .<API label="com.google.common.base.CharMatcher.precomputed">precomputed</API>();
+
+</code></pre>
+
+There are a few predefined matchers, however something like
+
+<pre><code>
+private final static <API label="">CharMatcher</API> IDENTIFIER_CHAR = <API label="">CharMatcher</API>.ASCII
+    .<API label="com.google.common.base.CharMatcher.and">and</API>(<API label="">CharMatcher</API>.JAVA_LETTER_OR_DIGIT)
+    .<API label="com.google.common.base.CharMatcher.or">or</API>(<API label="">CharMatcher</API>.<API label="com.google.common.base.CharMatcher.is">is</API>('_'))
+    .<API label="com.google.common.base.CharMatcher.precomputed">precomputed</API>();
+
+</code></pre>
+
+doesn't look any better. Neither does using <code><API label="com.google.common.base.CharMatcher.forPredicate">forPredicate</API></code> before we get <a href="http://java.dzone.com/news/java-8-lambda-syntax-closures" rel="nofollow">closures</a> in Java 8.
+There's no real problem here, it's just too verbose for something as simple <API label="">and</API> (I guess) as common.
+
+Any nicer solution? Maybe did anybody implement something like <code>newRegexLikeCharMatcher("[A-Za-z0-9_]")</code>?
+
+==========
+An implementation of your suggested method could be:
+
+<pre><code>
+public <API label="">CharMatcher</API> newRegexLikeCharMatcher(String regex) {
+    final Pattern pattern = <API label="None">Pattern.compile</API>(regex);
+    return new <API label="com.google.common.base.CharMatcher.CharMatcher">CharMatcher</API>() {
+        @Override
+        public boolean <API label="com.google.common.base.CharMatcher.matches">matches</API>(char c) {
+            return <API label="None">pattern.matcher</API>(<API label="None">Character.toString</API>(c)).<API label="None">find</API>();
+        }
+    }.<API label="com.google.common.base.CharMatcher.precomputed">precomputed</API>();
+}
+
+</code></pre>
+
+<API label="">or</API>
+
+<pre><code>
+public <API label="">CharMatcher</API> newRegexLikeCharMatcher(String regex) {
+    return <API label=""><API label="com.google.common.base.CharMatcher.forPredicate">CharMatcher</API>.forPredicate</API>(<API label="com.google.common.base.Predicates.compose">Predicates.compose</API>(<API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>(regex), <API label="com.google.common.base.Functions.toStringFunction">Functions.toStringFunction</API>()))
+            .<API label="com.google.common.base.CharMatcher.precomputed">precomputed</API>();
+}
+
+</code></pre>
+

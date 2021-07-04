@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/15305490
+I created a new Android test project.  I downloaded powermock-mockito-junit-1-1.5.zip from <a href="https://code.google.com/p/powermock/downloads/list">https://code.google.com/p/powermock/downloads/list</a>.  I added all of the libraries to the test project's <code>libs</code> folder. The test class is a very simple object:
+
+<pre><code>
+package com.test.test;
+
+import org.junit.runner.RunWith;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+import android.util.Log;
+
+@RunWith(PowerMockRunner.class)
+public class TestTestAndroid {
+
+   public void testRuns() {
+        Log.e("test", "Test case is called");
+    }
+}
+
+</code></pre>
+
+Then, I try running the project from Eclipse, or making the project from the command line.  I get the same error:
+
+<code>Conversion to Dalvik format failed: Unable to execute dex: Multiple dex files define Lorg/hamcrest/Description;</code>
+
+As it turns out, both <code>junit-4.8.2.jar</code> and <code>mockito-all-1.9.5.jar</code> define <code>org.hamcrest.Description</code>.  I must include the Mockito jar for obvious reasons - I need Mockito.  A different version of JUnit is provided by Android, but it is an old version that does not include the <code>@RunWith</code> annotation.
+
+Can someone answer how to use powermock and mockito in an Android project, without the conflicting <code>org.hamcrest.Description</code> problem?
+
+==========
+Sorry, you can't use PowerMock in the Dalvik VM.
+
+PowerMock works by running your test under a custom ClassLoader which uses <a href="http://www.csg.ci.i.u-tokyo.ac.jp/~chiba/javassist/" rel="noreferrer">Javassist</a> to modify the bytecode of your classes.  This works okay on a normal JVM, but on Dalvik the bytecode and class format are different, so this approach doesn't work.  PowerMock would need to be rewritten to use <a href="https://code.google.com/p/dexmaker/" rel="noreferrer">Dexmaker</a> instead of Javassist - this would be decidedly non-trivial, and I don't see <API label="">anything</API> like this on the PowerMock <a href="https://code.google.com/p/powermock/issues/list" rel="noreferrer">issues list</a>.
+

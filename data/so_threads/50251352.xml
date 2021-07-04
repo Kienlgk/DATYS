@@ -1,0 +1,89 @@
+https://stackoverflow.com/questions/50251352
+I 'm trying to use Fastjson library for JSON serialization.
+When I try to <API label="">deserialize</API> , it fails showing no default constructor error.
+Note: My class here is a toy example. I realty, it <API label="">contains</API> so many references to other classes which are in other maven projects  and its practically not possible to modify every class.
+
+Here is the code.
+
+<pre><code>
+Student s = new Student("vineel", "20");
+String hell = <API label="com.alibaba.fastjson.JSON.toJSONString">JSON.toJSONString</API>(s);
+Student model2 = <API label="com.alibaba.fastjson.JSON.parseObject">JSON.parseObject</API>(hell, Student.class);
+<API label="None">System.out.println</API>(model2);
+
+public class Student {
+
+private String <API label="None">name</API>;
+private String age;
+Student(String <API label="None">name</API>,String age){
+<API label="None">this.name</API> = <API label="None">name</API>;
+this.age = age;
+}
+@override
+public String <API label="None">toString</API>() {
+return "Student [<API label="None">name</API>=" + <API label="None">name</API> + ", age=" + age + "]";
+}
+public String <API label="None">getName</API>() {
+return <API label="None">name</API>;
+}
+public void setName(String <API label="None">name</API>) {
+<API label="None">this.name</API> = <API label="None">name</API>;
+}
+public String getAge() {
+return age;
+}
+public void setAge(String age) {
+this.age = age;
+}
+
+}
+
+</code></pre>
+
+Here is the error:
+
+<pre><code>
+Exception in thread "<API label="None">main</API>" com.alibaba.fastjson.JSONException: default constructor not found. class com.alibaba.fastjson.Student
+at <API label="com.alibaba.fastjson.util.JavaBeanInfo.build">com.alibaba.fastjson.util.JavaBeanInfo.build</API>(JavaBeanInfo.java:467)
+at <API label="com.alibaba.fastjson.util.JavaBeanInfo.build">com.alibaba.fastjson.util.JavaBeanInfo.build</API>(JavaBeanInfo.java:213)
+at <API label="com.alibaba.fastjson.parser.ParserConfig.createJavaBeanDeserializer">com.alibaba.fastjson.parser.ParserConfig.createJavaBeanDeserializer</API>(ParserConfig.java:656)
+at <API label="com.alibaba.fastjson.parser.ParserConfig.getDeserializer">com.alibaba.fastjson.parser.ParserConfig.getDeserializer</API>(ParserConfig.java:573)
+at <API label="com.alibaba.fastjson.parser.ParserConfig.getDeserializer">com.alibaba.fastjson.parser.ParserConfig.getDeserializer</API>(ParserConfig.java:386)
+at <API label="com.alibaba.fastjson.parser.DefaultJSONParser.parseObject">com.alibaba.fastjson.parser.DefaultJSONParser.parseObject</API>(DefaultJSONParser.java:658)
+at <API label="com.alibaba.fastjson.JSON.parseObject">com.alibaba.fastjson.JSON.parseObject</API>(JSON.java:365)
+at <API label="com.alibaba.fastjson.JSON.parseObject">com.alibaba.fastjson.JSON.parseObject</API>(JSON.java:269)
+at <API label="com.alibaba.fastjson.JSON.parseObject">com.alibaba.fastjson.JSON.parseObject</API>(JSON.java:488)
+at <API label="com.alibaba.fastjson.JSON.main">com.alibaba.fastjson.JSON.main</API>(JSON.java:1068)
+
+</code></pre>
+
+==========
+So create a TO class.
+
+<pre><code>
+Student model2 = <API label="com.alibaba.fastjson.JSON.parseObject">JSON.parseObject</API>(hell, StudentTO.class).asStudent();
+<API label="None">System.out.println</API>(model2);
+
+public class StudentTO {
+
+   private String <API label="None">name</API>;
+    private String age;
+    public String <API label="None">getName</API>() {
+        return <API label="None">name</API>;
+    }
+    public void setName(String <API label="None">name</API>) {
+        <API label="None">this.name</API> = <API label="None">name</API>;
+    }
+    public String getAge() {
+        return age;
+    }
+    public void setAge(String age) {
+        this.age = age;
+    }
+    public Student asStudent() {
+        return new Student(<API label="None">name</API>, age);
+    }
+}
+
+</code></pre>
+

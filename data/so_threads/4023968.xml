@@ -1,0 +1,54 @@
+https://stackoverflow.com/questions/4023968
+I am using below code to <API label="">get</API> & process value from google HashMultimap
+
+<pre><code>
+    HashMultimap hmm = new HashMultimap();
+    HashMultimap hmm2 = new HashMultimap();
+    <API label="">Element</API> ele;
+:
+    <API label="com.google.common.collect.LinkedHashMultimap.put">hmm2.put</API>("name","Amit");
+    <API label="com.google.common.collect.LinkedHashMultimap.put">hmm.put</API>("Amit",ele);
+    <API label="com.google.common.collect.LinkedHashMultimap.put">hmm.put</API>("rohit",hmm2);
+ :   
+    Iterator itr =  <API label="com.google.common.collect.HashMultimap.keys">hmm.keys</API>().<API label="None">iterator</API>();
+    String ky = (String) <API label="None">itr.next</API>();
+    <API label="None">System.out.println</API>(<API label="com.google.common.collect.LinkedHashMultimap.put">hmm.get</API>(ky));
+    ky = (String) <API label="None">itr.next</API>();
+    <API label="None">System.out.println</API>(<API label="com.google.common.collect.LinkedHashMultimap.put">hmm.get</API>(ky));
+
+</code></pre>
+
+In above code, if map element(or entry) is <API label="None">Element</API> type then i want to do some operation. If it is HashMultimap type then do some other operation. How can i check and pass the object to another function.
+
+==========
+Since this is a <code>HashMultimap</code> which is also a <code>SetMultimap</code>, when you call <code><API label="com.google.common.collect.LinkedHashMultimap.get">hmm.get</API>(ky)</code> the value returned is going to be a <code>Set</code> of all the <API label="">values</API> for that key.  You should then be able to iterate through each of the <API label="">values</API> in the <code>Set</code> and use <code>instanceof</code> on those <API label="">values</API>.  If there are not going to be multiple <API label="">values</API> for each key, you shouldn't be using a <code>Multimap</code> to begin with and should just use normal <code>HashMap</code>.
+
+<pre><code>
+    HashMultimap hmm = <API label="com.google.common.collect.LinkedHashMultimap.create">HashMultimap.create</API>();
+    HashMultimap hmm2 = <API label="com.google.common.collect.LinkedHashMultimap.create">HashMultimap.create</API>();
+    <API label="">Element</API> ele = new <API label="">Element</API>();
+    <API label="com.google.common.collect.LinkedHashMultimap.put">hmm2.put</API>("name", "Amit");
+    <API label="com.google.common.collect.LinkedHashMultimap.put">hmm.put</API>("Amit", ele);
+    <API label="com.google.common.collect.LinkedHashMultimap.put">hmm.put</API>("rohit", hmm2);
+    Iterator itr = <API label="com.google.common.collect.LinkedHashMultimap.keys">hmm.keys</API>().<API label="None">iterator</API>();
+    String ky = (String) <API label="None">itr.next</API>();
+
+   Set elements = <API label="com.google.common.collect.LinkedHashMultimap.get">hmm.get</API>(ky);
+    Iterator elementsItr = <API label="None">elements.iterator</API>();
+    Object val = <API label="None">elementsItr.next</API>();
+    if (val instanceof <API label="">Element</API>) {
+        doElementStuff((<API label="">Element</API>) val);
+    }
+
+   ky = (String) <API label="None">itr.next</API>();
+    elements = <API label="com.google.common.collect.LinkedHashMultimap.get">hmm.get</API>(ky);
+    elementsItr = <API label="None">elements.iterator</API>();
+    val = <API label="None">elementsItr.next</API>();
+    if (val instanceof <API label="">Element</API>) {
+        doElementStuff((<API label="">Element</API>) val);
+    }
+
+</code></pre>
+
+The key point is that calling <code><API label="com.google.common.collect.LinkedHashMultimap.get">get</API>()</code> on a <code>HashMultimap</code> returns a <code>Set</code> of <API label="">values</API> and not a single value.
+

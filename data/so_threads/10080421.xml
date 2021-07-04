@@ -1,0 +1,57 @@
+https://stackoverflow.com/questions/10080421
+In a jUnit test, I want to get some rows from the database based on the <code>name</code> column.  I then want to test that the rows I got have the names I expected.  I have the following:
+
+<pre><code>
+Set typesToGet = MyClassFactory.createInstances("furniture",
+    "audio equipment");
+Collection namesToGet = <API label="com.google.common.collect.Collections2.transform">Collections2.transform</API>(typesToGet,
+    new NameFunction());
+List typesGotten = _svc.getAllByName(typesToGet);
+<API label="None">assertThat</API>(<API label="None">typesGotten.size</API>(), <API label="">is</API>(<API label="">typesToGet.size</API>()));
+Collection namesGotten = <API label="com.google.common.collect.Collections2.transform">Collections2.transform</API>(typesGotten,
+    new NameFunction());
+assertEquals(namesToGet, namesGotten); // fails here
+
+</code></pre>
+
+I currently get this failure:
+
+
+ java.lang.AssertionError: expected: com.google.common.collect.Collections2$TransformedCollection<[audio equipment, furniture]> but was: com.google.common.collect.Collections2$TransformedCollection<[audio equipment, furniture]>
+
+
+So what's the cleanest, most concise way to test that I got rows back from the database whose <code>name</code> column matches the names I said I wanted?  I could have a <code>for</code> loop iterating through and checking that each name in one list exists in the other, but I was hoping to be more concise.  Something like the following pseudocode would be nice:
+
+<pre><code>
+List typesGotten = ...;
+["furniture", "audio equipment"].<API label="None">equals</API>(<API label="None">typesGotten.map</API>(type => <API label="None">type.getName</API>()))
+
+</code></pre>
+
+==========
+You can use <code><API label="None">containsAll</API>()</code> two times to check that you don't have any missing value or any unexpected value.
+
+<pre><code>
+assertTrue(<API label="None">namesToGet.containsAll</API>(namesGotten));
+assertTrue(<API label="None">namesGotten.containsAll</API>(namesToGet));
+
+</code></pre>
+
+
+
+But if you decide to use <code>List</code> or <code>Set</code> instead of <code>Collection</code>, the interface contract specify that a <code>List</code> <API label="">is</API> equal to another <code>List</code> (<a href="http://docs.oracle.com/javase/7/docs/api/java/util/Set.html#<API label="">equals</API>%28java.lang.Object%29" rel="noreferrer">same for <code>Set</code></a>) <a href="http://docs.oracle.com/javase/7/docs/api/java/util/List.html#<API label="">equals</API>%28java.lang.Object%29" rel="noreferrer">iff both contains the same values</a>.
+
+
+ Compares the specified object with this list for equality. Returns <code>true</code> if and only if the specified object <API label="">is</API> also a list, both lists have the same <API label="">size</API>, and all corresponding pairs of elements in the two lists are equal. (Two elements e1 and e2 are equal if <code>(e1==null ? e2==null : <API label="None">e1.equals</API>(e2))</code>.) In other words, two lists are defined to be equal if they contain the same elements in the same order. This definition ensures that the <API label="None">equals</API> method works properly across different implementations of the <code>List</code> interface.
+
+
+
+
+Resources:
+
+
+<a href="http://docs.oracle.com/javase/7/docs/api/java/util/Collection.html#<API label="None">containsAll</API>%28java.util.Collection%29" rel="noreferrer">Javadoc: <code><API label="">Collection.containsAll</API>()</code></a>
+<a href="http://docs.oracle.com/javase/7/docs/api/java/util/List.html#<API label="None">equals</API>%28java.lang.Object%29" rel="noreferrer">Javadoc: <code><API label="">List.equals</API>()</code></a>
+<a href="http://docs.oracle.com/javase/7/docs/api/java/util/Collection.html#<API label="None">containsAll</API>%28java.util.Collection%29" rel="noreferrer">Javadoc: <code><API label="">Set.equals</API>()</code></a>
+
+

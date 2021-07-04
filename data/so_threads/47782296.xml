@@ -1,0 +1,31 @@
+https://stackoverflow.com/questions/47782296
+<pre><code>private Cache cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+        .<API label="com.google.common.cache.CacheBuilder.concurrencyLevel">concurrencyLevel</API>(4)
+        .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(24, TimeUnit.HOURS)
+        .<API label="com.google.common.cache.CacheBuilder.initialCapacity">initialCapacity</API>(1024)
+        .<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(1_00_000)
+        .<API label="com.google.common.cache.CacheBuilder.build">build</API>();
+private ConcurrentMap cacheMap = <API label="com.google.common.cache.Cache.asMap">cache.asMap</API>();
+
+</code></pre>
+
+this is my code, it's simple and it's just creating a Guava map cache.
+question is, if I <API label="None">remove</API>() keys from this map, will GC be able to claim memory back from this map? without using weakReference(I am not storing nest objects like Set or Map etc...)?
+
+==========
+Yes
+
+From <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/cache/Cache.html#<API label="">asMap</API>--" rel="nofollow noreferrer">Guava's <code><API label="com.google.common.cache.Cache.asMap">Cache.asMap</API></code> javadoc</a> (emphasis mine):
+
+
+ Returns a view of the entries stored in this cache as a thread-safe map. Modifications made to the map directly affect the cache.
+
+
+And from <a href="https://github.com/google/guava/wiki/CachesExplained#explicit-removals" rel="nofollow noreferrer">Guava's Cache Explained wiki page</a>:
+
+
+ At any time, you may explicitly invalidate cache entries rather than waiting for entries to be evicted.
+
+
+You might want to check the whole wiki page instead of the section I highlighted.
+

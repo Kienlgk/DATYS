@@ -1,0 +1,81 @@
+https://stackoverflow.com/questions/14907667
+Answer/Edit:
+
+Ok, just realized I was trying to use the EnumBiMap incorrectly. I wanted a bi map that does not allow null <API label="">values</API>, which I guess the Guava library does not have. I looked at <a href="http://google-collections.googlecode.com/svn-history/r10/trunk/javadoc/com/google/common/collect/EnumBiMap.html" rel="nofollow noreferrer">ImmutableBiMap</a> but it is supposed to be static, with non-changing <API label="">values</API>. Guess I'll just have to check for null before I <API label="">put</API> anything into a HashBiMap.
+
+That said, this is how you can instantiate/use EnumBiMap:
+
+Given enum:
+
+<pre><code>
+enum Test{
+    VAL;
+}  
+
+</code></pre>
+
+Use:
+
+<pre><code>
+Map m = <API label="com.google.common.collect.EnumBiMap.create">EnumBiMap.create</API>(Test.class, Test.class);
+<API label="com.google.common.collect.EnumBiMap.put">m.put</API>(Test.VAL, Test.VAL);
+
+</code></pre>
+
+Or, if you want a more generic EnumBiMap, that supports any enum type:
+
+<pre><code>
+Map m = <API label="com.google.common.collect.EnumBiMap.create">EnumBiMap.create</API>(Enum.class, Enum.class);
+<API label="com.google.common.collect.EnumBiMap.pu">m.put</API>(Test.VAL, Test2.VAL2);
+
+</code></pre>
+
+
+
+Original question:
+
+I have looked around the <a href="http://google-collections.googlecode.com/svn-history/r10/trunk/javadoc/com/google/common/collect/EnumBiMap.html" rel="nofollow noreferrer">Guava API</a> documentation and the web, but cannot find any examples of implementing the EnumBiMap class. It doesn't behave the same as HashBiMap, which I could easily instantiate. Here is what I've tried - none of these will compile for me:
+
+<pre><code>
+Map m = <API label="com.google.common.collect.EnumBiMap.create">EnumBiMap.create</API>();
+
+</code></pre>
+
+..similar to what is suggested here: <a href="https://stackoverflow.com/questions/1533513/java-">Java: Instantiate Google Collection's HashBiMap</a>
+
+Also tried:
+
+<pre><code>
+Map m = <API label="com.google.common.collect.EnumBiMap.create">EnumBiMap.create</API>();
+
+</code></pre>
+
+..similar to formatting here: <a href="https://stackoverflow.com/questions/4906946/google-guava-how-to-use-immutablesortedmap-naturalorder">Google Guava: How to use ImmutableSortedMap.naturalOrder?</a>
+
+And:
+
+<pre><code>
+Map m = <API label="com.google.common.collect.EnumBiMap.create">EnumBiMap.create</API>(Integer.class, String.class);
+
+</code></pre>
+
+Has anyone successfully implemented EnumBiMap or seen any examples? If so, how?
+
+==========
+Do you mean (Guava <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/EnumBiMap.html">version 14.0</a>):
+
+<pre><code>
+Map m = <API label="com.google.common.collect.EnumBiMap.create">EnumBiMap.create</API>(Test.class, Test.class);
+<API label="com.google.common.collect.EnumBiMap.put">m.put</API>(Test.VAL, Test.VAL);
+
+</code></pre>
+
+And please notice the signature: 
+
+<pre><code>
+, V extends Enum EnumBiMap <API label="com.google.common.collect.EnumBiMap.create">create</API>(Class <API label="">keyType</API>, Class <API label="">valueType</API>)
+
+</code></pre>
+
+So <code>Integer</code> and <code>String</code> are not suitable for K or V.
+

@@ -1,0 +1,105 @@
+https://stackoverflow.com/questions/54329295
+I referred to all available resources on Stackoverflow for similar queries. But I'm not sure what the issue with this test is:
+
+It is throwing the following exception.
+
+<pre><code>
+[main] ERROR com.example.dao.spring.TransactionDAOSpring - org.mockito.exceptions.misusing.InvalidUseOfMatchersException: Invalid use of argument matchers!0 matchers expected, 2 recorded.
+
+</code></pre>
+
+Following is the code:
+
+<pre><code>
+import static org.junit.Assert.assertEquals;
+import static <API label="org.mockito.Matchers.anyLong">org.mockito.Matchers.anyLong</API>;
+import static <API label="org.mockito.Matchers.anyMapOf">org.mockito.Matchers.anyMapOf</API>;
+import static <API label="org.mockito.Matchers.anyString">org.mockito.Matchers.anyString</API>;
+import static <API label="org.mockito.Mockito.when">org.mockito.Mockito.when</API>;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.sql.DataSource;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcCall;
+
+import com.example.dto.DisplayTwo;
+import com.example.dto.DisplayOne;
+import com.example.dto.DisplayThree;
+
+public class TransactionDAOSpringTest {
+
+   TransactionDAOSpring transactionDAOSpring;
+
+   @Mock
+    DataSource dataSource;
+    @Mock
+    JdbcTemplate jdbcTemplate;
+    @Mock
+    SimpleJdbcCall storedProc;
+
+   @Rule
+    public ExpectedException thrown = <API label="None">ExpectedException.none</API>();
+
+   private Map resultMap;
+    private List displayOne;
+    private List displayTwo;
+    private List displayThree;
+
+   @Before
+    public void beforeMethod() {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+        transactionDAOSpring = new TransactionDAOSpring();
+        transactionDAOSpring.setJdbcTemplate(jdbcTemplate);
+        transactionDAOSpring.setDataSource(dataSource);
+        transactionDAOSpring.retrieveResultStoredProc = storedProc;
+        resultMap = new HashMap();
+        displayOne = new ArrayList();
+        displayTwo = new ArrayList();
+        displayThree = new ArrayList();
+    }
+
+   @Test
+    public void testRetrieve_When_ResultSet_Not_Empty() {
+        <API label="None">displayOne.add</API>(new DisplayOne());
+        <API label="None">displayTwo.add</API>(new DisplayTwo());
+        <API label="None">displayThree.add</API>(new DisplayThree());
+
+       <API label="None">resultMap.put</API>("DisplayOneResultSet", displayOne);
+        <API label="None">resultMap.put</API>("DisplayTwoResultSet", displayTwo);
+        <API label="None">resultMap.put</API>("DisplayThreeResultSet", displayThree);
+
+       <API label="org.mockito.Mockito.when">when</API>(<API label="None">storedProc.execute</API>(<API label="">anyMapOf</API>(String.class, Object.class)))
+                .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(resultMap);
+        Map returnedResultMap = transactionDAOSpring.retrieve(<API label="org.mockito.Matchers.anyString">anyString</API>(),
+                <API label="org.mockito.Matchers.anyLong">anyLong</API>());
+        assertEquals(<API label="None">resultMap.size</API>(), <API label="None">returnedResultMap.size</API>());
+    }
+
+</code></pre>
+
+Update: After debugging, it looks like it fails to getConnection from the dataSource and hence throws the exception.
+
+Any help would be appreciated.
+
+==========
+Matchers like <code><API label="org.mockito.Matchers.anyString">anyString</API>()</code> or <code><API label="org.mockito.Matchers.anyLong">anyLong</API>()</code> can be used for mocking an object, for example inside <code><API label="org.mockito.Mockito.when">when</API>()</code> or <code><API label="org.mockito.Mockito.verify">verify</API>()</code> invocation. In your case:
+
+<pre><code>
+ Map returnedResultMap = transactionDAOSpring.retrieve(
+                                                           <API label="org.mockito.Matchers.anyString">anyString</API>(), <API label="org.mockito.Matchers.anyLong">anyLong</API>());
+
+</code></pre>
+
+is real method call. I think that is what causes <code>InvalidUseOfMatchersException</code>. Try invoking your method with stub values like empty string and 0L
+

@@ -1,0 +1,154 @@
+https://stackoverflow.com/questions/60563766
+I'm trying to run a unit test case but am having trouble getting reflection to work. My testSubject uses a supplier class to <API label="">get</API> a map. The supplier class has a modulusChecker autowired in that I'm trying to set with reflection. However, whenever I run the test the doubleAlterneteModulusChecker is set to null?
+
+<pre><code>
+package uk.co.cdl.account.bankdetailsvalidation.api.impl;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import uk.co.cdl.account.bankdetailsvalidation.model.BankDetailsValidationModel;
+import uk.co.cdl.account.bankdetailsvalidation.moduluschecker.DoubleAlternateModulusChecker;
+import uk.co.cdl.account.bankdetailsvalidation.supplier.ModulusCheckerMapSupplier;
+import uk.co.cdl.account.bankdetailsvalidation.supplier.ModulusWeightTableSupplier;
+import uk.co.cdl.account.bankdetailsvalidation.supplier.SortCodeSubstitutionTableSupplier;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("CDLBankDetailsValidator Unit Tests")
+class CDLBankDetailsValidatorTest {
+
+   @Spy
+    private DoubleAlternateModulusChecker doubleAlternateModulusChecker;
+
+   @Spy
+    private ModulusCheckerMapSupplier modulusCheckerMapSupplier;
+
+   @Spy
+    private ValidationExceptionRuleFactory validationExceptionRuleFactory;
+
+   @Spy
+    private SortCodeSubstitutionTableSupplier sortCodeSubstitutionTableSupplier;
+
+   @Spy
+    private ModulusWeightTableSupplier mockModulusTableSupplier;
+
+   @InjectMocks
+    private BankDetailsValidator testSubject;
+
+   @DisplayName("<API label="None">validate</API>() returns a BankDetailsValidationModel with the correct values for a given bank account number / sort code")
+    @ParameterizedTest(name = "{3}" )
+    @MethodSource("bankAccountDetailsTestData")
+    void testCDLValidatorWithTestData(String sortCode, String accountNumber, BankDetailsValidationModel expected, String testDescription){
+        <API label="None">ReflectionTestUtils.setField</API>(modulusCheckerMapSupplier, "doubleAlternateModulusChecker", doubleAlternateModulusChecker);
+
+       //then
+        assertEquals(expected, <API label="None">testSubject.validate</API>(accountNumber, sortCode));
+    }
+
+   @DisplayName("Logger captures the correct debug messages")
+    @ParameterizedTest(name="Logged: {2}")
+    @MethodSource("loggerTestData")
+    void testLoggerCapturesDebugMessages(String sortCode, String accountNumber, String expected, int index){
+        //Given
+        ListAppender listAppender = getListAppender();
+
+       //When
+        <API label="None">testSubject.validate</API>(accountNumber, sortCode);
+        String actual = <API label="None">listAppender.list.get</API>(index).<API label="None">toString</API>();
+
+       //Then
+        assertEquals(expected, actual);
+    }
+
+   private ListAppender getListAppender(){
+        Logger logger = (Logger) <API label="None">LoggerFactory.getLogger</API>(CDLBankDetailsValidator.class);
+        ListAppenderlistAppender = new ListAppender<>();
+        <API label="None">listAppender.start</API>();
+        logger.addAppender(listAppender);
+        return listAppender;
+    }
+}
+
+@Component
+public class ModulusCheckerMapSupplier implements Supplier {
+
+   @Autowired
+    private DoubleAlternateModulusChecker doubleAlternateModulusChecker;
+
+   @Override
+    public Map <API label="">get</API>() {
+        Map modulusChecksByAlgorithmName = new HashMap<>();
+        <API label="None">modulusChecksByAlgorithmName.put</API>(DBLAL, doubleAlternateModulusChecker);
+        <API label="None">modulusChecksByAlgorithmName.put</API>(MOD10, new StandardModulusChecker(10));
+        <API label="None">modulusChecksByAlgorithmName.put</API>(MOD11, new StandardModulusChecker(11));
+        return modulusChecksByAlgorithmName;
+    }
+}
+
+@Component
+public class DoubleAlternateModulusChecker extends StandardModulusChecker {
+    private static Logger LOGGER = <API label="None">LogManager.getLogger</API>(DoubleAlternateModulusChecker.class);
+
+   @Override
+    public String <API label="">getName</API>() {
+        return "Double alternate modulus check";
+    }
+
+   @Override
+    public int getRemainder(String data, int[] weights) {
+        return 1;
+    }
+}
+
+
+</code></pre>
+
+==========
+You <API label="">mark</API> <code>@Spy</code>:
+
+<pre><code>
+@Spy
+private DoubleAlternateModulusChecker doubleAlternateModulusChecker;
+
+</code></pre>
+
+but not supply an initialization => Null.
+
+If you want to <API label="">spy</API> on real bean instance, use spring <a href="https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/test/mock/mockito/SpyBean.html" rel="nofollow noreferrer"><code>@SpyBean</code></a>
+
+If you do not have access to that annotation, then use reflection:
+
+<pre><code>
+@Autowired
+private DoubleAlternateModulusChecker doubleAlternateModulusChecker;
+
+@Autowired
+private BankDetailsValidator testSubject;  // Important, not @InjectMock
+
+
+</code></pre>
+
+Then in your test:
+
+<pre><code>
+DoubleAlternateModulusChecker <API label="">spy</API> = <API label="org.mockito.Mockito.spy">Mockito.spy</API>(doubleAlternateModulusChecker);
+<API label="None">ReflectionTestUtils.setField</API>(modulusCheckerMapSupplier, "doubleAlternateModulusChecker", <API label="">spy</API>);
+
+
+</code></pre>
+

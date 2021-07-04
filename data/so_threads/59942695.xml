@@ -1,0 +1,126 @@
+https://stackoverflow.com/questions/59942695
+I am using this library in my Spring boot application.
+
+<pre><code>
+
+ com.auth0
+  java-jwt
+  3.9.0
+
+
+</code></pre>
+
+How do I do my unit test for <code>DecodedJWT jwt = <API label="None">JWT.decode</API>(accessToken);</code>? 
+
+I could just pass in an actual token in but that is not the correct way to do it.
+
+I have this JwtAuthenticationFilter in my Spring Boot app.
+
+<pre><code>
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+   @Value("${clientid}")
+    private String clientid;
+
+   @Autowired
+    private AuthenticationService authenticationService;
+
+   @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, InvalidRoleException {
+
+       getJwtFromRequest(request, response, filterChain);
+    }
+
+   private void getJwtFromRequest(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+           String bearerToken = request.getHeader("Authorization");
+
+           if (!StringUtils.hasText(bearerToken) || !<API label="None">bearerToken.startsWith</API>("Bearer ")) {
+                throw new AccessTokenMissingException("No access token found in request headers.");
+            }
+
+           try {
+                String accessToken = bearerToken.substring(7);
+
+               // this will also throw error when unable to reach auth server
+                ResponseEntity result = authenticationService.getUserInfo(accessToken);
+
+               // Invalid access token
+                if (!result.getStatusCode().is2xxSuccessful()) {
+                    throw new InvalidAccessTokenException("Invalid access token.");
+                }
+
+               DecodedJWT jwt = <API label="None">JWT.decode</API>(accessToken);
+
+               String username = jwt.getClaim("preferred_username").<API label="None">asString</API>();
+                Map resources = jwt.getClaim("resource_access").<API label="None">asMap</API>();
+
+               Object roles = ((Map) <API label="None">resources.get</API>(clientid)).<API label="None">get</API>("roles");
+
+               List rolesList = (ArrayList)roles;
+
+               UserInfo user = new UserInfo();
+                user.setUsername(username);
+                user.setRole(rolesList);
+
+               // Step 3: Set username to security context
+                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                        user.getUsername(), null, AuthUtil.getAuthRole(user.getRole()));
+
+               <API label="None">SecurityContextHolder.getContext</API>().setAuthentication(usernamePasswordAuthenticationToken);
+
+           } catch (HttpClientErrorException.Unauthorized | JWTDecodeException e) {
+                throw new InvalidAccessTokenException("Invalid access token.");
+            }
+
+       filterChain.doFilter(request, response);
+    }
+}
+
+</code></pre>
+
+==========
+There are different strategies/options you can use, all will work:
+
+
+Don't mock the <API label="None">JWT.decode</API> at all, treat it as a utility method that should run within the test. The intuition behind it, what if your class was using <code><API label="None">Math.max</API>(a,b)</code> code or, or some date time manipulation like <code><API label="None">DateTime.of</API>(...)</code> would you mock it in the test? Probably not... Although in this case you will probably have to work with really decodable tokens in the test
+Use PowerMockito to mock the static call (I don't really recommend this way, but it will do the job if you don't want to change the code). 
+Do a refactoring extracting the <API label="None">decode</API> functionality to the interface and use it as a dependency in the filter:
+
+
+<pre><code>
+public interface JWTDecoder {
+   DecodedJWT <API label="">decode</API>(String token); // I assume its string for simplicity
+}
+
+@Component
+public class StdJWTDecoder implements JWTDecoder {
+   public DecodedJWT <API label="">decode</API>(String token) {
+       return <API label="None">JWT.decode</API>(tokent);
+}
+
+public class JwtAuthenticationFilter ... {
+   private final JWTDecoder jwtDecoder;
+
+  public JwtAuthenticationFilter(JWTDecoder jwtDecoder) {
+       this.jwtDecoder = jwtDecoder;
+   }
+
+   ....
+   private void getJwtFromRequest(HttpServletRequest request, HttpServletResponse 
+     response, FilterChain filterChain)  {
+      ...
+      // instead <API label="">of</API>:
+      DecodedJWT jwt = <API label="None">JWT.decode</API>(accessToken);  
+      // use this:
+      DecodedJWT jwt = <API label="None">jwtDecoder.decode</API>(accessToken);
+      ...
+   }
+
+}
+
+</code></pre>
+
+With this approach you can mock the <code>JwtDecoder</code> with mockito easily
+

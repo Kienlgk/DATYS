@@ -1,0 +1,102 @@
+https://stackoverflow.com/questions/37049218
+I need to mock the following enum:
+
+<pre><code>
+public enum PersonStatus
+{
+    WORKING,
+    HOLIDAY,
+    SICK      
+}
+
+</code></pre>
+
+This is because it is used in the following class that I am testing:
+
+Class under test:
+
+<pre><code>
+public interface PersonRepository extends CrudRepository
+{
+    List findByStatus(PersonStatus personStatus);
+}
+
+</code></pre>
+
+Here is my current test attempt:
+
+Current test:
+
+<pre><code>
+public class PersonRepositoryTest {
+
+   private final Logger LOGGER = <API label="None">LoggerFactory.getLogger</API>(PersonRepositoryTest.class);
+
+   //Mock the PersonRepository class
+    @Mock
+    private PersonRepository PersonRepository;
+
+   @Mock
+    private PersonStatus personStatus;
+
+   @Before
+    public void setUp() throws Exception {
+
+       <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+        <API label="None">assertThat</API>(PersonRepository, <API label="None">notNullValue</API>());
+        <API label="None">assertThat</API>(PersonStatus, <API label="None">notNullValue</API>());
+    }
+
+   @Test
+    public void testFindByStatus() throws ParseException {
+
+       List personlist = PersonRepository.findByStatus(personStatus);
+        <API label="None">assertThat</API>(personlist, <API label="None">notNullValue</API>());
+    }
+}
+
+</code></pre>
+
+Which Gives following error:
+
+error:
+
+<pre><code>
+org.mockito.exceptions.base.MockitoException: 
+Cannot mock/spy class PersonStatus
+Mockito cannot mock/spy following:
+  - final classes
+  - anonymous classes
+  - primitive types
+
+</code></pre>
+
+How can I solve this?
+
+==========
+Your <code>testFindByStatus</code> is trying to assert that the <code>findByStatus</code> does not return null.
+
+If the method works the same way regardless of the value of the <code>personStatus</code> param, just pass one of them:
+
+<pre><code>
+@Test
+public void testFindByStatus() throws ParseException {
+    List personlist = PersonRepository.findByStatus(WORKING);
+    <API label="None">assertThat</API>(personlist, <API label="None">notNullValue</API>());
+}
+
+</code></pre>
+
+If the behaviour may be different for the other possible <API label="">values</API>, you can test each of them:
+
+<pre><code>
+@Test
+public void testFindByStatus() throws ParseException {
+    for (PersonStatus status : <API label="None">PersonStatus.values</API>()) {
+        List personlist = PersonRepository.findByStatus(status);
+        <API label="None">assertThat</API>(personlist, <API label="None">notNullValue</API>());
+    }
+}
+
+</code></pre>
+

@@ -1,0 +1,72 @@
+https://stackoverflow.com/questions/62523220
+First of all I need some very efficient solution as I am comparing collections with >300k elements.
+At the beginning we have two different classes
+<pre><code>
+Class A {
+   String keyA;
+   String keyB;
+   String keyC;
+}
+
+Class B {
+   String keyA;
+   String keyB;
+   String keyC;
+   String name;
+   String code;
+
+  toA() {
+     return new A(keyA, keyB, keyC);
+   }
+}
+
+</code></pre>
+Both of them <API label="">contains</API> several fields which are composed <API label="">key</API>(in this example <API label="">key</API> of three columns = keyA keyB keyC)
+This composed <API label="">key</API> makes calculation very long for primitive brute forces using nested loops.
+So I figured out that the most efficient way would be to transform second class to first one using method toA
+and then I can safely compare them using for example google's api using Sets efficiency
+<pre><code>
+Set<a> collectionA = <300k of elements>
+Set collectionB = <300k of elements>
+Set<a> collectionBConvertedToA = <API label="None">collectionB.stream</API>().<API label="None">map</API>(item -> item.toA()).collect(<API label="None">toSet</API>())
+
+Set<a> result = Sets.differences(collectionBConvertedToA, collectionA); // very fast first full scan comparison
+
+Set changedNames = <API label="None">result.stream</API>()
+     .<API label="None">map</API>(outer -> <API label="None">collectionB.stream</API>()
+                               // very slow second full scan comparison
+                              .<API label="None">filter</API>(inner -> inner.getKeyA().<API label="None">equals</API>(outer.getKeyA()) 
+                                           && inner.getKeyB().<API label="None">equals</API>(outer.getKeyB()) 
+                                           && inner.getKeyC().<API label="None">equals</API>(outer.getKeyC()))
+                              .findFirst()
+                              .<API label="None">map</API>(item -> <API label="None">item.getName</API>()))
+     .collect(<API label="None">toSet</API>());
+<API label="None">log.info</API>("changed names" + changedNames);
+
+</code></pre>
+Guava Sets.differences can find differences on Sets >300k in less than 1/10 of second but later on I still have full scan anyway to collect names.
+I am just guessing, but is there something like
+<pre><code>
+Set result = Sets.differences(setA, setB, a -> a.customHashCode(), b -> b.customHashCode(), (a, b) -> a.customEquals(b))
+
+</code></pre>
+with custom <API label="None">hashCode</API> and custom <API label="None">equals</API> methods to keep Sets efficiency or there is some better pattern to make such comparison as I believe it seems like common problem ?
+EDIT
+I just figured out that I can just flip conversion to extended class
+<pre><code>
+toB() {
+  return new B(keyA, keyB, keyC, null, null);
+}
+
+</code></pre>
+but then I need override <API label="None">hashCode</API> and <API label="None">equals</API> to use only those 3 fields and I still believe there is more elegant way
+
+==========
+This is <code>O(n^2)</code> since you are streaming <code>collectionB</code> for each element in result. The following should work pretty fast:
+<pre><code>
+Set changedNames = <API label="None">collectionB.stream</API>()
+                              .<API label="None">filter</API>(b -> <API label="None">collectionA.contains</API>(b.toA())
+                              .<API label="None">map</API>(item -> <API label="None">item.getName</API>()).collect(<API label="None">toSet</API>());
+
+</code></pre>
+

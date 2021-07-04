@@ -1,0 +1,36 @@
+https://stackoverflow.com/questions/25372312
+I have a GenericCreator, with the following method
+
+<pre><code>
+ E <API label="">create</API>(E entity);
+
+</code></pre>
+
+I want to assert this method (where E = Foo) is only called once. I don't care if it's called with <API label="">any</API> other type parameter. The following assertion does not work for me:
+
+<pre><code>
+ <API label="org.mockito.Mockito.verify">verify</API>(genericCreator).<API label="">create</API>(<API label="org.mockito.Matchers.any">any</API>(Foo.class));
+
+</code></pre>
+
+because in the following case:
+
+<pre><code>
+Foo foo = new Foo();
+Bar bar = new Bar();
+<API label="">genericCreator.create</API>(foo);
+<API label="">genericCreator.create</API>(bar);
+
+</code></pre>
+
+it throws <code>org.mockito.exceptions.verification.TooManyActualInvocations: 
+<API label="">genericCreator.create</API>(); Wanted 1 time .... But was 2 times ...</code>
+While in reality I don't care about the .<API label="">create</API>(bar) call and I don't want the test to fail because it is called. How can I achieve this?
+
+==========
+Use the <code><API label="None">isA</API></code> matcher for invocations where you care about the specific type.
+
+<a href="http://site.mockito.org/mockito/docs/current/org/mockito/ArgumentMatchers.html#<API label="">isA</API>(java.lang.Class)" rel="nofollow">http://site.mockito.org/mockito/docs/current/org/mockito/ArgumentMatchers.html#<API label="">isA</API>(java.lang.Class)</a>
+
+The documentation for <code><API label="None">any</API></code> notes that it does not actually check types -- it's simply there to let you avoid casting. Thus, verifying with <API label="None">any</API> accepts an object of <API label="">any</API> type -- this is why you get 2 calls instead of 1.
+

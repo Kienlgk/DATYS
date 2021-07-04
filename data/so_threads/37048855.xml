@@ -1,0 +1,68 @@
+https://stackoverflow.com/questions/37048855
+I am trying to test the method findById() method in the class below that reads data from my Database using the CrudRepository:
+
+Class under test:
+
+<pre><code>
+public interface PersonRepository extends CrudRepository
+{
+
+   Person findById(String id);
+}
+
+</code></pre>
+
+Below is my test class, the test is currently passing but I would like to change it so that if the id "1" I am testing with is removed from my database, I can still run my test. I.e. do not rely on data within the database.  
+
+How can I do so?
+
+Test Class:
+
+<pre><code>
+public class PersonRepositoryTest {
+
+   @Mock
+    private PersonRepository personRepository;
+
+   @Before
+    public void setUp() throws Exception {
+        //Initialize the mocked class and ensure that it is not null
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+        <API label="None">assertThat</API>(personRepository, <API label="None">notNullValue</API>());
+    }
+
+   @Test
+    public void testFindById() throws ParseException {
+
+       //test string
+        String id = "1";
+
+       //<API label="">when</API> it is called, return
+        <API label="org.mockito.Mockito.when">when</API>(personRepository.findById(<API label="org.mockito.Mockito.anyString">anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new Person());
+
+       Person person = personRepository.findById(id);
+        <API label="None">assertThat</API>(person, <API label="None">notNullValue</API>());
+    }
+}
+
+</code></pre>
+
+==========
+As mentioned in the Post comments by @Thomas, you are just mocking the database. I'm assuming you want to write a negative test case <API label="">when</API> the ID is 1.
+
+You can just return null, instead of person Object. Instead of Matchers, pass a specific value to differentiate your positive and negative test cases.
+
+Positive Case -
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(personRepository.findById(2)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new Person());
+
+</code></pre>
+
+Negative Case - 
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(personRepository.findById(1)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(null);
+
+</code></pre>
+

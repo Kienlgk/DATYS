@@ -1,0 +1,39 @@
+https://stackoverflow.com/questions/60303439
+I am trying to <API label="org.mockito.Mockito.verify">verify</API> that a <API label="">method</API> is called with a <code>long</code> having any value but a given one. 
+
+I thus would like to know if there is an <code>ArgumentMatcher</code> that fits to my use case, such as:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(mObject).verifiedMethod(notEq(longValueThatShouldBeAvoided));
+
+</code></pre>
+
+
+
+I found this workaround:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(mObject).<API label="None">method</API>(<API label="org.mockito.Mockito.longThat">longThat</API>(arg -> arg != longValueThatShouldBeAvoided));
+
+</code></pre>
+
+But I find weird that such simple <code>ArgumentMatcher</code> has to be written from scratch. 
+
+
+
+Additional question: 
+How to proceed when checking for multiple values to avoid ? 
+
+Similarly, I found the workaround of using <code>arg -> arg != val0 && arg != val1</code> lambda as parameter of <a href="https://www.javadoc.io/static/org.mockito/mockito-core/3.2.4/org/mockito/ArgumentMatchers.html#<API label="">longThat</API>-org.mockito.ArgumentMatcher-" rel="nofollow noreferrer"><code><API label="None">ArgumentsMatcher.longThat</API></code></a> <API label="">method</API> to achieve this.
+
+==========
+try:
+
+<pre><code>
+import static <API label="org.mockito.AdditionalMatchers.not">org.mockito.AdditionalMatchers.not</API>; 
+import static <API label="None">org.mockito.ArgumentMatchers.eq</API>;
+
+<API label="org.mockito.Mockito.verify">verify</API>(mObject).verifiedMethod(<API label="org.mockito.AdditionalMatchers.not">not</API>(<API label="None">eq</API>(longValueThatShouldBeAvoided)));
+
+</code></pre>
+

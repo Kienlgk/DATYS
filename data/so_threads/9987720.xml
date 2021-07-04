@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/9987720
+I can run the Java version <API label="">of</API> my project fine by simply importing Guava libraries like so:
+
+<pre><code>
+import com.google.gwt.thirdparty.guava.common.collect.ImmutableList;
+
+</code></pre>
+
+Following the advice <a href="http://groups.google.com/group/playn/msg/cccb7916d5c2d40c" rel="nofollow">here</a>, I've added this line to html/pom.xml:
+
+<pre><code>
+
+ com.google.guava
+  guava-gwt
+  10.0.1
+
+
+</code></pre>
+
+And this line to html/project.gwt.xml file:
+
+<pre><code>
+
+
+</code></pre>
+
+But when I try to GWT-Compile my HTML version in Eclipse, I <API label="">get</API> errors like the following:
+
+<pre><code>
+[ERROR] Line 61: No source code is <API label="">available</API> for type com.google.gwt.thirdparty.guava.common.collect.ImmutableList; did you forget to inherit a required module?
+
+</code></pre>
+
+==========
+I think you may be importing the wrong class. Try replacing the <code>com.google.gwt.thirdparty.guava.common.collect.ImmutableList</code> import with <code>com.google.common.collect.ImmutableList</code>.
+
+Here is a similar question about the <code>Lists</code> class: <a href="https://stackoverflow.com/questions/6354025/trouble-with-gwt-and-guava">Trouble with GWT and Guava</a>
+

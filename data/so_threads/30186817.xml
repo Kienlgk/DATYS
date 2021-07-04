@@ -1,0 +1,314 @@
+https://stackoverflow.com/questions/30186817
+I've got a NullPointerException on method testStartEnbaledFeed on line <API label="">of</API> RssServiceTest <code><API label="None">service.start</API>();</code> and then on line <API label="">of</API> RssService <code>job.addJobChangeListener(new JobChangeAdapter() {</code>
+
+The key problem seems to be that the job.addChangelistener method <API label="">is</API> called for real. Anyone know how to solve it? RssServiceTest and RssService classes listed below:
+
+<pre><code>
+package org.eclipse.recommenders.internal.news.rcp;
+
+import static org.hamcrest.CoreMatchers.*;
+import static <API label="None">org.junit.Assert.assertThat</API>;
+import static org.mockito.Mockito.*;
+
+import org.eclipse.mylyn.commons.notifications.core.NotificationEnvironment;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.eventbus.EventBus;
+
+@SuppressWarnings("restriction")
+@RunWith(MockitoJUnitRunner.class)
+public class RssServiceTest {
+
+private static final String FIRST_ELEMENT = "first";
+private static final String SECOND_ELEMENT = "second";
+
+@Test
+public void testStartEnabledFeed() {
+    FeedDescriptor feed = FeedDescriptorsTest.enabled(FIRST_ELEMENT);
+    PollFeedJob job = <API label="org.mockito.Mockito.mock">mock</API>(PollFeedJob.class);
+    JobProvider provider = <API label="org.mockito.Mockito.mock">mock</API>(JobProvider.class);
+    NewsRcpPreferences preferences = <API label="org.mockito.Mockito.mock">mock</API>(NewsRcpPreferences.class);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">preferences.isEnabled</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+    <API label="org.mockito.Mockito.when">when</API>(preferences.getFeedDescriptors()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(<API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(feed));
+    NotificationEnvironment environment = <API label="org.mockito.Mockito.mock">mock</API>(NotificationEnvironment.class);
+    EventBus bus = <API label="org.mockito.Mockito.mock">mock</API>(EventBus.class);
+    <API label="org.mockito.Mockito.when">when</API>(provider.getPollFeedJob(<API label="org.mockito.Mockito.eq">Mockito.eq</API>(feed), <API label="org.mockito.Mockito.eq">Mockito.eq</API>(preferences), <API label="org.mockito.Mockito.eq">Mockito.eq</API>(environment)))
+            .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(job);
+    RssService service = new RssService(preferences, bus, environment, provider);
+    <API label="None">assertThat</API>(preferences, <API label="org.hamcrest.CoreMatchers.is">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    <API label="None">assertThat</API>(bus, <API label="org.hamcrest.CoreMatchers.is">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    <API label="None">assertThat</API>(environment, <API label="org.hamcrest.CoreMatchers.is">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    <API label="None">assertThat</API>(provider, <API label="org.hamcrest.CoreMatchers.is">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    <API label="None">assertThat</API>(job, <API label="org.hamcrest.CoreMatchers.is">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    <API label="None">assertThat</API>(feed, <API label="org.hamcrest.CoreMatchers.is">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    <API label="None">assertThat</API>(service, <API label="org.hamcrest.CoreMatchers.is">is</API>(<API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>()));
+    <API label="None">service.start</API>();
+}
+}
+
+</code></pre>
+
+`
+
+<pre><code>
+package org.eclipse.recommenders.internal.news.rcp;
+
+import static java.lang.Long.parseLong;
+import static org.eclipse.recommenders.internal.news.rcp.FeedEvents.createNewFeedItemsEvent;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.mylyn.commons.notifications.core.NotificationEnvironment;
+import org.eclipse.recommenders.internal.news.rcp.FeedEvents.FeedMessageReadEvent;
+import org.eclipse.recommenders.news.rcp.IFeedMessage;
+import org.eclipse.recommenders.news.rcp.IRssService;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+
+@SuppressWarnings("restriction")
+public class RssService implements IRssService {
+
+private static final long DEFAULT_DELAY = TimeUnit.DAYS.toMinutes(1);
+private static final long START_DELAY = 0;
+
+private final NewsRcpPreferences preferences;
+private final EventBus bus;
+private final NotificationEnvironment environment;
+private final JobProvider provider;
+
+private final Set readIds;
+
+private final HashMap groupedMessages = <API label="com.google.common.collect.Maps.newHashMap">Maps.newHashMap</API>();
+
+public RssService(NewsRcpPreferences preferences, EventBus bus, NotificationEnvironment environment,
+        JobProvider provider) {
+    this.preferences = preferences;
+    this.bus = bus;
+    this.environment = environment;
+    this.provider = provider;
+    <API label="com.google.common.eventbus.EventBus.register">bus.register</API>(this);
+
+   readIds = ReadFeedMessagesProperties.getReadIds();
+}
+
+@Override
+public void <API label="">start</API>() {
+    for (final FeedDescriptor feed : preferences.getFeedDescriptors()) {
+        if (<API label="None">feed.isEnabled</API>()) {
+            <API label="None">start</API>(feed);
+        }
+    }
+}
+
+@Override
+public void <API label="">start</API>(final FeedDescriptor feed) {
+    // final PollFeedJob job = new PollFeedJob(feed, preferences, environment);
+    final PollFeedJob job = provider.getPollFeedJob(feed, preferences, environment);
+    job.setSystem(true);
+    <API label="None">job.setPriority</API>(Job.DECORATE);
+    job.addJobChangeListener(new JobChangeAdapter() {
+        @Override
+        public void <API label="">done</API>(IJobChangeEvent event) {
+            boolean newMessage = false;
+            if (!<API label="None">groupedMessages.containsKey</API>(feed)) {
+                <API label="None">groupedMessages.put</API>(feed, <API label="">Lists.newArrayList</API>());
+            }
+            List feedMessages = <API label="None">groupedMessages.get</API>(feed);
+            for (IFeedMessage message : job.getMessages()) {
+                if (!<API label="None">feedMessages.contains</API>(message)) {
+                    <API label="None">feedMessages.add</API>(message);
+                    if (!<API label="None">readIds.contains</API>(<API label="None">message.getId</API>())) {
+                        newMessage = true;
+                    }
+                }
+            }
+
+           if (<API label="None">groupedMessages.size</API>() > 0 && newMessage) {
+                <API label="com.google.common.eventbus.EventBus.post">bus.post</API>(createNewFeedItemsEvent());
+            }
+
+           if (!<API label="None">preferences.isEnabled</API>() || !isFeedEnabled(feed)) {
+                return;
+            }
+            if (feed.getPollingInterval() != null) {
+                <API label="None">job.schedule</API>(TimeUnit.MINUTES.toMillis(parseLong(feed.getPollingInterval())));
+                return;
+            }
+            <API label="None">job.schedule</API>(TimeUnit.MINUTES.toMillis(DEFAULT_DELAY));
+        }
+    });
+
+   if (!provider.jobExists(feed, preferences, environment)) {
+        <API label="None">job.schedule</API>(START_DELAY);
+    }
+}
+
+@Override
+public Map getMessages(final int countPerFeed) {
+    Map transformedMap = <API label="com.google.common.collect.Maps.transformValues">Maps.transformValues</API>(groupedMessages,
+            new Function, List() {
+
+               @Override
+                public List <API label="">apply</API>(List input) {
+                    return <API label="com.google.common.collect.FluentIterable.from">FluentIterable.from</API>(input).<API label="com.google.common.collect.FluentIterable.limit">limit</API>(countPerFeed).<API label="com.google.common.collect.FluentIterable.filter">filter</API>(new Predicate() {
+
+                       @Override
+                        public boolean <API label="">apply</API>(IFeedMessage input) {
+                            return !<API label="None">readIds.contains</API>(<API label="None">input.getId</API>());
+                        }
+                    }).<API label="None">toList</API>();
+                }
+            });
+    Map filteredMap = <API label="com.google.common.collect.Maps.filterValues">Maps.filterValues</API>(transformedMap,
+            new Predicate() {
+
+               @Override
+                public boolean <API label="">apply</API>(List input) {
+                    if (input == null) {
+                        return false;
+                    }
+                    return !<API label="None">input.isEmpty</API>();
+                }
+
+           });
+    return <API label="com.google.common.collect.ImmutableMap.copyOf">ImmutableMap.copyOf</API>(filteredMap);
+}
+
+private boolean isFeedEnabled(FeedDescriptor feed) {
+    for (FeedDescriptor fd : preferences.getFeedDescriptors()) {
+        if (<API label="None">feed.getId</API>().<API label=None"">equals</API>(<API label="None">fd.getId</API>())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+@Subscribe
+public void <API label="">handle</API>(FeedMessageReadEvent event) {
+    <API label="None">readIds.add</API>(<API label="None">event.getId</API>());
+    ReadFeedMessagesProperties.writeReadIds(readIds);
+}
+}
+
+</code></pre>
+
+`
+
+<pre><code>
+java.lang.NullPointerException
+at org.eclipse.core.internal.jobs.InternalJob.addJobChangeListener(InternalJob.java:161)
+at org.eclipse.core.runtime.jobs.Job.addJobChangeListener(Job.java:182)
+at <API label="">org.eclipse.recommenders.internal.news.rcp.RssService.start</API>(RssService.java:77)
+at <API label="">org.eclipse.recommenders.internal.news.rcp.RssService.start</API>(RssService.java:66)
+at org.eclipse.recommenders.internal.news.rcp.RssServiceTest.testStartEnabledFeed(RssServiceTest.java:43)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:238)
+at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:63)
+at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:229)
+at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:309)
+at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.pde.internal.junit.runtime.RemotePluginTestRunner.main</API>(RemotePluginTestRunner.java:62)
+at     <API label="">org.eclipse.pde.internal.junit.runtime.PlatformUITestHarness$1.run</API>(PlatformUITestHarness.java:47)
+at <API label="">org.eclipse.swt.widgets.RunnableLock.run</API>(RunnableLock.java:35)
+at     org.eclipse.swt.widgets.Synchronizer.runAsyncMessages(Synchronizer.java:136)
+at org.eclipse.swt.widgets.Display.runAsyncMessages(Display.java:4147)
+at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:3764)
+at org.eclipse.jface.window.Window.runEventLoop(Window.java:832)
+at <API label="">org.eclipse.jface.window.Window.open</API>(Window.java:808)
+at <API label="">org.eclipse.jface.dialogs.MessageDialog.open</API>(MessageDialog.java:341)
+at <API label="">org.eclipse.recommenders.internal.rcp.RcpModule$2.run</API>(RcpModule.java:248)
+at <API label="">org.eclipse.swt.widgets.RunnableLock.run</API>(RunnableLock.java:35)
+at     org.eclipse.swt.widgets.Synchronizer.runAsyncMessages(Synchronizer.java:136)
+at org.eclipse.swt.widgets.Display.runAsyncMessages(Display.java:4147)
+at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:3764)
+at <API label="">org.eclipse.e4.ui.internal.workbench.swt.PartRenderingEngine$9.run</API>(PartRenderingEngine.java:1151)
+at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:332)
+at <API label="">org.eclipse.e4.ui.internal.workbench.swt.PartRenderingEngine.run</API>(PartRenderingEngine.java:1032)
+at org.eclipse.e4.ui.internal.workbench.E4Workbench.createAndRunUI(E4Workbench.java:148)
+at <API label="">org.eclipse.ui.internal.Workbench$5.run</API>(Workbench.java:636)
+at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:332)
+at org.eclipse.ui.internal.Workbench.createAndRunWorkbench(Workbench.java:579)
+at org.eclipse.ui.PlatformUI.createAndRunWorkbench(PlatformUI.java:150)
+at <API label="">org.eclipse.ui.internal.ide.application.IDEApplication.start</API>(IDEApplication.java:135)
+at org.eclipse.pde.internal.junit.runtime.NonUIThreadTestApplication.runApp(NonUIThreadTestApplication.java:54)
+at org.eclipse.pde.internal.junit.runtime.UITestApplication.runApp(UITestApplication.java:47)
+at <API label="">org.eclipse.pde.internal.junit.runtime.NonUIThreadTestApplication.start</API>(NonUIThreadTestApplication.java:48)
+at <API label="">org.eclipse.equinox.internal.app.EclipseAppHandle.run</API>(EclipseAppHandle.java:196)
+at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:134)
+at <API label="">org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start</API>(EclipseAppLauncher.java:104)
+at <API label="">org.eclipse.core.runtime.adaptor.EclipseStarter.run</API>(EclipseStarter.java:380)
+at <API label="">org.eclipse.core.runtime.adaptor.EclipseStarter.run</API>(EclipseStarter.java:235)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:648)
+at org.eclipse.equinox.launcher.Main.basicRun(Main.java:603)
+at <API label="">org.eclipse.equinox.launcher.Main.run</API>(Main.java:1465)
+at <API label="">org.eclipse.equinox.launcher.Main.main</API>(Main.java:1438)
+
+</code></pre>
+
+==========
+The first thing I would do <API label="">is</API> change
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(provider.getPollFeedJob(<API label="org.mockito.Mockito.eq">Mockito.eq</API>(feed), <API label="org.mockito.Mockito.eq">Mockito.eq</API>(preferences), <API label="org.mockito.Mockito.eq">Mockito.eq</API>(environment)))
+        .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(job);
+
+</code></pre>
+
+to
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(provider.getPollFeedJob(<API label="org.mockito.Matchers.any">any</API>(FeedDescriptor.class), <API label="org.mockito.Matchers.any">any</API>(NewsRcpPreferences.class), <API label="org.mockito.Matchers.any">any</API>(NotificationEnvironment.class)))
+        .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(job);
+
+</code></pre>
+
+This <API label="">is</API> only to ensure that your provider <API label="">is</API> in fact giving you the <API label="">mock</API> job.
+
+Then I would <API label="">add</API> a 
+
+<pre><code>
+<API label="org.mockito.Mockito.doNothing">doNothing</API>().<API label="org.mockito.stubbing.Stubber.when">when</API>(job).addJobChangeListener(<API label="org.mockito.Matchers.any">any</API>(JobChangeAdapter.class));
+
+</code></pre>
+
+Or you can do the second one first.  Either way those are two things you can try.
+

@@ -1,0 +1,166 @@
+https://stackoverflow.com/questions/49673221
+I have written sample Kafka Producer class, I tested this class with local configurations, its working fine. Now along with it I am trying to write corresponding test class, for that I am using concept of mockings concepts but getting some errors
+
+My original class:-
+
+<pre><code>
+public class SimpleProducer {
+
+   private static final Logger logger = <API label="None">LogManager.getLogger</API>(SimpleProducer.class);
+    public static String message = null;
+    public static void <API label="">main</API>(String[] args) throws Exception {
+
+       String topicName = null;
+        if(args.length == 0){
+            <API label="None">logger.info</API>("Run class by providing topic-name java -cp /path-of-the-jar/kafka-consumer-producer-jar-with-dependencies.jar com.ewt.SimpleProducer  > kafka-<API label="">consumer.log</API> 2>&1 &");
+            return;
+        }
+        else{
+            topicName = args[0];
+        }
+
+       // create instance for properties to access producer configs
+        <API label="">Properties</API> props = new <API label="None">Properties</API>();
+
+       // Assign localhost id
+        <API label="None">props.put</API>("bootstrap.servers", "localhost:9092");
+
+       // Set acknowledgements for producer requests.
+        <API label="None">props.put</API>("acks", "all");
+
+       // If the request fails, the producer can automatically retry,
+        <API label="None">props.put</API>("retries", 0);
+
+       // Specify buffer <API label="">size</API> in config
+        <API label="None">props.put</API>("<API label="">batch.size</API>", 16384);
+
+       // Reduce the no of requests less than 0
+        <API label="None">props.put</API>("linger.ms", 1);
+
+       // The buffer.memory controls the total amount of memory available to
+        // the producer for buffering.
+        <API label="None">props.put</API>("buffer.memory", 33554432);
+
+       <API label="None">props.put</API>("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+
+       <API label="None">props.put</API>("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+
+       Producer producer = new KafkaProducer(props);
+
+       for (int i = 0; i < 10; i++)
+            producer.send(new ProducerRecord(topicName, <API label="None">Integer.toString</API>(i), <API label="None">Integer.toString</API>(i)));
+        message = "Messages sent successfully";
+        <API label="None">logger.info</API>(message);
+        <API label="None">producer.close</API>();
+    }
+}
+
+</code></pre>
+
+Test Class:-
+
+<pre><code>
+import <API label="None">java.util.Properties</API>;
+
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+import com.ewt.SimpleProducer;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(<API label="">Properties</API>.class)
+public class SimpleProducerTest {
+
+@Test
+public void mainTest() throws Exception{
+    <API label="">Properties</API> props = new <API label="">Properties</API>();
+    KafkaProducer kafkaProducer = <API label="">Mockito.mock</API>(KafkaProducer.class);
+        PowerMockito.whenNew(<API label="None">Properties</API>.class).withNoArguments().<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(props);
+        PowerMockito.whenNew(KafkaProducer.class).withArguments(<API label="">Properties</API>.class).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(kafkaProducer); // showing error here
+        //PowerMockito.whenNew(KafkaProducer.class).withArguments(props).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(kafkaProducer);//tried this one also, it is also giving same error
+        <API label="org.mockito.Mockito.doNothing">Mockito.doNothing</API>().<API label="org.mockito.stubbing.Stubber.when">when</API>(kafkaProducer.send(<API label="">Mockito.anyObject</API>()));
+        //<API label="org.mockito.Mockito.doNothing">Mockito.doNothing</API>().<API label="org.mockito.stubbing.Stubber.when">when</API>(<API label="None">kafkaProducer.close</API>());
+        String args[] = {"test-topic"};
+        <API label="None">SimpleProducer.main</API>(args);
+        <API label="None">System.out.println</API>(SimpleProducer.message);
+    }
+}
+
+</code></pre>
+
+Getting the following error
+
+<pre><code>
+org.powermock.reflect.exceptions.TooManyConstructorsFoundException: Several             
+matching constructors found, please specify the argument parameter types so that PowerMock can determine which method you're referring to.
+Matching constructors in class         org.apache.kafka.clients.producer.KafkaProducer were:
+org.apache.kafka.clients.producer.KafkaProducer( <API label="">java.util.Properties</API>.class )
+org.apache.kafka.clients.producer.KafkaProducer( java.util.Map.class )
+
+at org.powermock.reflect.internal.WhiteboxImpl.throwExceptionWhenMultipleConstructorMatchesFound(WhiteboxImpl.java:1751)
+at org.powermock.reflect.internal.WhiteboxImpl.findUniqueConstructorOrThrowException(WhiteboxImpl.java:1098)
+at org.powermock.api.mockito.internal.expectation.DefaultConstructorExpectationSetup.createNewSubstituteMock(DefaultConstructorExpectationSetup.java:98)
+at org.powermock.api.mockito.internal.expectation.DefaultConstructorExpectationSetup.withArguments(DefaultConstructorExpectationSetup.java:55)
+at com.ewt.test.SimpleProducerTest.mainTest(SimpleProducerTest.java:24)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:68)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:326)
+at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:88)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:96)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:310)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:131)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.access$100(PowerMockJUnit47RunnerDelegateImpl.java:59)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner$TestExecutorStatement.evaluate</API>(PowerMockJUnit47RunnerDelegateImpl.java:147)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.evaluateStatement(PowerMockJUnit47RunnerDelegateImpl.java:107)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:82)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:298)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:86)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:218)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:160)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:134)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:33)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:45)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:136)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:117)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:57)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:59)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:678)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+
+</code></pre>
+
+==========
+<code><API label="">java.util.Properties</API></code> is a <code>java.util.Map</code> so PowerMock is unable to distinguish between these two contructors:
+
+<pre><code>
+org.apache.kafka.clients.producer.KafkaProducer( <API label="">java.util.Properties</API>.class )
+
+org.apache.kafka.clients.producer.KafkaProducer( java.util.Map.class )
+
+</code></pre>
+
+You can use <code>withParameterTypes</code> alongside <code>withArguments</code> to tell PowerMock exactly which contructor you are targetting.
+
+For example:
+
+<pre><code>
+PowerMockito.whenNew(KafkaProducer.class)
+    .withParameterTypes(<API label="None">Properties</API>.class)
+    .withArguments(<API label="None">Properties</API>.class)
+    .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(kafkaProducer); 
+
+</code></pre>
+

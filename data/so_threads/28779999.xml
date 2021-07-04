@@ -1,0 +1,19 @@
+https://stackoverflow.com/questions/28779999
+I want to write a test that passes a mock object A into an object under test B and checks if ANY of the methods of A were called. To give some context, class B is designed to manipulate A in a specific way, based on a <API label="">set</API> of parameters, and under certain conditions it shouldn't do <API label="">anything</API> to it at all. So my goal is to test that scenario. I know how to test whether a specific method was called or not:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(A, <API label="org.mockito.Mockito.never">never</API>()).myMethod();
+
+</code></pre>
+
+But I can't find a way to make sure that NONE of the methods A has were called. Is there a way to do this?
+
+==========
+I believe that <a href="https://www.javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#verifyNoInteractions-java.lang.Object...-" rel="nofollow noreferrer"><code>verifyNoInteractions</code></a> might be what you're looking for.  In your case you'd call <code>Mockito.verifyNoInteractions(A)</code>.
+<code>public static void verifyNoInteractions(java.lang.Object... mocks)</code>
+<pre><code>
+Verifies that no interactions happened on given mocks. 
+
+</code></pre>
+<a href="https://www.javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#verifyNoInteractions-java.lang.Object...-" rel="nofollow noreferrer">https://www.javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#verifyNoInteractions-java.lang.Object...-</a>
+

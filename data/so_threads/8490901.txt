@@ -1,0 +1,61 @@
+https://stackoverflow.com/questions/8490901
+Hello I've this piece of code:
+
+<code>
+public static void <API label="">main</API>(String[] args) {
+    Set set1 = new HashSet();
+    Set set2 = new HashSet();
+    <API label="None">set1.add</API>(1);
+    <API label="None">set1.add</API>(2);
+    <API label="None">set1.add</API>(3);
+    <API label="None">set1.add</API>(4);
+    <API label="None">set1.add</API>(5);
+
+   <API label="None">set2.add</API>(4);
+    <API label="None">set2.add</API>(5);
+    <API label="None">set2.add</API>(6);
+    <API label="None">set2.add</API>(7);
+    <API label="None">set2.add</API>(8);
+
+   SetView x = <API label="com.google.common.collect.Sets.intersection">Sets.intersection</API>(set1, set2);
+    <API label="None">set1.removeAll</API>(x);
+    <API label="None">set2.removeAll</API>(x);
+}
+</code>
+
+and it throws 
+
+<code>
+Exception in thread "main" java.util.ConcurrentModificationException
+    at java.util.HashMap$HashIterator.nextEntry(HashMap.java:841)
+    at <API label="">java.util.HashMap$KeyIterator.next</API>(HashMap.java:877)
+    at <API label="">com.google.common.collect.Iterators$7.computeNext</API>(Iterators.java:627)
+    at com.google.common.collect.AbstractIterator.tryToComputeNext(AbstractIterator.java:141)
+    at <API label="">com.google.common.collect.AbstractIterator.hasNext</API>(AbstractIterator.java:136)
+    at <API label="">java.util.AbstractSet.removeAll</API>(AbstractSet.java:142)
+    at <API label="">com.Main2.main</API>(Main2.java:30)
+</code>
+
+is this a normal? or a small bug...
+
+==========
+<code>SetView</code> is a view of the <API label="">intersection</API> of these sets, not a copy. From the Guava docs:
+
+
+ An unmodifiable view of a set which may be backed by other sets; this
+  view will change as the backing sets do.
+
+
+So, when you call <code><API label="None">set1.removeAll</API>(x)</code> and pass in the view, you're essentially trying to <API label="">remove</API> from <code>set1</code> while looping over part of itself. This is the reason for the <code>ConcurrentModificationException</code>.
+
+To achieve what you're trying to do, have a look at <code>SetView.immutableCopy()</code>.
+
+For example:
+
+<code>
+SetView intersectionView = <API label="com.google.common.collect.Sets.intersection">Sets.intersection</API>(set1, set2);
+ImmutableSet intersectionCopy = intersectionView.immutableCopy();
+<API label="None">set1.removeAll</API>(intersectionCopy);
+<API label="None">set2.removeAll</API>(intersectionCopy);
+</code>
+

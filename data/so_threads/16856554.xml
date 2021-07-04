@@ -1,0 +1,78 @@
+https://stackoverflow.com/questions/16856554
+I have an ArrayList which is filled by Objects.
+
+My object class called <code>Article</code> which has two fields ;
+
+<pre><code>
+public class Article {
+
+   private int codeArt;
+    private String desArt;
+
+ public Article(int aInt, String string) {
+        this.desArt = string;
+        this.codeArt = aInt;
+    }
+
+   public int getCodeArt() {return codeArt; }
+    public void setCodeArt(int codeArt) {this.codeArt = codeArt;}
+    public String getDesArt() {return desArt;}
+    public void setDesArt(String desArt) { this.desArt = desArt;}
+
+}
+
+</code></pre>
+
+I want to <API label="">filter</API> my List using the <code>desArt</code> field, and for test I used the String "test".
+
+I used the Guava from google which allows me to <API label="">filter</API> an ArrayList.
+
+this is the code I tried :
+
+<pre><code>
+private List listArticles = new ArrayList<>();
+
+//Here the I've filled my ArrayList
+
+private List filteredList filteredList = <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(<API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(listArticles, <API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>("test")));
+
+</code></pre>
+
+but this code isn't working.
+
+==========
+This is normal: <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Predicates.html#<API label="">containsPattern</API>%28java.lang.String%29"><API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>()</a> operates on <code>CharSequence</code>s, which your <code>gestionStock.Article</code> object does not implement.
+
+You need to write your own predicate:
+
+<pre><code>
+public final class ArticleFilter
+    implements Predicate
+{
+    private final Pattern pattern;
+
+   public ArticleFilter(final String regex)
+    {
+        pattern = <API label="None">Pattern.compile</API>(regex);
+    }
+
+   @Override
+    public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(final gestionstock.Article input)
+    {
+        return <API label="None">pattern.matcher</API>(input.getDesArt()).<API label="None">find</API>();
+    }
+}
+
+</code></pre>
+
+Then use:
+
+<pre><code>
+ private List filteredList
+     = <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(<API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(listArticles,     
+         new ArticleFilter("test")));
+
+</code></pre>
+
+However, this is quite some code for something which can be done in much less code using non functional programming, as demonstrated by @mgnyp...
+

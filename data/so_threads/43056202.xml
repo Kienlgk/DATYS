@@ -1,0 +1,39 @@
+https://stackoverflow.com/questions/43056202
+I am using <a href="http://joel-costigliola.github.io/assertj/" rel="noreferrer">AssertJ</a> and I am trying to assert that two <code>List</code> contain same strings, ignoring the order.
+
+<pre><code>
+List expected = <API label="None">Arrays.asList</API>("Something-6144-77.pdf", "d-6144-77.pdf", "something-6144-78.pdf", "Something-6144-8068.pdf");
+List actual = new ArrayList();
+
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="None">actual.size</API>()).<API label="org.assertj.core.api.IntegerAssert.isEqualTo">isEqualTo</API>(<API label="None">expected.size</API>());
+
+// This line gives the error: "The method <API label="">containsExactlyInAnyOrder</API>(String...) in the type ListAssert is not applicable for the arguments (List)"
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(actual).<API label="org.assertj.core.api.ListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>(expected);
+
+</code></pre>
+
+How can I fix the compilation error below that is appearing when trying to use <code><API label="org.assertj.core.api.ListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>()</code>? 
+
+
+ "The method <API label="org.assertj.core.api.ListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>(String...) in the type ListAssert is not applicable for the arguments (List)"
+
+
+==========
+The error message gives you the solution:
+
+<pre><code>
+The method <API label="org.assertj.core.api.ListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>(String...)
+
+</code></pre>
+
+<code>String...</code> is a any number of strings but can be passed as an <API label="">array</API> as well:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(actual).<API label="org.assertj.core.api.ListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>((String[]) <API label="None">expected.toArray</API>(new String[<API label="None">expected.size</API>()]));
+
+</code></pre>
+
+The cast is necessary here and that code is given under the assumption that the <code>expected</code> element is created different than in your example, as it doesn't make sense to convert an <API label="">array</API> to a list and back.
+
+Here some documentation to varargs (Arbitrary number of arguments, the <code>...</code>): <a href="https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html" rel="nofollow noreferrer">https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html</a>
+

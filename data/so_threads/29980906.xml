@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/29980906
+How do I go about mocking a void method and also replace what that method executes? I'd like to mock the method so it does a thread.sleep to simulate work.
+
+I've tried 
+
+<pre><code>
+<API label="org.mockito.Mockito.doAnswer">Mockito.doAnswer</API>(new Answer(){
+    Void <API label="">answer</API>(InvocationOnMock invocation) {
+        Thread.sleep(1000);
+        return null;
+    }
+}.when(Class).myVoidMethod((OtherClass) <API label="org.mockito.Mockito.any">Mockito.any</API>());
+
+</code></pre>
+
+but it complains that I'm not mocking it right and gives me examples of using doException or thenReturn.
+
+==========
+From Mockito Documentation 
+
+<pre><code>
+      <API label="org.mockito.Mockito.stubVoid">stubVoid</API>(mock)
+  .toAnswer(new Answer() {
+                public Object <API label="">answer</API>(InvocationOnMOck invocation) {
+                    Visitor v = (Visitor) <API label="org.mockito.invocation.InvocationOnMock.getArguments">invocation.getArguments</API>()[0];
+                    v.visitMock(<API label="org.mockito.invocation.InvocationOnMock.getMock">invocation.getMock</API>());
+
+                   return null;
+                }
+            })
+   .on().<API label="None">accept</API>(<API label="org.mockito.Mockito.any">any</API>());
+
+</code></pre>
+
+The Answer will be executed 
+
+<a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/stubbing/VoidMethodStubbable.html" rel="nofollow">http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/stubbing/VoidMethodStubbable.html</a>
+

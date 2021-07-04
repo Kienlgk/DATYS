@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/61641396
+I feel like I'm missing something obvious here, but the documentation is letting me down. I'm attempting to compare two maps while ignoring a set <API label="">of</API> fields in assertJ. I would like to see this assert pass:
+
+<pre><code>
+  private static final String[] IGNORED_FIELDS = { "ignored", "another" };
+  private static final Map TEST_PAYLOAD = <API label="com.google.common.collect.ImmutableMap.of">ImmutableMap.of</API>("test", "payload", "example", "value", "ignored", "field");
+  private static final Map COMPARISON_PAYLOAD = <API label="com.google.common.collect.ImmutableMap.of">ImmutableMap.of</API>("test", "payload", "example", "value", "another", "ignored field");
+  // assert fails
+  <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(TEST_PAYLOAD).<API label="org.assertj.core.api.MapAssert.isEqualToIgnoringGivenFields">isEqualToIgnoringGivenFields</API>(COMPARISON_PAYLOAD, IGNORED_FIELDS);
+
+</code></pre>
+
+However, the comparison that actually occurs is <API label="">of</API> the map objects, and fails on things like <API label="">size</API>, modCount, threshold, etc. In addition, it doesn't actually ignore the fields listed when comparing tables, keys, and values. I have also tried using
+
+<pre><code>
+  <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(TEST_PAYLOAD).<API label="org.assertj.core.api.MapAssert.usingRecursiveComparison">usingRecursiveComparison</API>().ignoringGivenFields(IGNORED_FIELDS).<API label="">isEqualTo</API>(COMPARISON_PAYLOAD);
+
+</code></pre>
+
+but this failed because it attempted to compare the ignored fields. Is there an elegant solution here, or am I going to have to manually iterate through keys?
+
+==========
+<code>ignoringGivenFields()</code> won't work, because it's an <code>ObjectAssert</code>, not a <code>MapAssert</code> method and operates on object's properties, not map's keys, as you pointed out.
+
+That said, I believe there's no built-in AssertJ method which you could use, but you can write your own <API label="">filter</API> method and <API label="">apply</API> it before doing equality test:
+
+<pre><code>
+private static  Map filterIgnoredKeys(Map map) {
+    return <API label="None">Maps.filterKeys</API>(map, key -> !<API label="None">IGNORED_FIELDS.contains</API>(key));
+}
+// later
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(filterIgnoredKeys(TEST_PAYLOAD))
+        .<API label="">isEqualTo</API>(filterIgnoredKeys(COMPARISON_PAYLOAD))
+
+</code></pre>
+
+If you want the solution to be more elegant, you can experiment with <a href="https://joel-costigliola.github.io/assertj/assertj-core-custom-assertions.html" rel="nofollow noreferrer">your own custom assertion</a>.
+

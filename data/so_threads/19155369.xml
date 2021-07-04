@@ -1,0 +1,71 @@
+https://stackoverflow.com/questions/19155369
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(candidateService.findById(1)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new Candidate());
+
+</code></pre>
+
+I want to extend this behaviour for <API label="">any</API> Integer(not necessarily for 1)
+
+If I wrire
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(candidateService.findById( <API label="org.mockito.Matchers.any">any</API>(Integer.class)  )).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new Candidate());
+
+</code></pre>
+
+I have compilation error
+
+
+ The method findById(Integer) in the type CandidateService is not
+  applicable for the arguments (Matcher)
+
+
+UPDATE
+
+imports:
+
+<pre><code>
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+</code></pre>
+
+==========
+Try <API label="org.mockito.Matchers.anyInt">anyInt</API>():
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(candidateService.findById(<API label="org.mockito.Matchers.anyInt">anyInt</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new Candidate());
+
+</code></pre>
+
+For example I have <API label="org.mockito.Matchers.anyLong">anyLong</API>() in my project:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(dao.getAddress(<API label="org.mockito.Matchers.anyLong">anyLong</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenReturn</API>(<API label="">Arrays.asList</API>(dto));
+
+</code></pre>
+
+EDIT:
+You must import:
+
+<pre><code>
+import static org.mockito.Matchers.anyInt;
+
+</code></pre>
+

@@ -1,0 +1,61 @@
+https://stackoverflow.com/questions/38273418
+I am using Junit 4.8.2. When I run my test class with <code>@RunWith(MockitoJUnitRunner.class)</code> and just annotate mocks with @Mock, it doesn't seem to initialize the mocks. But when I use the static <API label="org.mockito.Mockito.mock">mock</API>() and get rid of the runner and annotations, I can see that the mocks are initialized. 
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class MyTestClass
+{
+    private static final String DOMAIN = "<API label="">mock</API>";
+
+   @Mock private TransactionManager transactionManager;
+    @Mock private SearchManager searchManager;
+
+   private final <API label="">filter</API> = new Filter(transactionManager,searchManager, DOMAIN);
+
+   @Test
+    public void myTest()
+    {
+        <API label="">filter</API>.callMethod();      // This throws NPE since transactionManager was null
+    }
+}
+
+</code></pre>
+
+What am I doing wrong here? I have looked into this <a href="https://stackoverflow.com/questions/15494926/initialising-<API label="">mock</API>-objects-mockito]">Initialising <API label="">mock</API> objects - MockIto</a> and have done everything according to it but still no luck.
+
+==========
+The runner handles the <code>@Mock</code> annotation after the class is instantiated, so move the <code><API label="">filter</API> = new Filter(transactionManager,searchManager, DOMAIN);</code> in a <code>@Before</code> annotated method:
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class MyTestClass
+{
+    private static final String DOMAIN = "<API label="">mock</API>";
+
+   @Mock 
+    private TransactionManager transactionManager;
+
+   @Mock 
+    private SearchManager searchManager;
+
+   private Filter <API label="">filter</API>;
+
+   @Before
+    public void setup() throws Exception {
+        <API label="">filter</API> = new Filter(transactionManager, searchManager, DOMAIN);
+    }
+
+   @Test
+    public void myTest() throws Exception {
+        <API label="">filter</API>.callMethod(); // No more NPE
+    }
+}
+
+</code></pre>
+
+From the <a href="http://site.mockito.org/mockito/docs/current/org/mockito/runners/MockitoJUnitRunner.html" rel="noreferrer">runner doc</a>: 
+
+
+ Initializes mocks annotated with <code>@Mock</code>, so that explicit usage of <code><API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(Object)</code> is not necessary. Mocks are initialized before each test method.
+
+

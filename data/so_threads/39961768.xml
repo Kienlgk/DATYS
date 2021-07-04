@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/39961768
+I have issue where <API label="">when</API> I use Java parallelStream instead of stream my tests fail. This happens because I am returning Mock objects in a strict order rather than controlling Mock objects returned based on input.
+
+The following is my current code used to return mocks objects:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(myOperation.getSomething(<API label="org.mockito.Mockito.any">any</API>(String.class)))
+    .<API label="org.mockito.stubbing.OngoingStubbing.thenAnswer">thenAnswer</API>(<API label="org.mockito.AdditionalAnswers.returnsElementsOf">AdditionalAnswers.returnsElementsOf</API>(aListOfThings)));
+
+</code></pre>
+
+How can I concisely control the return value based off the argument I am passing to "getSomething"?
+
+==========
+You can do something like that:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(myOperation.getSomething(<API label="org.mockito.Mockito.any">any</API>(String.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenAnswer">thenAnswer</API>(new Answer() {
+    @Override
+    public SomeThing <API label="">answer</API>(final InvocationOnMock invocation) throws Throwable {
+        // HERE ====> use <API label="org.mockito.invocation.InvocationOnMock.getArguments">invocation.getArguments</API>()
+        return new SomeThing();
+    }
+});
+
+</code></pre>
+
+Here the <API label="">answer</API> return a <code>SomeThing</code> instance, you will need to adjust to your needs
+
+Some reading:
+
+
+<a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#37" rel="nofollow">Java 8 custom <API label="">answer</API> support</a>
+<a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#<API label="">doAnswer</API>(org.mockito.stubbing.Answer)" rel="nofollow"><API label="org.mockito.Mockito.doAnswer">doAnswer</API> documentation</a>
+<a href="http://site.mockito.org/mockito/docs/current/org/mockito/invocation/InvocationOnMock.html" rel="nofollow"><code>InvocationOnMock</code> javadoc</a>
+
+

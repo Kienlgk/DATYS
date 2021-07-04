@@ -1,0 +1,71 @@
+https://stackoverflow.com/questions/6778743
+Off and on for the past few weeks I've been trying to find my ideal cache implementation using guava's <a href="http://guava-libraries.googlecode.com/svn/trunk/javadoc/com/google/common/collect/<API label="">MapMaker</API>.html" rel="nofollow noreferrer" title="<API label="">MapMaker</API>"><API label="">MapMaker</API></a>. See my previous two questions <a href="https://stackoverflow.com/questions/6289234/guava-mapmaker-optionally-set-maximumsize0-for-factory-method">here</a> and <a href="https://stackoverflow.com/questions/6592183/what-are-the-practical-consequences-of-using-soft-references">here</a> to follow my thought process.
+
+Taking what I've learned, my next attempt is going to ditch soft values in favor of <API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API> and <API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>:
+
+<pre><code>
+ConcurrentMap cache = new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>()
+        .<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(MAXIMUM_SIZE)
+        .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(MINUTES_TO_EXPIRY, TimeUnit.MINUTES)
+        .makeComputingMap(loadFunction);
+
+</code></pre>
+
+where
+
+<pre><code>
+Function loadFunction = new Function() {
+   @Override
+   public MyObject <API label="None">apply</API>(String uidKey) {
+      return getFromDataBase(uidKey);
+   }
+};
+
+</code></pre>
+
+However, the one remaining issue I'm still grappling with is that this implementation will evict objects even if they are strongly reachable, once their time is up. This could result in multiple objects with the same UID floating around in the environment, which I don't want (I believe what I'm trying to achieve is known as canonicalization).
+
+So as far as I can tell the only answer is to have an additional map which functions as an interner that I can check to see if a data object is still in memory:
+
+<pre><code>
+ConcurrentMap interner = new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>()
+        .<API label="com.google.common.collect.MapMaker.weakValues">weakValues</API>()
+        .<API label="com.google.common.collect.MapMaker.makeMap">makeMap</API>();
+
+</code></pre>
+
+and the load function would be revised:
+
+<pre><code>
+Function loadFunction = new Function() {
+   @Override
+   public MyObject <API label="None">apply</API>(String uidKey) {
+      MyObject dataObject = <API label="None">interner.get</API>(uidKey);
+      if (dataObject == null) {
+         dataObject = getFromDataBase(uidKey);
+         <API label="None">interner.put</API>(uidKey, dataObject);
+      }
+      return dataObject;
+   }
+};
+
+</code></pre>
+
+However, using two maps instead of one for the cache seems inefficient. Is there a more sophisticated way to approach this? In general, am I going about this the right way, or should I rethink my caching strategy?
+
+==========
+Whether two maps is efficient depends entirely on how expensive getFromDatabase() is, and how big your objects are.  It does not seem out of all reasonable boundaries to do something like this.
+
+As for the implementation, It looks like you can probably layer your maps in a slightly different way to <API label="">get</API> the behavior you want, and still have good concurrency properties.
+
+
+Create your first map with weak values, and <API label="">put</API> the computing function getFromDatabase() on this map.
+The second map is the expiring one, also computing, but this function just gets from the first map.
+
+
+Do all your access through the second map.
+
+In other words, the expiring map acts to pin a most-recently-used subset of your objects in memory, while the weak-reference map is the real cache.  
+
+-dg
+

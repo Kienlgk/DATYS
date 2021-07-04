@@ -1,0 +1,30 @@
+https://stackoverflow.com/questions/7794014
+Is it possible to use guava in the client side code of a gwt web application? If so, how does one <API label="">add</API> guava to an Eclipse project?
+
+I've added both the guava-10.0.1 and guava-gwt-10.0.1 jars to my build path and have added the source attachments to each but I still get this error:
+
+
+ No source code is <API label="">available</API> for type
+  com.google.gwt.thirdparty.guava.common.base.Predicate; did you
+  forget to inherit a required module
+
+
+==========
+OK, look at your import line.  Does it look like this?
+
+<pre><code>
+import com.google.gwt.thirdparty.guava.common.base.Predicate;
+
+</code></pre>
+
+That's wrong.  Change it to:
+
+<pre><code>
+import com.google.common.base.Predicate;
+
+</code></pre>
+
+If you use completion assist in Eclipse -- Control-Spacebar -- study the list of offered completions. Don't just pick the first one.  Look to the right where it will identify the source of the completion in light grey text.  If you are looking at the thirdparty.guava one, <API label="">move</API> to the next one until you see the google.common one.
+
+Maybe someone can give some insight into what the thirdparty.guava library is used for, whether it needs to be in the build path, and in what order Guava libraries ought to appear in the typical GWT project.  
+

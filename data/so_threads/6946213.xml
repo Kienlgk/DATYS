@@ -1,0 +1,83 @@
+https://stackoverflow.com/questions/6946213
+I am having trouble using the <API label="com.google.common.collect.MapMaker">MapMaker</API> from google-guava. Here is the code:
+
+<pre><code>
+package test;
+
+
+import java.lang.ref.SoftReference;
+import java.util.Map;
+import java.util.Random;
+
+import com.google.common.collect.MapEvictionListener;
+import com.google.common.collect.MapMaker;
+
+
+public class MapMakerTest {
+
+private static Random RANDOM = new Random();
+
+private static char[] CHARS =
+    ("abcdefghijklmnopqrstuvwxyz" +
+     "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+     "1234567890-=!@#$%^&*()_+").<API label="None">toCharArray</API>();
+
+public static void <API label="">main</API>(String[] args) throws Exception {
+    MapEvictionListener listener = new MapEvictionListener() {
+
+       @Override
+        public void onEviction(String key, String value) {
+            <API label="None">System.out.println</API>("> evicted");
+        }
+    };
+    Map map = new <API label="">MapMaker</API>().
+        <API label="com.google.common.collect.MapMaker.concurrencyLevel">concurrencyLevel</API>(1).<API label="">softValues</API>().
+        evictionListener(listener).<API label="com.google.common.collect.MapMaker.makeMap">makeMap</API>();
+    while (true) {
+        <API label="None">System.out.println</API>(<API label="None">map.size</API>());
+        String s = getRandomString();
+        <API label="None">map.put</API>(s, s);
+        Thread.sleep(50);
+    }
+}
+
+private static String getRandomString() {
+    int total = 50000;
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < total; ++i) {
+        <API label="None">sb.append</API>(CHARS[RANDOM.nextInt(CHARS.length)]);
+    }
+    return <API label="None">sb.toString</API>();
+}
+}
+
+</code></pre>
+
+When java is called like: <code>java -Xms2m -Xmx2m -cp guava-r09.jar:. test.MapMakerTest</code> (the heap settings are so small intentionally to easier see what happens) around the 60th iteration it explodes with OutOfMemoryError: HeapSpace.
+
+However, when the map is <code>Map</code> (and according changes in the rest of the code: the listener, and the <API label="None">put</API>), I can see the evictions taking place, and the code simply works, and the values get garbage collected.
+
+In all of the documentation, including this one: <a href="http://guava-libraries.googlecode.com/svn/tags/release09/javadoc/index.html" rel="nofollow">http://guava-libraries.googlecode.com/svn/tags/release09/javadoc/index.html</a>, there is no mention of SoftReferences explicitly. Isn't the Map implementation supposed to wrap the values in SoftReference when <API label="None">put</API> is called? I am really confused about the supposed usage.
+
+I am susing guava r09.
+
+Could anyone maybe explain what I am doing wrong, and why my assumptions are wrong?
+
+Best regards,
+wujek
+
+==========
+You use the same object for key and value, therefore it is strongly reachable as a key and is not eligible for garbage collection despite the fact that value is softly reachable:
+
+<pre><code>
+<API label="None">map.put</API>(s, s); 
+
+</code></pre>
+
+Try to use different instances:
+
+<pre><code>
+<API label="None">map.put</API>(s, new String(s));
+
+</code></pre>
+

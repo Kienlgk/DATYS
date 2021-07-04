@@ -1,0 +1,118 @@
+https://stackoverflow.com/questions/8346036
+I am trying to serialize some objects of class InstitutionResultView which is basically wrapper to <a href="http://docs.guava-libraries.googlecode.com/git-history/v10.0.1/javadoc/index.html" rel="nofollow">guava's TreeMultimap</a>:
+
+<pre><code>
+import java.io.Serializable;
+import java.text.Collator;
+import java.util.Comparator;
+
+import com.google.common.base.Function;
+import com.google.common.base.Objects;
+import com.google.common.collect.Maps.EntryTransformer;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.SortedSetMultimap;
+import com.google.common.collect.TreeMultimap;
+
+public class InstitutionResultView implements Serializable {
+  private static final long serialVersionUID = -8110992296090587657L;
+
+ private final SortedSetMultimap nameToInstitutionsMapping = <API label="com.google.common.collect.TreeMultimap.create">TreeMultimap.create</API>(
+      <API label=""com.google.common.collect.Ordering.from">Ordering.from</API>(StringComparators.AS_IS), // <API label="">insertion</API> order
+      <API label="com.google.common.collect.Ordering.natural">Ordering.natural</API>() // <----- this works when serializing object
+      // <API label="com.google.common.collect.Ordering.from">Ordering.from</API>(<API label="">Collator.getInstance</API>()) // <----- when used instead previous line gives an exception when serializing
+          .<API label="com.google.common.collect.Ordering.nullsFirst">nullsFirst</API>().<API label="com.google.common.collect.Ordering.onResultOf">onResultOf</API>(StringInstitutionFunctions.BY_NAME) // <API label="">sort</API> by name
+          .<API label="com.google.common.collect.Ordering.compound">compound</API>(
+              <API label="com.google.common.collect.Ordering.natural">Ordering.natural</API>().<API label="com.google.common.collect.Ordering.nullsFirst">nullsFirst</API>().<API label="com.google.common.collect.Ordering.onResultOf">onResultOf</API>(IntegerInstitutionFunctions.BY_ID) // <API label="">sort</API> by id
+              ));
+
+ public SortedSetMultimap institutions() {
+    return nameToInstitutionsMapping;
+  }
+
+ public void setInstitutions(final Multimap institutions) {
+    <API label="None">this.nameToInstitutionsMapping.clear</API>();
+    <API label="None">this.nameToInstitutionsMapping.putAll</API>(institutions);
+  }
+
+ @Override
+  public String <API label="None">toString</API>() {
+    return <API label="com.google.common.base.MoreObjects.toStringHelper">Objects.toStringHelper</API>(this)
+        .<API label="None">add</API>("nameToInstitutionsMapping", <API label="com.google.common.collect.Multimaps.transformEntries">Multimaps.transformEntries</API>(nameToInstitutionsMapping, EntryTransformers.TO_NAME_WITH_CATEGORY))
+        .<API label="None">toString</API>();
+  }
+
+</code></pre>
+
+During serialization I <API label="">get</API> exception:
+
+
+ java.io.NotSerializableException: java.text.RuleBasedCollator     at
+  java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1164)
+    at
+  
+  ...
+  
+  <API label="com.google.common.collect.TreeMultimap.writeObject">com.google.common.collect.TreeMultimap.writeObject</API>(TreeMultimap.java:180)
+  
+  ...
+
+
+I found <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4330877" rel="nofollow">this bug <API label="">from</API> Sun's bug database</a> which covers very similar case to mine, but it doesn't point to any resolution. I tried adding transient Collator instance field: 
+
+<pre><code>
+  private transient Collator collatorInstance = <API label="None">Collator.getInstance</API>();
+
+</code></pre>
+
+and using it as <code><API label="com.google.common.collect.Ordering.from">Ordering.from</API>(collatorInstance)</code> but still it doesn't work.
+
+I'd be glad if anybody could give me some idea what to do to solve this problem.
+
+
+
+EDIT - That's what worked for me (thanks to @Puce and his answer):
+
+<pre><code>
+  class CollatorWrapper implements Comparator, Serializable {
+    private static final long serialVersionUID = 1L;
+
+   private transient Collator collatorInstance;
+
+   public CollatorWrapper() {
+      super();
+      initCollatorInstance();
+    }
+
+   @Override
+    public int <API label="None">compare</API>(final String o1, final String o2) {
+      return <API label="None">collatorInstance.compare</API>(o1, o2);
+    }
+
+   private void initCollatorInstance() {
+      collatorInstance = <API label="">Collator.getInstance</API>();
+    }
+
+   private void <API label="None">writeObject</API>(final java.io.ObjectOutputStream out) throws IOException {
+      out.defaultWriteObject();
+    }
+
+   private void <API label="None">readObject</API>(final java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+      in.defaultReadObject();
+      initCollatorInstance();
+    }
+  }
+
+</code></pre>
+
+==========
+I think you might be able to <API label="">write</API> a wrapper, which
+
+
+implements Comparator
+implements Serialzable (and the necessary methods such as <API label="None">readObject</API>, <API label="None">writeObject</API>)
+wraps a transient Collator 
+remembers the Locale (if you need that)
+
+

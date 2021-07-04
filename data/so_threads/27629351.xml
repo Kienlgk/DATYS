@@ -1,0 +1,171 @@
+https://stackoverflow.com/questions/27629351
+Here is my POJO class:
+
+/**
+ * a POJO class to store json response data
+ */
+public class SearchItem {
+
+<pre><code>
+private String headline="";
+
+private String mDefinition="";
+private String nivURL="";
+
+public String getHeadline() {
+    return headline;
+}
+
+public void setHeadline(String headline) {
+    this.headline = headline;
+}
+
+public  String getImageURL() {
+    return nivURL;
+}
+
+public void setImageURL(String URL) {
+    this.nivURL = URL;
+}
+
+public String getDefinition() {
+    return mDefinition;
+}
+
+public void setDefinition(String definition) {
+    this.mDefinition = definition;
+}
+
+@Override
+public String <API label="">toString</API>() {
+    return "[ headline=" + headline +
+            " , imageView URL=" + nivURL + "]";
+}
+
+</code></pre>
+
+}
+
+and here is my simple test trying to <API label="org.mockito.Mockito.mock">mock</API> the class:
+
+<pre><code>
+import android.test.ActivityInstrumentationTestCase2;
+import android.widget.Button;
+import android.widget.EditText;
+
+import org.mockito.Mockito;
+
+/**
+ * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
+ */
+public class ApplicationTest extends ActivityInstrumentationTestCase2 {
+
+   MainActivity mActivity;
+    private Button goBtn;
+    private RecyclerListAdapter mAdapter;
+
+   public ApplicationTest() {
+        super(MainActivity.class);
+
+   }
+
+   @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+
+       setActivityInitialTouchMode(false);
+
+       mActivity = getActivity();
+
+       goBtn=(Button)mActivity.findViewById(
+                R.id.btn_go);
+
+   }
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+    }
+    public void testPreconditions() {
+        assertTrue(mActivity.isNetworkAvailable());
+        isLayoutValid();
+    }
+
+   public void isLayoutValid(){
+        <API label="None">assertNotNull</API>(goBtn);
+
+   }
+
+
+
+
+ public void testSomething(){
+
+   //this fails
+    <API label="org.mockito.Mockito.mock">Mockito.mock</API>(SearchItem.class);
+        }
+
+}
+
+</code></pre>
+
+Here is the logcat output:
+
+<pre><code>
+    Running tests
+Test running started
+java.lang.VerifyError: org/mockito/cglib/core/ReflectUtils
+at <API label="">org.mockito.cglib.core.KeyFactory$Generator.generateClass</API>(KeyFactory.java:167)
+at <API label="">org.mockito.cglib.core.DefaultGeneratorStrategy.generate</API>(DefaultGeneratorStrategy.java:25)
+at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:217)
+at <API label="">org.mockito.cglib.core.KeyFactory$Generator.create</API>(KeyFactory.java:145)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:117)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:109)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:105)
+at org.mockito.cglib.proxy.Enhancer.(Enhancer.java:70)
+at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.createProxyClass</API>(ClassImposterizer.java:96)
+at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.imposterise</API>(ClassImposterizer.java:60)
+at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.imposterise</API>(ClassImposterizer.java:52)
+at <API label="">org.mockito.internal.creation.CglibMockMaker.createMock</API>(CglibMockMaker.java:24)
+at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:32)
+at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:59)
+at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1258)
+at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1135)
+at mypackage.ApplicationTest.testSomething(ApplicationTest.java:65)
+
+</code></pre>
+
+and here is my android studio gradle dependencies:
+
+<pre><code>
+dependencies {
+    compile files('libs/volley.jar')
+    apt "org.androidannotations:androidannotations:3.0+"          
+    compile "org.androidannotations:androidannotations-api:3.0+"
+    compile 'com.android.support:appcompat-v7:21.0.0'
+    compile 'com.android.support:recyclerview-v7:21.0.0'
+    compile 'com.android.support:cardview-v7:21.0.0'
+    compile 'com.jakewharton:butterknife:6.0.0'
+    compile 'com.squareup.dagger:dagger:1.2.2'
+    compile 'com.squareup:javawriter:2.5.1'
+    compile 'javax.inject:javax.inject:1'
+    compile 'org.mockito:mockito-all:1.10.8'
+    apt 'com.squareup.dagger:dagger-compiler:1.2.2'
+}
+
+</code></pre>
+
+How can i resolve the mockito error ?
+
+==========
+Try adding the dexmaker libs to your dependencies.
+
+<pre><code>
+androidTestCompile 'com.google.dexmaker:dexmaker-mockito:1.0',
+androidTestCompile 'com.google.dexmaker:dexmaker:1.0',
+
+</code></pre>
+
+You need to include these so that mockito can interact with your dex files correctly.
+
+A better explanation can be found here: <a href="http://corner.squareup.com/2012/10/mockito-android.html" rel="nofollow">http://corner.squareup.com/2012/10/mockito-android.html</a>
+

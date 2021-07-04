@@ -1,0 +1,54 @@
+https://stackoverflow.com/questions/40412688
+Normally with Mockito, if you're stubbing a method that gets called multiple times, you'd do
+
+<pre><code>
+Mockito
+    .<API label="org.mockito.Mockito.doReturn">doReturn</API>(0)
+    .<API label="org.mockito.stubbing.Stubber.doReturn">doReturn</API>(1)
+    .<API label="org.mockito.stubbing.Stubber.doReturn">doReturn</API>(2)
+    .<API label="org.mockito.stubbing.Stubber.when">when</API>(mock).<API label="None">getValue</API>();
+
+</code></pre>
+
+I'd like to programaitcally stub a method that gets called multiple times, something like
+
+<pre><code>
+Stubber stubber;
+for (int i = 0; i < 8; ++i) {
+    <API label="org.mockito.stubbing.Stubber.doReturn">stubber.doReturn</API>(i);
+}
+<API label="org.mockito.stubbing.Stubber.when">stubber.when</API>(mock).<API label="None">getValue</API>();
+
+</code></pre>
+
+My problem is there doesn't seem to be a public <code>Stubber</code> factory method. There's <code>org.mockito.internal.MockitoCore.stubber()</code> and <code>new <API label="">org.mockito.internal.stubbing.StubberImpl</API>()</code>, but both are internal, and using them feels wrong.
+
+Is there a better pattern for programatically stubbing like this? Is there a better way to get an empty <code>Stubber</code>?
+
+One solution would be <code><API label="org.mockito.Mockito.when">when</API>().<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>()</code>, but I've been avoiding that since reading on <a href="https://stackoverflow.com/questions/20353846/mockito-difference-between-doreturn-and-<API label="">when</API>">the difference between <API label="org.mockito.Mockito.doReturn">doReturn</API>() and <API label="org.mockito.stubbing.OngoingStubbing.then">then</API>()</a>.
+
+==========
+The only official way to get a Stubber is to call <code><API label="org.mockito.Mockito.doReturn">doReturn</API></code> or <code><API label="org.mockito.Mockito.doAnswer">doAnswer</API></code> (etc).
+
+The better pattern for stubbing like that is to use <a href="http://site.mockito.org/mockito/docs/current/org/mockito/AdditionalAnswers.html#<API label="">returnsElementsOf</API>(java.util.Collection)" rel="nofollow noreferrer"><API label="org.mockito.AdditionalAnswers.returnsElementsOf">returnsElementsOf</API></a>:
+
+<pre><code>
+List returnValues = new ArrayList<>();
+for (int i = 0; i < 8; ++i) {
+    <API label="None">returnValues.add</API>(i);
+}
+<API label="org.mockito.Mockito.doAnswer">doAnswer</API>(<API label="org.mockito.AdditionalAnswers.returnsElementsOf">returnsElementsOf</API>(returnValues)).<API label="org.mockito.stubbing.Stubber.when">when</API>(mock).<API label="None">getValue</API>();
+
+</code></pre>
+
+You can also pass in an Array into <code><API label="org.mockito.Mockito.doReturn">doReturn</API></code>, which already takes an array-compatible varargs, but only as its two-parameter overload:
+
+<pre><code>
+int[] returnValues = new int[7];
+for (int i = 1; i < 8; ++i) {
+    returnValues[i] = i;
+}
+<API label="org.mockito.Mockito.doReturn">doReturn</API>(0, returnValues).<API label="org.mockito.stubbing.Stubber.when">when</API>(mock).<API label="None">getValue</API>();
+
+</code></pre>
+

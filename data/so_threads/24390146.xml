@@ -1,0 +1,110 @@
+https://stackoverflow.com/questions/24390146
+I am getting the error message <code>Unfinished Stubbing detected here</code>, <API label="">when</API> running the following code:
+
+<pre><code>
+import static <API label="org.mockito.Mockito.mock">org.mockito.Mockito.mock</API>;
+import static org.mockito.Mockito.*;
+import org.mockito.Mock;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.reflect.Whitebox;
+
+@RunWith(PowerMockRunner.class)
+public class PatchWriterTaskTest {
+@Before
+public void before() throws Exception {
+    filePath = getFilePath();
+    task = <API label="None">PowerMockito.spy</API>(new PatchWriterTask());
+    patchFilesName = new HashMap();
+
+   <API label="None">patchFilesName.put</API>(1, "TCE_RDF_COVERED_DATA_REGION.sql");
+
+   scriptPath = new iFle(filePath + "do_patch_rdf.sql");
+
+   <API label="None">PowerMockito.when</API>(task, "<API label="None">getLogger</API>").<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(logger);
+    <API label="None">PowerMockito.when</API>(task, "getPatchFilesName").<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(patchFilesName);
+    <API label="None">PowerMockito.when</API>(task, "getDirectoryPath").<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(filePath);
+    <API label="None">PowerMockito.when</API>(task, "saveDoPatchFile");
+}
+@Test
+public void testUpdateIssuesTable() throws Exception {
+        PatchWriterTask task = new PatchWriterTask();
+        Connection conn = <API label="org.mockito.Mockito.mock">mock</API>(Connection.class);
+        PreparedStatement updateStatement = <API label="org.mockito.Mockito.mock ">mock</API>(PreparedStatement.class);
+        String sql = "update val_issues set PATCH_CREATION_INFO = ? where VAL_ISSUE_ID = ?";
+        <API label="org.mockito.Mockito.when">when</API>(conn.prepareStatement(sql)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(updateStatement);
+
+</code></pre>
+
+The last line throws the error. It doesn't really make sense, as I have done the same code before. Why am I getting this error?
+
+EDIT: I am using powerMockito in order to use the <code>Whitebox.invokeMethod()</code> method, but I also want to use regular Mockito in the rest of the program. Could that be a problem?
+
+Stack Trace:
+
+<pre><code>
+org.mockito.exceptions.misusing.UnfinishedStubbingException: 
+Unfinished stubbing detected here:
+-> at <API label="">org.powermock.api.mockito.PowerMockito.when</API>(PowerMockito.java:426)
+
+E.g. <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>() may be missing.
+Examples of correct stubbing:
+    <API label="org.mockito.Mockito.when">when</API>(<API label="">mock</API>.isOk()).<API label="">thenReturn</API>(true);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="">mock</API>.isOk()).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(exception);
+    <API label="org.mockito.Mockito.doThrow">doThrow</API>(exception).<API label="org.mockito.stubbing.Stubber.when">when</API>(<API label="">mock</API>).someVoidMethod();
+Hints:
+ 1. missing <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>()
+ 2. you are trying to <API label="org.mockito.Mockito.stub">stub</API> a final method, you naughty developer!
+
+   at com.navteq.rdf.base.task.PatchWriterTaskTest.testUpdateIssuesTable(PatchWriterTaskTest.java:78)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+    at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:66)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:310)
+    at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:86)
+    at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:94)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:294)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:282)
+    at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:84)
+    at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:207)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:146)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+    at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+    at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:118)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:104)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+    at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:53)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:197)
+
+</code></pre>
+
+==========
+Seems like the error is pretty <API label="">clear</API>.
+
+<pre><code>
+<API label="org.powermock.api.mockito.PowerMockito.when">PowerMockito.when</API>(task, "saveDoPatchFile");
+
+</code></pre>
+
+...is missing a <code><API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API></code>, right?
+
+<pre><code>
+E.g. <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>() may be missing. Examples of correct stubbing:
+    <API label="org.mockito.Mockito.when">when</API>(<API label="">mock</API>.isOk()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="">mock</API>.isOk()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenThrow</API>(exception);
+    <API label="org.mockito.Mockito.doThrow">doThrow</API>(exception).<API label="org.mockito.stubbing.Stubber.when">when</API>(<API label="">mock</API>).someVoidMethod();
+
+</code></pre>
+
+So why is the exception down in your test method? Neither PowerMock nor Mockito can flag a failure to call <code><API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API></code> until the <API label="">next</API> time you interact with (Power)Mockito or a <API label="">mock</API>. After all, Mockito and PowerMockito aren't notified that your <code>@Before</code> method ends, and have to accept the "waiting for <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>" state. (You're allowed to call <code><API label="org.mockito.Mockito.mock">mock</API></code> before <code><API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API></code> to allow <code><API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(<API label="org.mockito.Mockito.mock">mock</API>(Foo.class))</code>.)
+

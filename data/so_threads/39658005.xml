@@ -1,0 +1,138 @@
+https://stackoverflow.com/questions/39658005
+i'm struggling to figure out how to use the <a href="https://github.com/google/guava/wiki/ClosingResourcesExplained" rel="nofollow">Closer</a> utility from the guava library. Please see the code below. 
+
+
+One thing is, that the <a href="https://lucene.apache.org/core/4_6_0/core/org/apache/lucene/index/IndexWriter.html" rel="nofollow">IndexWriter</a> throws an <code>IOException</code> on both object initialization and <code><API label="">close</API>()</code>. Therefore, the code in the finally and <API label="None">rethrow</API> blocks is underlined. 
+The other question is, why do i have to catch <code>Throwable</code> instead of other exception types and do i have to <API label="">rethrow</API> the errors (i would prefer to log those at the spot)
+
+
+`
+
+<pre><code>
+int getDocumentsCount() {
+    Closer closer = <API label="com.google.common.io.Closer.create">Closer.create</API>();
+    try {
+        IndexWriter iwriter = <API label="com.google.common.io.Closer.register">closer.register</API>(openIndexWriter());
+        return iwriter.numDocs();
+    } catch (Throwable e) {
+        <API label="None">logger.error</API>(e, e);
+        return -1;
+    } finally {
+        <API label="None">closer.close</API>();
+    }
+}
+
+
+IndexWriter openIndexWriter() throws IOException {
+    return new IndexWriter(directory, analyzer, false,
+        IndexWriter.MaxFieldLength.UNLIMITED);
+}
+
+</code></pre>
+
+`
+
+Thanks a lot 
+
+(stuck with Java 6)
+
+==========
+From <a href="https://github.com/google/guava/wiki/ClosingResourcesExplained#closer" rel="nofollow">Guava's own explanation</a>, you have to use <code>Throwable</code>, yes.
+
+Here's their example snippet:
+
+<pre><code>
+public void foo() throws IOException {
+  Closer closer = <API label="com.google.common.io.Closer.create">Closer.create</API>();
+  try {
+    InputStream in = <API label="com.google.common.io.Closer.register">closer.register</API>(openInputStream());
+    OutputStream out = <API label="com.google.common.io.Closer.register">closer.register</API>(openOutputStream());
+    // do stuff with in and out
+  } catch (Throwable e) { // must catch Throwable
+    throw <API label="com.google.common.io.Closer.rethrow">closer.rethrow</API>(e);
+  } finally {
+    <API label="com.google.common.io.Closer.close">closer.close</API>();
+  }
+}
+
+</code></pre>
+
+Note that they catch <code>Throwable</code> and <API label="">rethrow</API> it directly from the <code>Closer</code> instance.
+
+As to why it is <code>Throwable</code> and not, let's say <code>IOException</code> or <code>RuntimeException</code>, it's because the <code>Closer</code> must know that an <API label="">error</API> occurred so that it can <API label="">close</API> the resources properly. All is only a matter of doing things proper. So it can work if you don't do it properly, but it's not guaranteed.
+
+Not that if your method can throw <code>MyOwnCheckedException</code>, for instance, you have to declare them:
+
+<pre><code>
+} catch (Throwable t) {
+  throw <API label="com.google.common.io.Closer.rethrow">closer.rethrow</API>(e, MyOwnCheckedException.class);
+} finally {
+  <API label="com.google.common.io.Closer.close">closer.close</API>();
+}
+
+</code></pre>
+
+Java 7 example, for comparison:
+
+<pre><code>
+public void foo() throws IOException {
+  try (InputStream in = openInputStream();
+       OutputStream out = openOutputStream();
+    // do stuff with in and out
+  }
+}
+
+</code></pre>
+
+If you compare the <code>Closer</code> example with the Java 7 example, you can see that I still have to declare the <code>IOException</code> in the method signature.
+
+
+
+For your case, this is what you have to do:
+
+<pre><code>
+int getDocumentsCount() {
+  try {
+    Closer closer = <API label="com.google.common.io.Closer.create">Closer.create</API>();
+    try {
+       IndexWriter iwriter = <API label="com.google.common.io.Closer.register">closer.register</API>(openIndexWriter());
+      return iwriter.numDocs();
+    } catch (Throwable e) {
+      <API label="com.google.common.io.Closer.rethrow">closer.rethrow</API>(e);
+    } finally {
+      <API label="com.google.common.io.Closer.reclose">closer.close</API>();
+    }
+  } catch (IOException e) {
+    <API label="None">logger.error</API>(e, e);
+    return -1;
+  }
+}
+
+</code></pre>
+
+To avoid try-pyramids, I'd do the following:
+
+<pre><code>
+int getDocumentsCount() {
+  try {
+    return doGetDocumentsCount();
+  } catch (IOException e) {
+    <API label="None">logger.error</API>(e, e);
+    return -1;
+  }
+}
+
+int doGetDocumentsCount() throws IOException {
+  Closer closer = <API label="com.google.common.io.Closer.create">Closer.create</API>();
+  try {
+    IndexWriter iwriter = <API label="com.google.common.io.Closer.register">closer.register</API>(openIndexWriter());
+    return iwriter.numDocs();
+  } catch (Throwable e) {
+    <API label="com.google.common.io.Closer.rethrow">closer.rethrow</API>(e);
+  } finally {
+    <API label="com.google.common.io.Closer.close">closer.close</API>();
+  }
+}
+
+</code></pre>
+

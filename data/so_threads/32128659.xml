@@ -1,0 +1,155 @@
+https://stackoverflow.com/questions/32128659
+I've got a class called <code>ConfigReferenceProcessor</code> that <API label="">is</API> responsible for instantiating new objects of a <API label="">given</API> type and configuring them using the provided configuration information. The type of the object that <API label="">is</API> instantiated must derive from an abstract base class called <code>BaseConfigurable</code> (There are methods defined in this base class that I need to call in order to configure the new instance). A note going forward: <code>BaseConfigurable</code> <API label="">is</API> out of my control, so I can't make <API label="">any</API> changes to its code.
+
+I'm trying to unit test the method <code>processConfigReference</code>, which does the following:
+
+<pre><code>
+public  T processConfigReference(
+        Class clazz, ConfigReferenceCfg configRef) {
+    // All this in a try/catch
+    Class objClass = Class.forName(<API label="None">configRef.getClassName</API>())
+                                       .asSubclass(clazz);
+    Constructor constructor = <API label="None">objClass.getConstructor</API>();
+    T obj = <API label="None">constructor.newInstance</API>();
+
+   // Some methods to setup and configure the new instance, including:
+    obj.loadConfig(configRef.getConfigName());
+
+   return obj;
+}
+
+</code></pre>
+
+In my unit test, I need control over the <code>loadConfig</code> method because I don't want to drag in the entire configuration behaviour with file system lookups, etc. My first thought was to simply create my own mock object:
+
+<pre><code>
+static class MockConfigurable extends BaseConfigurable {
+
+   @Override
+    public void loadConfig(String configName) {
+        // Do nothing.
+    }
+
+   // Mandatory methods
+}
+
+</code></pre>
+
+Unfortunately, I can't override <code>loadConfig</code> because it's declared as <code>final</code> in the base class.
+
+I found other questions on stack overflow about mocking object creation using the PowerMockito method <code>whenNew</code> and tried using that to set up my mock by mocking the final method and also returning the mock object <API label="">when</API> new instances are created:
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({ TestConfigReferenceProcessor.MockConfigurable.class, ConfigReferenceProcessor.class })
+public class TestConfigReferenceProcessor {
+    static class MockConfigurable extends BaseConfigurable {
+        // Mandatory methods
+    }
+
+   @Mock private MockConfigurable mockConfigurable;
+
+   @Before
+    public void initializeMockConfigurableInstance() throws Exception {
+        <API label="None">doNothing</API>().<API label="None">when</API>(mockConfigurable).loadConfig(<API label="org.mockito.Matchers.any">any</API>(String.class));
+        whenNew(MockConfigurable.class).withAnyArguments().<API label="org.mockito.stubbing.OngoingStubbing">thenReturn</API>(mockConfigurable);
+    }
+
+   @Test
+    public void shouldProcessConfigRef() {
+        MockConfigurable result = 
+                <API label="None">ConfigReferenceProcessor.forClass</API>(MockConfigurable.class)
+                                        .processConfigReference(configRefCfg);
+
+       // Fails!
+        <API label="None">verify</API>(mockConfigurable).loadConfig(<API label="">any</API>(String.class));
+    }
+}
+
+</code></pre>
+
+But this approach doesn't seem to work for me. I suspect it doesn't work because I'm not actually creating an object using <code>new</code>.
+
+Is there <API label="">any</API> other way to get around this problem?
+
+==========
+<code>BaseConfigurable</code> <API label="">is</API> out of your control and <code>loadConfig</code> <API label="">is</API> final, but you can do what you want with <code>ConfigReferenceProcessor</code> right? I think a good way to go, then, would be to separate things with another level indirection.  Create a <code>ConfigurableFactory</code> class with a <code>newConfigurable</code> method.  Then you can mock the factory and <API label="None">verify</API> the interactions.  So, create the factory class:
+
+<pre><code>
+public class ConfigurableFactory {
+    public  T newConfigurable(Class clazz, String className) throws Exception {
+        Class objClass = Class.forName(className)
+                .asSubclass(clazz);
+        Constructor constructor = <API label="None">objClass.getConstructor</API>();
+        return <API label="None">constructor.newInstance</API>();
+    }
+
+}
+
+</code></pre>
+
+Then refactor your original method thus:
+
+<pre><code>
+public class ConfigReferenceProcessor {
+
+   private ConfigurableFactory configurableFactory = 
+        new ConfigurableFactory(); // default instance
+
+   public void setConfigurableFactory(ConfigurableFactory configurableFactory) {
+        this.configurableFactory = configurableFactory;
+    }
+
+   public  T processConfigReference(
+            Class clazz, ConfigReferenceCfg configRef) throws Exception {
+        T obj = configurableFactory.newConfigurable(clazz, <API label="None">configRef.getClassName</API>());
+
+       // Some methods to setup and configure the new instance, including:
+        obj.loadConfig(configRef.getConfigName());
+
+       return obj;
+    }
+
+}
+
+</code></pre>
+
+Something like this would test your method:
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(BaseConfigurable.class)
+public class ConfigReferenceProcessorTest {
+
+   // public class so the constructor <API label="">is</API> callable
+    public static class MockConfigurable extends BaseConfigurable {
+        // Mandatory methods
+    }
+
+   @Mock
+    private ConfigReferenceCfg configRefCfg;
+    @Mock
+    private ConfigurableFactory configurableFactory;
+    @Mock
+    private MockConfigurable mockConfigurable;
+    @InjectMocks
+    private ConfigReferenceProcessor processorUT;
+
+   @Test
+    public void shouldProcessConfigRef() throws Exception {
+        final String className = <API label="None">MockConfigurable.class.getName</API>();
+        <API label="org.mockito.BDDMockito.given">given</API>(<API label="None">configRefCfg.getClassName</API>()).<API label="org.mockito.BDDMockito.willReturn">willReturn</API>(className);
+        <API label="org.mockito.BDDMockito.given">given</API>(configRefCfg.getConfigName()).<API label="org.mockito.BDDMockito.willReturn">willReturn</API>("testName");
+        <API label="org.mockito.BDDMockito.given">given</API>(configurableFactory.newConfigurable(MockConfigurable.class, className)).
+            <API label="org.mockito.BDDMockito.willReturn">willReturn</API>(mockConfigurable);
+        MockConfigurable result =
+                processorUT.processConfigReference(MockConfigurable.class, configRefCfg);
+        <API label="None">assertThat</API>(result, <API label="None">is</API>(mockConfigurable));
+        <API label="None">verify</API>(mockConfigurable).loadConfig("testName");
+    }
+}
+
+</code></pre>
+
+You can then write separate tests of the factory class, but those won't require <API label="">any</API> mocks - just pass in the values and get and instance and check that the class of the instance <API label="">is</API> what you expect it to be.
+

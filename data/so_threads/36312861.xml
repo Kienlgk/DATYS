@@ -1,0 +1,227 @@
+https://stackoverflow.com/questions/36312861
+I am having project in spring-mvc. I wrote a test case in mockito, Below <API label="">is</API> the code:
+
+<code>Cotroller</code>
+
+<pre><code>
+@RestController
+@RequestMapping("/api/conferences")
+public class ConferenceController {
+
+   private static final Logger LOGGER = <API label="None">LoggerFactory.getLogger</API>(ConferenceController.class);
+
+   @Autowired
+    private ConferenceService conferenceService;
+
+   @RequestMapping(method = RequestMethod.POST)
+    public Map <API label="">create</API>(@Valid @RequestBody Conference conference) {
+        <API label="None">LOGGER.debug</API>("Creating a new conference with information: {}", conference);
+
+       Map response = new LinkedHashMap<>();
+        <API label="None">response.put</API>("message", "Conference created successfully");
+        <API label="None">response.put</API>("conference", <API label="None">conferenceService.add</API>(conference));
+        return response;
+    }
+}
+
+</code></pre>
+
+<code>Service</code>
+
+<pre><code>
+@Service
+public class ConferenceServiceImpl implements ConferenceService {
+
+   private static final Logger LOGGER = <API label="None">LoggerFactory.getLogger</API>(ConferenceServiceImpl.class);
+
+   @Autowired
+    private ConferenceRepository conferenceRepository;
+
+   @Transactional
+    @Override
+    public Conference <API label="">add</API>(Conference created) {
+        <API label="None">LOGGER.debug</API>("Creating a new conference with information: {}", created);
+
+       created =  conferenceRepository.save(created);
+        <API label="None">LOGGER.debug</API>("Added a conference with information: {}", created);
+
+       return created;
+    }
+}
+
+</code></pre>
+
+<code>Test</code>
+
+<pre><code>
+    @Test
+    public void testCreate() throws Exception {
+        Conference added = new Conference.Builder("name", "description").<API label="None">build</API>();
+
+       <API label="org.mockito.Mockito.when">when</API>(<API label="None">conferenceService.add</API>(<API label="org.mockito.Matchers.any">any</API>(Conference.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(added);
+
+       mockMvc.perform(<API label="None">post</API>("/api/conferences")
+                .contentType(TestUtil.APPLICATION_JSON_UTF8)
+                .content(TestUtil.convertObjectToJsonBytes(added))
+        )
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(TestUtil.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.message", <API label="">is</API>("Conference created successfully")))
+                .andExpect(jsonPath("$.conference.id", <API label="None">is</API>(5)))
+                .andExpect(jsonPath("$.conference.name", <API label="None">is</API>("name")))
+                .andExpect(jsonPath("$.conference.description", <API label="None">is</API>("description")));
+    }
+
+</code></pre>
+
+Below <API label="">is</API> the error code:
+
+<pre><code>
+org.springframework.dao.InvalidDataAccessApiUsageException: Target object must not be null; nested exception <API label="">is</API> java.lang.IllegalArgumentException: Target object must not be null
+
+   at org.springframework.orm.jpa.EntityManagerFactoryUtils.convertJpaAccessExceptionIfPossible(EntityManagerFactoryUtils.java:384)
+    at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible(HibernateJpaDialect.java:227)
+    at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.translateExceptionIfPossible(AbstractEntityManagerFactoryBean.java:436)
+    at org.springframework.dao.support.ChainedPersistenceExceptionTranslator.translateExceptionIfPossible(ChainedPersistenceExceptionTranslator.java:59)
+    at org.springframework.dao.support.DataAccessUtils.translateIfNecessary(DataAccessUtils.java:213)
+    at <API label="">org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke</API>(PersistenceExceptionTranslationInterceptor.java:147)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke</API>(CrudMethodMetadataPostProcessor.java:131)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke</API>(ExposeInvocationInterceptor.java:92)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.aop.framework.JdkDynamicAopProxy.invoke</API>(JdkDynamicAopProxy.java:208)
+    at com.sun.proxy.$Proxy93.save(Unknown Source)
+    at <API label="">com.pjwards.aide.service.Conference.ConferenceServiceImpl.add</API>(ConferenceServiceImpl.java:38)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:497)
+    at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:302)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:157)
+    at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation(TransactionInterceptor.java:99)
+    at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:281)
+    at <API label="">org.springframework.transaction.interceptor.TransactionInterceptor.invoke</API>(TransactionInterceptor.java:96)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.aop.framework.JdkDynamicAopProxy.invoke</API>(JdkDynamicAopProxy.java:208)
+    at <API label="">com.sun.proxy.$Proxy96.add</API>(Unknown Source)
+    at com.pjwards.aide.controller.api.ConferenceControllerTest.testCreate(ConferenceControllerTest.java:111)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:497)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+    at <API label="">org.springframework.test.context.junit4.statements.RunBeforeTestMethodCallbacks.evaluate</API>(RunBeforeTestMethodCallbacks.java:75)
+    at <API label="">org.springframework.test.context.junit4.statements.RunAfterTestMethodCallbacks.evaluate</API>(RunAfterTestMethodCallbacks.java:86)
+    at <API label="">org.springframework.test.context.junit4.statements.SpringRepeat.evaluate</API>(SpringRepeat.java:84)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:254)
+    at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:89)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate</API>(RunBeforeTestClassCallbacks.java:61)
+    at <API label="">org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate</API>(RunAfterTestClassCallbacks.java:70)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run</API>(SpringJUnit4ClassRunner.java:193)
+    at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:137)
+    at com.intellij.junit4.JUnit4IdeaTestRunner.startRunnerWithArgs(JUnit4IdeaTestRunner.java:69)
+    at com.intellij.rt.execution.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:234)
+    at <API label="">com.intellij.rt.execution.junit.JUnitStarter.main</API>(JUnitStarter.java:74)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:497)
+    at <API label="">com.intellij.rt.execution.application.AppMain.main</API>(AppMain.java:144)
+Caused by: java.lang.IllegalArgumentException: Target object must not be null
+    at <API label="">org.springframework.util.Assert.notNull</API>(Assert.java:115)
+    at org.springframework.beans.AbstractNestablePropertyAccessor.setWrappedInstance(AbstractNestablePropertyAccessor.java:205)
+    at org.springframework.beans.BeanWrapperImpl.setWrappedInstance(BeanWrapperImpl.java:138)
+    at org.springframework.beans.AbstractNestablePropertyAccessor.setWrappedInstance(AbstractNestablePropertyAccessor.java:194)
+    at org.springframework.beans.AbstractNestablePropertyAccessor.(AbstractNestablePropertyAccessor.java:133)
+    at org.springframework.beans.BeanWrapperImpl.(BeanWrapperImpl.java:101)
+    at org.springframework.data.util.DirectFieldAccessFallbackBeanWrapper.(DirectFieldAccessFallbackBeanWrapper.java:35)
+    at <API label="">org.springframework.data.jpa.repository.support.JpaMetamodelEntityInformation.getId</API>(JpaMetamodelEntityInformation.java:144)
+    at org.springframework.data.repository.core.support.AbstractEntityInformation.isNew(AbstractEntityInformation.java:51)
+    at org.springframework.data.jpa.repository.support.JpaMetamodelEntityInformation.isNew(JpaMetamodelEntityInformation.java:223)
+    at org.springframework.data.jpa.repository.support.SimpleJpaRepository.save(SimpleJpaRepository.java:438)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:497)
+    at org.springframework.data.repository.core.support.RepositoryFactorySupport$QueryExecutorMethodInterceptor.executeMethodOn(RepositoryFactorySupport.java:483)
+    at org.springframework.data.repository.core.support.RepositoryFactorySupport$QueryExecutorMethodInterceptor.doInvoke(RepositoryFactorySupport.java:468)
+    at <API label="">org.springframework.data.repository.core.support.RepositoryFactorySupport$QueryExecutorMethodInterceptor.invoke</API>(RepositoryFactorySupport.java:440)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke</API>(DefaultMethodInvokingMethodInterceptor.java:61)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation(TransactionInterceptor.java:99)
+    at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:281)
+    at <API label="">org.springframework.transaction.interceptor.TransactionInterceptor.invoke</API>(TransactionInterceptor.java:96)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke</API>(PersistenceExceptionTranslationInterceptor.java:136)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke</API>(CrudMethodMetadataPostProcessor.java:131)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke</API>(ExposeInvocationInterceptor.java:92)
+    at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+    at <API label="">org.springframework.aop.framework.JdkDynamicAopProxy.invoke</API>(JdkDynamicAopProxy.java:208)
+    at com.sun.proxy.$Proxy93.save(Unknown Source)
+    at <API label="">com.pjwards.aide.service.Conference.ConferenceServiceImpl.add</API>(ConferenceServiceImpl.java:38)
+    at com.pjwards.aide.service.Conference.ConferenceServiceImpl$$EnhancerByMockitoWithCGLIB$$2d3321b.CGLIB$<API label="">add</API>$0()
+    at <API label="">com.pjwards.aide.service.Conference.ConferenceServiceImpl$$EnhancerByMockitoWithCGLIB$$2d3321b$$FastClassByMockitoWithCGLIB$$38e6884e.invoke</API>()
+    at <API label="">org.mockito.cglib.proxy.MethodProxy.invokeSuper</API>(MethodProxy.java:216)
+    at <API label="">org.mockito.internal.creation.cglib.DelegatingMockitoMethodProxy.invokeSuper</API>(DelegatingMockitoMethodProxy.java:19)
+    at <API label="">org.mockito.internal.invocation.realmethod.DefaultRealMethod.invoke</API>(DefaultRealMethod.java:21)
+    at <API label="">org.mockito.internal.invocation.realmethod.CleanTraceRealMethod.invoke</API>(CleanTraceRealMethod.java:30)
+    at <API label="">org.mockito.internal.invocation.InvocationImpl.callRealMethod</API>(InvocationImpl.java:112)
+    at <API label="">org.mockito.internal.stubbing.answers.CallsRealMethods.answer</API>(CallsRealMethods.java:41)
+    at <API label="">org.mockito.internal.handler.MockHandlerImpl.handle</API>(MockHandlerImpl.java:93)
+    at <API label="">org.mockito.internal.handler.NullResultGuardian.handle</API>(NullResultGuardian.java:29)
+    at <API label="">org.mockito.internal.handler.InvocationNotifierHandler.handle</API>(InvocationNotifierHandler.java:38)
+    at <API label="">org.mockito.internal.creation.cglib.MethodInterceptorFilter.intercept</API>(MethodInterceptorFilter.java:59)
+    at <API label="">com.pjwards.aide.service.Conference.ConferenceServiceImpl$$EnhancerByMockitoWithCGLIB$$2d3321b.add</API>()
+    ... 47 more
+
+</code></pre>
+
+==========
+this not null pointer exception, you make some thing incorrect
+refactor your service
+
+<pre><code>
+@Service
+public class ConferenceServiceImpl implements ConferenceService {
+
+   private static final Logger LOGGER = <API label="None">LoggerFactory.getLogger</API>(ConferenceServiceImpl.class);
+
+   @Autowired
+    private ConferenceRepository conferenceRepository;
+
+   @Transactional
+    @Override
+    public Conference <API label="">add</API>(Conference created) {
+        <API label="None">LOGGER.debug</API>("Creating a new conference with information: {}", created);
+
+       <API label="None">LOGGER.debug</API>("Added a conference with information: {}", created);
+
+       return conferenceRepository.save(created);
+    }
+}
+
+</code></pre>
+
+and also <API label="">add</API> your test <code>Conference</code>  object id
+
+<pre><code>
+Conference added = new Conference.Builder(5, "name", "description").<API label="None">build</API>();
+
+</code></pre>
+

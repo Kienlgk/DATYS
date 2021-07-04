@@ -1,0 +1,142 @@
+https://stackoverflow.com/questions/25609232
+I`d like to serialize a <a href="https://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/BiMap.html" rel="nofollow">BiMap</a> with <a href="http://x-stream.github.io/" rel="nofollow">xStream</a>. Since I dont like the auto generated code by xStream for a BiMap, I thought it might be a good Idea to <API label="">convert</API> a BiMap into a HashMap and serialize just the HashMap and when deserializing it, I just read in the HashMap again and <API label="">convert</API> it back to a BiMap. So I came up with the following converter strategy:
+
+<pre><code>
+public class XStreamBiMapConverterExample
+{
+  public void <API label="">run</API>()
+  {
+    XStream xStream = new XStream();
+    xStream.setMode( XStream.XPATH_ABSOLUTE_REFERENCES );
+    xStream.registerConverter( new BiMapConverter(), XStream.PRIORITY_VERY_HIGH );
+
+   final String xml = xStream.toXML( new ObjectToSerialize() );
+
+   <API label="None">System.out.println</API>( xml );
+
+   xStream.fromXML( xml );//Reading does not work, if the BiMap of ObjectToSerialize is empty
+  }
+
+ public static void <API label="">main</API>( final String[] args )
+  {
+    new XStreamBiMapConverterExample().<API label="None">run</API>();
+  }
+}
+
+
+class ObjectToSerialize
+{
+  //  Map serializeMap = new HashMap<>();
+  BiMap serializeMap = <API label="com.google.common.collect.EnumBiMap.create">HashBiMap.create</API>();
+
+ public ObjectToSerialize()
+  {
+    //If there is no Values, my Converter fails. With Value there is no Problem.
+    //    <API label="com.google.common.collect.HashBiMap.put">serializeMap.put</API>( "Hallo", 7 );
+  }
+}
+
+
+class BiMapConverter implements Converter
+{
+  @Override
+  public boolean canConvert( @SuppressWarnings( "rawtypes" ) final Class type )
+  {
+    return <API label="None">BiMap.class.isAssignableFrom</API>( type );
+  }
+
+ @Override
+  public void marshal( final Object source, final HierarchicalStreamWriter writer,
+                       final MarshallingContext context )
+  {
+    final BiMap biMap = (BiMap) source;
+
+   final HashMap convertBiMapToHashMap = convertMapToHashMap( biMap );
+
+   context.convertAnother( convertBiMapToHashMap );
+  }
+
+ private  HashMap convertMapToHashMap( final Map map )
+  {
+    final HashMap hashMap = new HashMap<>();
+
+   for ( Entry entry : <API label="None">map.entrySet</API>() )
+    {
+      <API label="None">hashMap.put</API>( <API label="None">entry.getKey</API>(), <API label="None">entry.getValue</API>() );
+    }
+
+   return hashMap;
+  }
+
+ @Override
+  public Object unmarshal( final HierarchicalStreamReader reader, final UnmarshallingContext context )
+  {
+    final HashMap serializedMap =
+        (HashMap) context.convertAnother( <API label="None">reader.getValue</API>(), HashMap.class );
+
+   return convertMapToBiMap( serializedMap );
+  }
+
+ private  BiMap convertMapToBiMap( final Map map )
+  {
+    final BiMap biMap = <API label="com.google.common.collect.HashBiMap.create">HashBiMap.create</API>();
+
+   for ( Entry entry : <API label="None">map.entrySet</API>() )
+    {
+      <API label="com.google.common.collect.BiMap.put">biMap.put</API>( <API label="None">entry.getKey</API>(), <API label="None">entry.getValue</API>() );
+    }
+
+   return biMap;
+  }
+}
+
+</code></pre>
+
+This works perfectly fine, since xStream can already <API label="">convert</API> HashMaps. Strange thing is, it only works, when there are Values within the BiMap. If the BiMap is empty, I get the following Exception, while unmarshalling the data:
+
+<pre><code>
+Exception in thread "<API label="">main</API>" com.thoughtworks.xstream.converters.ConversionException: only START_TAG can have attributes END_TAG seen ...ize>\n  ... @2:62 : only START_TAG can have attributes END_TAG seen ...ize>\n  ... @2:62
+---- Debugging information ----
+message             : only START_TAG can have attributes END_TAG seen ...ize>\n  ... @2:62
+cause-exception     : java.lang.IndexOutOfBoundsException
+cause-message       : only START_TAG can have attributes END_TAG seen ...ize>\n  ... @2:62
+class               : com.google.common.collect.HashBiMap
+required-type       : com.google.common.collect.HashBiMap
+converter-type      : BiMapConverter
+path                : /ObjectToSerialize/serializeMap
+line number         : 2
+class[1]            : ObjectToSerialize
+converter-type[1]   : com.thoughtworks.xstream.converters.reflection.ReflectionConverter
+version             : 1.4.6
+-------------------------------
+    at <API label="">com.thoughtworks.xstream.core.TreeUnmarshaller.convert</API>(TreeUnmarshaller.java:79)
+    at <API label="">com.thoughtworks.xstream.core.AbstractReferenceUnmarshaller.convert</API>(AbstractReferenceUnmarshaller.java:65)
+    at com.thoughtworks.xstream.core.TreeUnmarshaller.convertAnother(TreeUnmarshaller.java:66)
+...
+
+</code></pre>
+
+The generated Output after using the Converter (when the BiMap is empty!) is the following:
+
+<pre><code>
+
+ 
+
+
+</code></pre>
+
+Can anyone tell me, what I am doing wrong?
+
+==========
+You don't need to call the <code><API label="None">reader.getValue</API>()</code> in the <code>unmarshal</code> method.
+
+<pre><code>
+public Object unmarshal(final HierarchicalStreamReader reader, final UnmarshallingContext context) {
+    final HashMap serializedMap = (HashMap) context.convertAnother(null, HashMap.class);
+    return convertMapToBiMap(serializedMap);
+}
+
+</code></pre>
+
+This will work with an empty Map.
+

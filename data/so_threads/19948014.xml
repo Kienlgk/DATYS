@@ -1,0 +1,87 @@
+https://stackoverflow.com/questions/19948014
+The is my Mysql Class:
+
+<pre><code>
+public class MysqlConnection {
+
+   public Connection MysqlConnect() {
+        String url = "jdbc:mysql://localhost:3306/";
+        String dbName = "dashboard";
+        String driver = "com.mysql.jdbc.Driver";
+        String userName = "root";
+        String passwd = "";
+        Connection conn = null;
+        try {
+            Class.forName(driver);
+            conn = DriverManager.getConnection(url+dbName,userName,passwd);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return conn;
+    }
+}
+
+</code></pre>
+
+And my PowerMockito test class is like this:
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PowerMockIgnore("javax.management.*")
+@PrepareForTest(Class.class)
+public class MysqlConnectionTest {
+
+   @Test(expected = ClassNotFoundException.class)
+    public void MysqlConnectiontest() {
+        PowerMockito.mockStatic(Class.class);
+        try {
+            <API label="org.mockito.Mockito.when">when</API>(Class.forName(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(new ClassNotFoundException("error message"));
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        obj.MysqlConnect();
+    }
+}
+
+</code></pre>
+
+The Stacktrace of the error is:
+
+<pre><code>
+java.lang.AssertionError: Expected exception: java.lang.ClassNotFoundException
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:314)
+at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:86)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:94)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:296)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:112)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:73)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:284)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:84)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:209)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:148)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:122)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:102)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:42)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:197)
+
+</code></pre>
+
+The program is not mocking any line of code but is executing the code from the actual MySQLConnect function instead. It is making use of the actual driver. If I <API label="">remove</API> the expected part from @Test the test succeeds. That is, no mocking is done, driver is loaded and everything.
+
+==========
+You cannot mock <code>java.lang.Class</code> with PowerMockito or any other mocking framework which relies on runtime byte code modification.
+Reason for this is that those classes are already loaded <API label="">when</API> the mockito agent is manipulating (instrumenting) the classes that should be mocked.
+
+Why don't you instead mock your <code>MysqlConnection</code> class? There you could spy on your <code>MysqlConnect</code> method and return a mocked connection instead. 
+

@@ -1,0 +1,55 @@
+https://stackoverflow.com/questions/32955936
+I have a service that I am mocking using Mockito. Is there any way that I can <API label="">verify</API> the parameters passed to the service call?
+
+For example:
+
+I have a service named <code>employeeAnalyzer.calculateAnnualAppraisalForEmployee(Employee emp)</code>.
+
+So from unit test I would like to do something like
+
+<pre><code>
+verifyThat ("John", <API label="None">emp.getName</API>());
+verifyThat ("Doe", emp.getLastName);
+
+</code></pre>
+
+Basically I want to spy on the parameter that was sent to the service which I inject using
+
+<pre><code>
+@InjectMocks
+EmployeeAnalyzer employeeAnalyzer;
+
+</code></pre>
+
+Thanks in advance. 
+
+==========
+Definitely! Mockito is awesome. You can use an <a href="https://static.javadoc.io/org.mockito/mockito-core/2.7.13/org/mockito/ArgumentCaptor.html" rel="nofollow noreferrer">ArgumentCaptor</a> to <API label="org.mockito.ArgumentCaptor.capture">capture</API> the <code>Employee</code> parameter and then do some assertions.
+
+(example taken from the previous link)
+
+<pre><code>
+ArgumentCaptor argument = <API label="org.mockito.ArgumentCaptor.forClass">ArgumentCaptor.forClass</API>(Person.class);
+<API label="verify">verify</API>(mock).doSomething(<API label="org.mockito.ArgumentCaptor.capture">argument.capture</API>());
+assertEquals("John", <API label="org.mockito.ArgumentCaptor.getValue">argument.getValue</API>().<API label="None">getName</API>());
+
+</code></pre>
+
+Or the new funky way using the <a href="http://docs.mockito.googlecode.com/hg/org/mockito/Captor.html" rel="nofollow noreferrer">@Captor</a> annotation
+
+<pre><code>
+@Captor ArgumentCaptor captor;
+
+@Before
+public void <API label="">init</API>(){
+   <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+}
+
+@Test public void shouldDoSomethingUseful() {
+   //...
+   <API label="org.mockito.Mockito.verify">verify</API>(mock).doStuff(<API label="org.mockito.ArgumentCaptor.capture">captor.capture</API>());
+   assertEquals("foo", <API label="org.mockito.ArgumentCaptor.getValue">captor.getValue</API>());
+}
+
+</code></pre>
+

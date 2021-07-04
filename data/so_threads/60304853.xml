@@ -1,0 +1,89 @@
+https://stackoverflow.com/questions/60304853
+trying to do the below but, getting a <code>overloaded method value differences with alternatives: cannot be applied to java.util.Map[String, Any]</code>
+
+<pre><code>
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.google.common.collect.Maps
+
+import scala.collection.JavaConverters._
+
+
+
+object Testing extends App {
+
+ val leftJson = """{
+    "name": {
+      "first": "John",
+      "<API label="">last</API>": "Doe"
+    },
+    "address": null,
+    "birthday": "1980-01-01",
+    "company": "Acme",
+    "occupation": "Software engineer",
+    "phones": [
+    {
+      "number": "000000000",
+      "type": "home"
+    },
+    {
+      "number": "999999999",
+      "type": "mobile"
+    }
+    ]
+  }"""
+  val rightJson = """{
+    "name": {
+      "first": "Jane",
+      "<API label="">last</API>": "Doe",
+      "nickname": "Jenny"
+    },
+    "birthday": "1990-01-01",
+    "occupation": null,
+    "phones": [
+    {
+      "number": "111111111",
+      "type": "mobile"
+    }
+    ],
+    "favorite": true,
+    "groups": [
+    "<API label="">close</API>-friends",
+    "gym"
+    ]
+  }"""
+
+ val mapper = new ObjectMapper
+  mapper.registerModule(DefaultScalaModule)
+  val leftMap = mapper.readValue(leftJson, classOf[Map[String, Any]])
+  val rightMap = mapper.readValue(rightJson, classOf[Map[String, Any]])
+
+ val differences = <API label="com.google.common.collect.Maps.difference">Maps.difference</API>(leftMap.asJava, rightMap.asJava)
+
+}
+
+</code></pre>
+
+<pre><code>
+Error:(59, 26) overloaded method value <API label="">difference</API> with alternatives:
+  [K, V](x$1: java.util.SortedMap[K, _ <: V], x$2: java.util.Map[_ <: K, _ <: V])com.google.common.collect.SortedMapDifference[K,V] 
+  [K, V](x$1: java.util.Map[_ <: K, _ <: V], x$2: java.util.Map[_ <: K, _ <: V], x$3: com.google.common.base.Equivalence[_ >: V])com.google.common.collect.MapDifference[K,V] 
+  [K, V](x$1: java.util.Map[_ <: K, _ <: V], x$2: java.util.Map[_ <: K, _ <: V])com.google.common.collect.MapDifference[K,V]
+ cannot be applied to (java.util.Map[String,Object], java.util.Map[String,Object])
+  val differences = <API label="com.google.common.collect.Maps.difference">Maps.difference</API>(leftMap.asJava, rightMap.asJava)
+
+</code></pre>
+
+==========
+The good news is that your code compiles correctly using Scala 2.13.1.
+
+I also tried compiling your code using Scala 2.12.10 and indeed the problems shows up.
+
+The problem gets solved if you hint the type <API label="">parameters</API> to the compiler:
+
+<pre><code>
+val differences = <API label="com.google.common.collect.Maps.difference">Maps.difference</API>[String, Any](leftMap.asJava, rightMap.asJava)
+
+</code></pre>
+

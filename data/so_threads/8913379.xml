@@ -1,0 +1,94 @@
+https://stackoverflow.com/questions/8913379
+I am pretty new to Scala and still do not understand generics that well.  Consequently, I cannot figure out why the compiler hates me with type mismatch errors.
+
+I am using Google's Guava library to create some simple caches represented as Scala's ConcurrentMap.  I would like to keep track of the created caches using another Map of cache name to ConcurrentMap (the cache).  Here is what I have so far which compiles but is missing the tracking of the caches (I've commented out the bits that fail):
+
+<pre><code>
+import scala.collection.mutable.ConcurrentMap
+
+trait CacheManager {
+
+   def getCache[V <: AnyRef](
+            cacheName: String,
+            cacheListener: Option[CacheListener] = None): ConcurrentMap[String, V]
+
+}
+
+
+import scala.collection.JavaConversions._
+import <API label="com.google.common.collect.MapMaker">com.google.common.collect.MapMaker</API>
+import java.util.concurrent.{ConcurrentMap => JConcurrentMap, TimeUnit}
+import org.slf4j.LoggerFactory
+import com.google.common.cache.{RemovalNotification, RemovalListener, CacheBuilder}
+import scala.collection.mutable.ConcurrentMap
+
+class LocalCacheManager extends CacheManager {
+
+   private val logger = <API label="None">LoggerFactory.getLogger</API>(classOf[LocalCacheManager])
+
+
+   private val caches /*: ConcurrentMap[String, ConcurrentMap[String, _ <: AnyRef]]*/ =
+            asScalaConcurrentMap[String, ConcurrentMap[String, _ <: AnyRef]](
+                new <API label="com.google.common.collect.MapMaker">MapMaker</API>().<API label="com.google.common.collect.MapMaker.concurrencyLevel">concurrencyLevel</API>(4).makeMap[String, ConcurrentMap[String, _ <: AnyRef]]())
+
+   def getCache[V <: AnyRef](cacheName: String, cacheListener: Option[CacheListener] = None) = {
+//        caches.getOrElseUpdate(cacheName, {
+            val cache = <API label="None">CacheBuilder.newBuilder</API>()
+                        .<API label="com.google.common.collect.MapMaker.concurrencyLevel">concurrencyLevel</API>(4)
+                        .<API label="com.google.common.cache.CacheBuilder.softValues">softValues</API>()
+                        .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(30, TimeUnit.MINUTES)
+                        .build[String, V]()
+            asScalaConcurrentMap[String, V](<API label="None">cache.asMap</API>())
+//        })
+    }
+}
+
+</code></pre>
+
+Basically, if I try to add the Guava cache to caches (via the commented out caches.getOrElseUpdate) then the compiler complains with the following:
+
+<pre><code>
+error: type mismatch;
+found   : scala.collection.mutable.ConcurrentMap[String,_$1] where type _$1 <: AnyRef
+required: scala.collection.mutable.ConcurrentMap[String,V]
+caches.getOrElseUpdate(cacheName, {
+
+</code></pre>
+
+==========
+Since you are providing type information when retrieving the cache, it is not necessary to try and maintain the wildcard typing. It's much simpler to type the values to AnyRef and then typecast to V at the end. The following compiles and should help. Also, there is no need to call asScalaConcurrentMap directly since it is well... implicit.
+
+<pre><code>
+import scala.collection.JavaConversions._
+import <API label="">com.google.common.collect.MapMaker</API>
+import java.util.concurrent.TimeUnit
+import com.google.common.cache.CacheBuilder
+import scala.collection.mutable.ConcurrentMap
+
+trait CacheListener // not sure what this is doing yet.
+
+trait CacheManager {
+
+   def getCache[V <: AnyRef](
+            cacheName: String,
+            cacheListener: Option[CacheListener] = None): ConcurrentMap[String, V]
+
+}
+
+class LocalCacheManager extends CacheManager {
+    private val caches: ConcurrentMap[String, ConcurrentMap[String, AnyRef]] =
+                new <API label="com.google.common.collect.MapMaker">MapMaker</API>().<API label="com.google.common.collect.MapMaker.concurrencyLevel">concurrencyLevel</API>(4).makeMap[String, ConcurrentMap[String, AnyRef]]()
+    def getCache[V <: AnyRef](cacheName: String, cacheListener: Option[CacheListener] = None) = 
+      caches.getOrElseUpdate(cacheName, {
+              <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+                          .<API label="com.google.common.collect.MapMaker.concurrencyLevel">concurrencyLevel</API>(4)
+                          .<API label="com.google.common.cache.CacheBuilder.softValues">softValues</API>()
+                          .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(30, TimeUnit.MINUTES)
+                          .asInstanceOf[CacheBuilder[String, AnyRef ]]
+                          .build[String, AnyRef ]()
+                          .<API label="com.google.common.cache.CacheBuilder.asMap">asMap</API>()
+              }).asInstanceOf[ConcurrentMap[String, V]]
+}
+
+</code></pre>
+

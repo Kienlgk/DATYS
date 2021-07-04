@@ -1,0 +1,83 @@
+https://stackoverflow.com/questions/52333003
+I've <API label="">build</API> a cache that returns a value in list format when you <API label="">enter</API> the parameters.  If that value is not in the cache, it goes to the database and retrieves it, putting it in the cache for future reference:
+
+<pre><code>
+private ProfileDAO profileDAO;
+private String[] temp;
+    private LoadingCache loadingCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+            .<API label="com.google.common.cache.CacheBuilder.refreshAfterWrite">refreshAfterWrite</API>(5, TimeUnit.MINUTES)
+            .<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(5, TimeUnit.MINUTES)
+            .<API label="com.google.common.cache.CacheBuilder.build">build</API>(
+                    new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+                        @Override
+                        public List <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) throws Exception {
+                            <API label="None">logger.info</API>("Running method to retrieve from database");
+                            temp = <API label="None">key.split</API>("\\|");
+                            String instance = temp[0];
+                            String name = temp[1];
+List profiles= profileDAO.getProfileByFields(id, name);
+                            if (<API label="None">profiles.isEmpty</API>()) {
+                                List nullValue = new ArrayList();
+                                <API label="None">logger.info</API>("Unable to find a value.");
+                                return nullValue;
+                            }
+                            <API label="None">logger.info</API>("Found a value");
+                            return profileDAO.getProfileByFields(id, name);
+                        }
+                    }
+            );
+
+public List getProfileByFields(String id, String name) throws Exception {
+        String key = <API label="None">id.toLowerCase</API>() + "|" + <API label="None">name.toLowerCase</API>()
+        return <API label="com.google.common.cache.LoadingCache.get">loadingCache.get</API>(key);
+    }
+
+</code></pre>
+
+This seems to work fine, but it does not take into account null values.  If I look for an entry that does not exist, I <API label="">get</API> an exception for :
+
+<pre><code>
+<API label="">com.google.common.cache.CacheLoader</API>$InvalidCacheLoadException: <API label="">CacheLoader</API> returned null for key A01|Peter
+
+</code></pre>
+
+I'd like to simply return an empty List(Profile) if there is no match in the database, but my if statement has failed.  Is there any way around this error for this particular use case?
+
+==========
+Make changes in your code to check first profiles is null or not <API label="">as</API>(using profiles == null ...) :
+
+<pre><code>
+private ProfileDAO profileDAO;
+private String[] temp;
+    private LoadingCache loadingCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+            .<API label="com.google.common.cache.CacheBuilder.refreshAfterWrite">refreshAfterWrite</API>(5, TimeUnit.MINUTES)
+            .<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(5, TimeUnit.MINUTES)
+            .<API label="com.google.common.cache.CacheBuilder.build">build</API>(
+                    new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+                        @Override
+                        public List <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) throws Exception {
+                            <API label="None">logger.info</API>("Running method to retrieve from database");
+                            temp = <API label="None">key.split</API>("\\|");
+                            String instance = temp[0];
+                            String name = temp[1];
+List profiles= profileDAO.getProfileByFields(id, name);
+                            if (profiles == null || <API label="None">profiles.isEmpty</API>()) {
+                                List nullValue = new ArrayList();
+                                <API label="None">logger.info</API>("Unable to find a value.");
+                                return nullValue;
+                            }
+                            <API label="None">logger.info</API>("Found a value");
+                            return profileDAO.getProfileByFields(id, name);
+                        }
+                    }
+            );
+
+public List getProfileByFields(String id, String name) throws Exception {
+        String key = <API label="None">id.toLowerCase</API>() + "|" + <API label="None">name.toLowerCase</API>()
+        return <API label="com.google.common.cache.LoadingCache.get">loadingCache.get</API>(key);
+    }
+
+</code></pre>
+
+Please check this code is working for you null values or not..
+

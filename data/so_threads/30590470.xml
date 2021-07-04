@@ -1,0 +1,94 @@
+https://stackoverflow.com/questions/30590470
+Trying to use mockito in my AndroidTestCase. I added the dependencies to the build.gradle:
+
+<pre><code>
+final DEXMAKER_VERSION = '1.2'
+
+dependencies {
+    // ...
+    androidTestCompile "com.google.dexmaker:dexmaker:${DEXMAKER_VERSION}"
+    androidTestCompile "com.google.dexmaker:dexmaker-mockito:${DEXMAKER_VERSION}"
+    androidTestCompile 'org.mockito:mockito-core:1.10.19'
+
+}
+
+</code></pre>
+
+The TestCase with  the mockito initialization:
+
+<pre><code>
+public class UsersListPresenterTest extends AndroidTestCase {
+
+   public void setUp() throws Exception {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    }
+
+   public void testInitialize() throws Exception {
+
+   }
+}
+
+</code></pre>
+
+But as soon as I <API label="">add</API> any attribute to the class, even before adding any <API label="">annotation</API> the test <API label="">start</API> to crash:
+
+<pre><code>
+public class UsersListPresenterTest extends AndroidTestCase {
+
+   String mockString;
+
+   public void setUp() throws Exception {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    }
+
+   public void testInitialize() throws Exception {
+
+   }
+}
+
+</code></pre>
+
+With the following stacktrace
+
+<pre><code>
+java.lang.NullPointerException: Attempt to invoke virtual method 
+    'java.lang.Class <API label="">java.lang.Object.getClass</API>()' on a null object reference
+at com.google.dexmaker.mockito.DexmakerMockMaker.getInvocationHandlerAdapter(DexmakerMockMaker.java:80)
+at <API label="">com.google.dexmaker.mockito.DexmakerMockMaker.getHandler</API>(DexmakerMockMaker.java:75)
+at org.mockito.internal.util.MockUtil.isMockitoMock(MockUtil.java:74)
+at <API label="">org.mockito.internal.util.MockUtil.isMock</API>(MockUtil.java:66)
+at org.mockito.internal.configuration.injection.scanner.MockScanner.isMockOrSpy(MockScanner.java:86)
+at org.mockito.internal.configuration.injection.scanner.MockScanner.preparedMock(MockScanner.java:72)
+at org.mockito.internal.configuration.injection.scanner.MockScanner.scan(MockScanner.java:61)
+at <API label="">org.mockito.internal.configuration.injection.scanner.MockScanner.addPreparedMocks</API>(MockScanner.java:47)
+at <API label="">org.mockito.internal.configuration.InjectingAnnotationEngine.injectMocks</API>(InjectingAnnotationEngine.java:96)
+at org.mockito.internal.configuration.InjectingAnnotationEngine.processInjectMocks(InjectingAnnotationEngine.java:62)
+at <API label="">org.mockito.internal.configuration.InjectingAnnotationEngine.process</API>(InjectingAnnotationEngine.java:56)
+at <API label="">org.mockito.MockitoAnnotations.initMocks</API>(MockitoAnnotations.java:108)
+at com.myproject.presentation.UsersListPresenterTest.setUp(UsersListPresenterTest.java:28)
+at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:191)
+at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:176)
+at android.test.InstrumentationTestRunner.onStart(InstrumentationTestRunner.java:555)
+at <API label="">android.app.Instrumentation$InstrumentationThread.run</API>(Instrumentation.java:1853)
+
+</code></pre>
+
+What am I doing wrong?
+
+==========
+You could try to replace 
+
+<pre><code>
+<API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+
+</code></pre>
+
+with this
+
+<pre><code>
+System.setProperty("dexmaker.dexcache", <API label="None">getContext</API>().getCacheDir().<API label="None">getPath</API>());
+
+</code></pre>
+
+It works for me. <a href="http://www.kevinrschultz.com/blog/2014/08/31/mockito-and-android-how-to/" rel="noreferrer">See ref here</a>
+

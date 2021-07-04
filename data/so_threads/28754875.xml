@@ -1,0 +1,57 @@
+https://stackoverflow.com/questions/28754875
+I had a <code>Map, String></code> that checks where a particular <code>Double</code> value (score) is mapped to a <code>String</code> (level). The end users want to be able to dynamically change this mapping, in the long term we would like for there to be a web based <code>GUI</code> where they control this but for the short term they're happy for a file to be in <code>S3</code> and to editing that whenever a change is needed. I don't want to hit <code>S3</code> for each request and want to cache this as it doesn't change too frequently(Once a week or so). I don't want to have to make a code change and bounce my service either.
+
+Here is what I have come up with -
+
+<pre><code>
+public class Mapper() {
+    private LoadingCache scoreToLevelCache;
+
+public Mapper() {
+    scoreToLevelCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+            .<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(10, TimeUnit.MINUTES)
+            .<API label="None">build</API>(new <API label="">CacheLoader</API>() {
+                public String <API label="None">load</API>(Score score) {
+                    Map, String> scoreToLevelMap = readMappingFromS3(); //readMappingFromS3 omitted for brevity
+                    for(Range key : <API label="None">scoreToLevelMap.keySet</API>()) {
+                        if(<API label="None">key.contains</API>(<API label="">score.getCount</API>())) { return <API label="None">scoreToLevelMap.get</API>(key); }
+                    }
+                    throw new IllegalArgumentException("The score couldn't be mapped to a level. Either the score passed in was incorrect or the mapping is incorrect");
+                }
+            }); 
+}
+
+public String getContentLevelForScore(Score Score) {
+    try {
+        return <API label="">scoreToLevelCache.get</API>(Score);
+    } catch (ExecutionException e) { throw new InternalServerException(e); }
+  } 
+}
+
+</code></pre>
+
+The obvious problem with this approach is in the <code><API label="">load</API></code> method when I do
+<code>Map, String> scoreToLevelMap = readMappingFromS3();</code>
+For each key I'm loading the entire map over and over. This isn't a performance issue but it could become one when the size increases, in any case this is not an efficient approach.
+
+I think that keeping this entire map in the cache would be better, but I'm not sure how to do that here. Can anyone help with this or suggest a more elegant way of achieving this.
+
+==========
+Guava has a different mechanism for "a cache that only ever <API label="">contains</API> one value"; it's called <a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/base/Suppliers.html#<API label="">memoizeWithExpiration</API>-com.google.common.base.Supplier-long-java.util.concurrent.TimeUnit-" rel="nofollow noreferrer"><code><API label="com.google.common.base.Suppliers.memoizeWithExpiration">Suppliers.memoizeWithExpiration</API></code></a>.
+
+<pre><code>
+private Supplier, String> cachedMap = 
+    <API label="com.google.common.base.Suppliers.memoizeWithExpiration">Suppliers.memoizeWithExpiration</API>(
+        new Supplier, String>() {
+            public Map, String> <API label="">get</API>() {
+                return readMappingFromS3();
+            }
+        }, 10, TimeUnit.MINUTES);
+
+public String getContentLevelForScore(Score score) {
+    Map, String> scoreMap = <API label="">cachedMap.get</API>();
+    // etc.
+}
+
+</code></pre>
+

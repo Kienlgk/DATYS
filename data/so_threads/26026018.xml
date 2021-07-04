@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/26026018
+I am trying to put statement like
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(myDao.fetchTree(<API label="org.mockito.Matchers.anyLong">anyLong</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(myTreeList);
+
+</code></pre>
+
+and I have import 
+
+<pre><code>
+import static <API label="org.mockito.Mockito.when">org.mockito.Mockito.when</API>;
+import static <API label="org.mockito.Matchers.anyLong">org.mockito.Matchers.anyLong</API>;
+import static <API label="org.mockito.Matchers.thenReturn">org.mockito.Matchers.thenReturn</API>; //not importing
+
+</code></pre>
+
+import for <API label="org.mockito.Matchers.thenReturn">thenReturn</API> is not mapping. Is this a version issue? I am using Mockito 1.8.4.
+
+==========
+Mockito's <API label="org.mockito.Mockito.when">when</API> returns an object of class OngoingStubbing.  This class has a method <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(), and that's what gets called in your example code.  No additional import is needed.
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(myDao.fetchTree(<API label="org.mockito.Matchers.anyLong">anyLong</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(myTreeList);
+
+</code></pre>
+
+could be broken up as
+
+<pre><code>
+OngoingStubbing thing = <API label="org.mockito.Mockito.when">when</API>(myDao.fetchTree(<API label="org.mockito.Matchers.anyLong">anyLong</API>()));
+<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thing.thenReturn</API>(myTreeList);
+
+</code></pre>
+
+You are just calling the <code><API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API></code> method of OngoingStubbing.
+

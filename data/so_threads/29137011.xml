@@ -1,0 +1,66 @@
+https://stackoverflow.com/questions/29137011
+Guava <API label="">Objects</API>(deprecated) or MoreObjects implements the ToStringHelper class using builder pattern, the <API label="None">add</API>() function is implemented for both primitive type and Object:
+
+<pre><code>
+public ToStringHelper <API label="None">add</API>(String name, @Nullable Object value)
+public ToStringHelper <API label="None">add</API>(String name, boolean value) 
+public ToStringHelper <API label="None">add</API>(String name, char value) 
+... (other primitive type)
+
+</code></pre>
+
+the class works fine even without the overloading <API label="">of</API> primitive types, because the autoboxing converts and calls the <API label="None">add</API>(String, Object) function. 
+
+So my question is the reason <API label="">of</API> using overloading for all primitives to avoid autoboxing? 
+
+1.repetitive autoboxing can be a huge overhead, but for most use case, this is not going to happen. Effective Java item 49, prefer primitive types to boxed primitives. 
+
+2.Efffective Java, Item 41, P193, 
+
+
+ A safe conservative policy is never to export two overloadings with the same number <API label="">of</API> parameters.
+
+
+the ToStringHelper example is a obvious violation <API label="">of</API> this policy. The author goes on to talk about in class ObjectOutputStream, different primitives has their own function: <API label="com.google.common.io.ByteArrayDataOutput.writeBoolean">writeBoolean</API>(boolean), <API label="com.google.common.io.ByteArrayDataOutput.writeInt">writeInt</API>(int) ... I was never able to understand the advantage <API label="">of</API> using different name to avoid overloading for this specific example, why is it good? 
+
+Any input will be welcomed. 
+
+==========
+I hesistate to give this as an answer because it is second-guessing the Guava language designers. They might be able to give you a definite answer, but this is what I surmise:
+
+Shortly before the "conservative policy" on Effective Java 2nd Ed Page 193 is the statement:
+
+
+ Avoid confusing uses <API label="">of</API> overloading
+
+
+Whilst it then goes on to say
+
+
+ Exactly what constitutes a confusing use <API label="">of</API> overloading is up for some debate
+
+
+I think that this is not a confusing use <API label="">of</API> overloading. I claim this because the logical behaviour <API label="">of</API> the class is identical to if it were simply implemented as:
+
+<pre><code>
+public ToStringHelper <API label="None">add</API>(String name, @Nullable Object value)
+// No primitive overloads.
+
+</code></pre>
+
+However, there are other suggestions in EJ which come into play. One is Item 49 on page 20, another is Item 5, "Avoid creating unnecessary objects".
+
+It's not necessary to create the boxed primitives because there are overloads <API label="">of</API> <code><API label="None">String.valueOf</API>(...)</code> which handle each <API label="">of</API> the primitive types, inevitably more efficiently than boxing them and calling <code><API label="">toString</API>()</code>.
+
+Bear in mind that Guava was written for Google first, and then they open-sourced it. At the scale that Google works, the difference between using the primitive type and creating the boxed type, calling <code><API label="None">toString</API>()</code> and destroying the object is going to be measurable.
+
+Adding these overloads will give a performance win without the caller really needing to do anything to get it. On the other hand, if there were differently-named overloads (e.g. <code>addChar</code>, <code>addBoolean</code>), you actually would have to consciously choose which one you invoke, and likely many invocations would lazily select the <code>Object</code> overload, because, hey, it works. Keeping the same names allows it to work transparently.
+
+
+
+There are a lot <API label="">of</API> other examples in Guava <API label="">of</API> avoiding the unnecessary creation <API label="">of</API> objects via overloads. For instance, <code>ImmutableList</code> has the <code><API label="">of</API></code> static factory method, overloaded for zero, one, two, ..., eleven elements, and then everything else is handled by the variadic overload.
+
+It could be implemented simply as <code><API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(T... elements)</code>, but that would require the implicit creation <API label="">of</API> the variadic array each time, which must be defensively copied internally in order to guarantee the immutability <API label="">of</API> the list.
+
+As such, these overloads provide the opportunity to build the list a bit more efficiently. As a user <API label="">of</API> the class, you probably never notice this, however.
+

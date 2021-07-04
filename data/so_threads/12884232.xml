@@ -1,0 +1,18 @@
+https://stackoverflow.com/questions/12884232
+I have a Google guava cache that is loading data from the database and caching it using the primary key. The objects I end up creating from the database are immutable and building an object requires access to several tables. What happens in the following scenario:
+
+
+Thread 1: calls cache.load(10) and the cache is being populated based on a database primary key with value 10
+Thread 2: updates the database row with primary key 10 and so it calls cache.invalidate(10) the invalidate is called before the cache.load(10) is finished.
+
+
+What does Guava Loading Cache do when invalidate(x) is called while load(x) is executing? 
+
+==========
+You can have two situations there:
+
+
+Thread 1 reached the point of the actual loading (<a href="http://code.google.com/p/guava-libraries/source/browse/guava/src/com/google/common/cache/LocalCache.java?name=v13.0.1#2266" rel="nofollow"><code>LocalCache.Segment.lockedGetOrLoad()</code></a> in 13.0.1) first, and the segment lock was <a href="http://code.google.com/p/guava-libraries/source/browse/guava/src/com/google/common/cache/LocalCache.java?name=v13.0.1#2273" rel="nofollow">acquired</a>: in that case, the loading finishes, the lock is <a href="http://code.google.com/p/guava-libraries/source/browse/guava/src/com/google/common/cache/LocalCache.java?name=v13.0.1#2327" rel="nofollow">released</a> and the computed value is returned to the caller, but it will be invalidated by Thread 2 when it runs (<a href="http://code.google.com/p/guava-libraries/source/browse/guava/src/com/google/common/cache/LocalCache.java?name=v13.0.1#3117" rel="nofollow"><code><API label="None">LocalCache.Segment.remove</API>()</code></a>) and can <a href="http://code.google.com/p/guava-libraries/source/browse/guava/src/com/google/common/cache/LocalCache.java?name=v13.0.1#3118" rel="nofollow">acquire</a> the lock.
+Thread 2 acquired the lock before Thread 1 actually started loading: the invalidation doesn't really do anything, since the entry's not there yet, and Thread 1 then loads the up-to-date value.
+
+

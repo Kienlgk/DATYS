@@ -1,0 +1,42 @@
+https://stackoverflow.com/questions/16788275
+In my test I'm asserting that the list I return is an alphabetically ordered list of the one I just created.
+
+What exactly does the assertEquals do check for? Does it check the ordering of the list or just its contents?
+
+So if I have a list of { "Fred", "Bob", "Anna" } would list 2 of { "Anna", "Bob", "Fred" } return true as they contain the same object, regardless of order? 
+
+==========
+If you follow the source code of jUnit.  You will see that <code>assertEquals</code> eventually calls the <code><API label="None">equals</API></code> method on the objects provided in the the <code><API label="None">isEquals</API></code> method.
+
+<pre><code>
+private static boolean <API label="">isEquals</API>(Object expected, Object actual) {
+    return <API label="None">expected.equals</API>(actual);
+}
+
+</code></pre>
+
+Source Code: <a href="https://github.com/junit-team/junit/blob/master/src/main/java/org/junit/Assert.java" rel="noreferrer">https://github.com/junit-team/junit/blob/master/src/main/java/org/junit/Assert.java</a>
+
+This will call the <code>.equals()</code> method on the implementation of <code>List</code>.  Here is the <a href="http://grepcode.com/file/repository.grepcode.com/java/root/jdk/openjdk/6-b14/java/util/AbstractList.java#AbstractList.equals%28java.lang.Object%29" rel="noreferrer">source code</a> for the <code>.equals()</code> implementation of `ArrayList'.
+
+ArrayList.equals()
+
+<pre><code>
+  public boolean <API label="">equals</API>(Object o) {
+      if (o == this) //Equality check
+          return true;
+      if (!(o instanceof List))  //Type check
+          return false;
+      ListIterator e1 = <API label="None">listIterator</API>();
+      ListIterator e2 = ((List) o).<API label="None">listIterator</API>();
+      while(<API label="None">e1.hasNext</API>() && <API label="None">e2.hasNext</API>()) {
+          E o1 = <API label="None">e1.next</API>();
+          Object o2 = <API label="None">e2.next</API>();
+          if (!(o1==null ? o2==null : <API label="None">o1.equals</API>(o2))) //equality check of list contents
+              return false;
+      }
+      return !(<API label="None">e1.hasNext</API>() || <API label="None">e2.hasNext</API>());
+  }
+
+</code></pre>
+

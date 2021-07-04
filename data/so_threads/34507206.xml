@@ -1,0 +1,26 @@
+https://stackoverflow.com/questions/34507206
+I have a <code>Map</code> (say amountMap) which I want to convert to an <code>ImmutableMap</code>, code for which is:
+
+<pre><code>
+return <API label="None">amountMap.entrySet</API>().<API label="None">stream</API>()
+        .collect(collectingAndThen(<API label="None">toMap</API>(e-><API label="None">e.getKey</API>(),e-><API label="None">e.getValue</API>().<API label="None">doubleValue</API>()),ImmutableMap::<API label="com.google.common.collect.ImmutableMap.copyOf">copyOf</API>));
+
+</code></pre>
+
+However Eclipse shows an error which says that <API label="None">e.getKey</API>() and <API label="None">e.getValue</API>() require explicit type casting since they are of type Object.
+
+The same code works when I split it like so:
+
+<pre><code>
+Map tempMap = <API label="None">amountMap.entrySet</API>().<API label="None">stream</API>()
+                                .collect(<API label="None">toMap</API>(e-><API label="None">e.getKey</API>(),e-><API label="None">e.getValue</API>().<API label="None">doubleValue</API>());
+
+return <API label="com.google.common.collect.ImmutableMap.copyOf">ImmutableMap.copyOf</API>(tempMap);
+
+</code></pre>
+
+I am assuming the former error is because of Type Erasure, but if not, is there a way to return the Map as an ImmutableMap without the intermediate step of creating a temporary map to hold the results ?
+
+==========
+This was because I was using an old version of Eclipse(Luna) was fixed on upgrading
+

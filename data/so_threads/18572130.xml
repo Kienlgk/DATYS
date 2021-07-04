@@ -1,0 +1,54 @@
+https://stackoverflow.com/questions/18572130
+Is it possible to <API label="org.mockito.Mockito.mock">mock</API> the Android Camera class ?
+
+<pre><code>
+@Override
+public void setUp() {
+    _camera = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Camera.class);
+}
+
+</code></pre>
+
+fails to <API label="">generate</API> a <API label="">mock</API> (<code>ExceptionInitializerError</code> in Mockito's <code><API label="org.mockito.internal.creation.cglib.ClassImposterizer.createProxyClass">createProxyClass</API></code>).
+
+Should I <API label="">create</API> some kind of wrapper around the <code>Camera</code> (<API label="">not</API> my favorite solution, would really like to just <API label="org.mockito.Mockito.mock">mock</API> the class...)?
+
+Or, should I use a different <API label="">mock</API> library then Mockito?
+
+Hope somebody can point me in the right direction.
+
+Complete stacktrace of <code>ExceptionInitializerError</code>
+
+<pre><code>
+java.lang.ExceptionInInitializerError
+at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.createProxyClass</API>(ClassImposterizer.java:85)
+at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.imposterise</API>(ClassImposterizer.java:62)
+at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.imposterise</API>(ClassImposterizer.java:56)
+at <API label="">org.mockito.internal.creation.CglibMockMaker.createMock</API>(CglibMockMaker.java:23)
+at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:26)
+at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:51)
+at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1243)
+at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1120)
+at com.cleancode.lifesaver.flashlight.test.FlashLightTests.setUp(FlashLightTests.java:20)
+at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:190)
+at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:175)
+at android.test.InstrumentationTestRunner.onStart(InstrumentationTestRunner.java:555)
+at <API label="">android.app.Instrumentation$InstrumentationThread.run</API>(Instrumentation.java:1661)
+Caused by: java.lang.VerifyError: org/mockito/cglib/core/ReflectUtils
+at <API label="">org.mockito.cglib.core.KeyFactory$Generator.generateClass</API>(KeyFactory.java:167)
+at <API label="">org.mockito.cglib.core.DefaultGeneratorStrategy.generate</API>(DefaultGeneratorStrategy.java:25)
+at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:217)
+at <API label="">org.mockito.cglib.core.KeyFactory$Generator.create</API>(KeyFactory.java:145)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:117)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:109)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:105)
+at org.mockito.cglib.proxy.Enhancer.(Enhancer.java:70)
+... 18 more
+
+</code></pre>
+
+==========
+In your stacktrace, notice the substring ".CglibMockMaker": that's the problem here.  CGLib doesn't work on android -- there's a plugin for Mockito specifically for android that uses dexmaker, which is like CGLib but works for dalvik.  Just search for dexmaker  mockito and you should be on the right path.
+
+You still won't be able to <API label="org.mockito.Mockito.mock">mock</API> Camera.open() (the static factory method), but you can refactor your code around that.  What matters is that Camera is <API label="">not</API> a final class; the rest is just awkward plumbing for the test, which you should just <API label="">accept</API> as the tax for writing well-tested android apps.
+

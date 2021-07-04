@@ -1,0 +1,45 @@
+https://stackoverflow.com/questions/9772701
+Mockito keeps intercepting a function I made in a DAO and randomly returning 0. I would like for the function to actually run. Where can I configure this mockito beast to leave the function alone?
+
+Debugger jumps in here instead of going into my spring dao:
+
+<pre><code>
+ public Object <API label="">intercept</API>(Object proxy, Method method, Object[] args, MethodProxy methodProxy)
+        throws Throwable {
+    if (<API label="org.mockito.internal.util.ObjectMethodsGuru.isEqualsMethod">objectMethodsGuru.isEqualsMethod</API>(method)) {
+        return proxy == args[0];
+    } else if (<API label="org.mockito.internal.util.ObjectMethodsGuru.isHashCodeMethod">objectMethodsGuru.isHashCodeMethod</API>(method)) {
+        return hashCodeForMock(proxy);
+    }
+
+   MockitoMethodProxy mockitoMethodProxy = <API label="org.mockito.internal.creation.cglib.MethodInterceptorFilter.createMockitoMethodProxy">createMockitoMethodProxy</API>(methodProxy);
+    <API label="org.mockito.internal.creation.cglib.CGLIBHacker.setMockitoNamingPolicy">cglibHacker.setMockitoNamingPolicy</API>(mockitoMethodProxy);
+
+   MockitoMethod mockitoMethod = <API label="org.mockito.internal.creation.cglib.MethodInterceptorFilter.createMockitoMethod">createMockitoMethod</API>(method);
+
+   FilteredCGLIBProxyRealMethod realMethod = new FilteredCGLIBProxyRealMethod(mockitoMethodProxy);
+    Invocation invocation = new Invocation(proxy, mockitoMethod, args, <API label="org.mockito.internal.progress.SequenceNumber.next">SequenceNumber.next</API>(), realMethod);
+    return <API label="org.mockito.internal.handler.InvocationNotifierHandler.handle">handler.handle</API>(invocation);
+}
+
+</code></pre>
+
+==========
+
+ What is mockito? 
+
+
+<a href="http://mockito.org/" rel="nofollow">MockIto</a> (and <a href="http://jmockit.org/" rel="nofollow">JMockIt</a> as I took the original question) are mock APIs, they allow developers to write tests which are isolated from the rest of the application or other external resources (such as a database).
+
+
+ why is it screwing with my JUNIT tests?
+
+
+As who ever wrote the test decided they do not want this test to hit the database. So they used mockito to prevent this from happening.
+
+
+ Where can i configure this mockito beast to leave the function alone?
+
+
+Find the developer who wrote this test (or the test you are basing your current test on). Work with them to understand mocking frameworks. 
+

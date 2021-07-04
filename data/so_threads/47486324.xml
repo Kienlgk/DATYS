@@ -1,0 +1,108 @@
+https://stackoverflow.com/questions/47486324
+I'm writing testcases for below given method.
+
+Method: 
+
+<pre><code>
+@Override
+public void removeAllConnections(String uuid, String userName, String oimId) {
+    <API label="None">customLogger.debug</API>(Thread.currentThread().<API label="None">getStackTrace</API>()[1].<API label="None">getMethodName</API>(), userName, null, null, accessProviderBuilder.getUserName(), accessProviderBuilder.getUuid());
+
+   UserAccessBean userAccessBean = new UserAccessBean(userName);
+    userAccessBean.setOimid(oimId);
+    <API label="None">userAccessBean.setToken</API>("");
+    <API label="None">log.info</API>("removeAllConnections:oimid:"+userAccessBean.getOimId());
+    UserProfileDetailBean userProfileDetail = <API label="None">accessClient.getAccess</API>(userAccessBean,applicationForCsr);
+    Set accountAccesses = userProfileDetail.getAccountAccessList();
+    try {
+        removeAllConnectionsExceptPrimary(oimId, userName, accountAccesses);
+        removePrimaryConnection(oimId, userName, accountAccesses);
+    } catch (ConnectionStateException e) {
+        throw new ConnectionStateException(ConnectionNameNotRemoved, CONNECTION_REMOVAL_FAILED_MSG);
+    } catch (InternalServerErrorException e) {
+        throw new InternalServerErrorException(INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR_MSG);
+    }
+}
+
+</code></pre>
+
+Below snippet is test case for given method.
+
+Testcase:
+
+<pre><code>
+@Test
+public void testRemoveAllConnections() {
+    UserAccessBean userAccessBean = new UserAccessBean(userName);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">accessClient.getAccess</API>(userAccessBean,"CSR")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(userProfileDetail);
+    <API label="org.mockito.Mockito.when">when</API>(userProfileDetail.getAccountAccessList()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(accountAccesses);
+    String applicaionForCSR = "CSR";
+    <API label="None">ReflectionTestUtils.setField</API>(service, "applicationForCsr", applicaionForCSR);
+
+   service.removeAllConnections(uuid, userName, oimId);
+
+}
+
+</code></pre>
+
+While debugging the code, my execution is failing at below given line as the value of  userProfileDetail is null. 
+
+
+<pre><code>
+Set accountAccesses = userProfileDetail.getAccountAccessList();
+
+</code></pre>
+
+
+While doing inspect element on <API label="None">accessClient.getAccess</API>(userAccessBean,applicationForCsr) it is throwing below error. Pretty sure it is some silly mistake but unable to trace it.
+
+Error:
+
+
+ No such instance method: 'UserProfileDetailBean
+  <API label="">v1.AccessService$$EnhancerByMockitoWithCGLIB$$a852895d.getAccess</API>
+  (UserAccessBean)'
+
+
+Application: Spring Boot 1.5.0
+Library: Mockito 2.7.X
+
+==========
+I can suggest three possible solutions (or more like 2.5):
+
+a) Override the <code>equals</code> method of <code>UserAccessBean</code>, so that two <code>UserAccessBeans</code> are equal if and only if their <code>names</code> are equal. Of course, this might interfere with your productive code and I would not change the equals method only for testing. 
+
+b) Since the username doesn't actually play a vital role in your test (the tests itself defines what the username is), you can simply ignore the details with...
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">accessClient.getAccess</API>(<API label="org.mockito.Mockito.any">Mockito.any</API>(UserAccessBean.class),<API label="org.mockito.Mockito.eq">Mockito.eq</API>("CSR"))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(userProfileDetail);
+
+</code></pre>
+
+This way, the userProfileDetail will be returned for <API label="">any</API> value of the first parameter. Of course, you lose detail here, so for example, the test would be correct if the username was somehow wrong, but chances are that this isn't possible in your test anyway.
+
+<code><API label="org.mockito.Mockito.any">Mockito.any</API>(...)</code> is a so called matcher that tells Mockito to "use" this rule no matter what value is given for the parameter in question. Anything you put there is ok for Mockito. <code><API label="org.mockito.Mockito.eq">Mockito.eq</API>("CSR")</code> tells it, that this parameter must be equal to "CSR". So, the whole rule is...
+
+If someone calls <code><API label="None">accessClient.getAccess</API></code>, no matter what the first parameter ist, but the 2nd must be equal to "CSR", then return <code>userProfileDetail</code>.
+
+So, with this, the first parameter can be anything. So, for example, the following to calls will be accepted:
+
+<pre><code>
+<API label="None">accessClient.getAccess</API>(new UserAccessBean("correct name"), "CSR");
+<API label="None">accessClient.getAccess</API>(new UserAccessBean("totally wrong name"), "CSR");
+
+</code></pre>
+
+...because it does not matter what the first parameter is, ANY value will be accepted. So, what you "lose" there is the ability to check if the <code>UserAccessBean</code> is the correct one (because <API label="">any</API> is accepted). But in your case, since you only define those <code>UserAccessBeans</code> in the test anyway, this should not be a problem.
+
+But if it is, I can offer two workarounds...
+
+c) Use either a customer Matcher (that checks the name of the UserAccessBean) or use the <code><API label="org.mockito.Mockito.any">Mockito.any</API>(...)</code> as above and an ArgumentCaptor to check if the name was correct in the end...
+
+<pre><code>
+ArgumentCaptor captor = <API label="org.mockito.ArgumentCaptor.forClass">ArgumentCaptor.forClass</API>(UserAccessBean.class);
+<API label="org.mockito.Mockito.verify">Mockito.verify</API>(accessClient).<API label="None">getAccess</API>(<API label="org.mockito.ArgumentCaptor.capture">captor.capture</API>(),<API label="org.mockito.Mockito.eq">Mockito.eq</API>("CSR"));
+assertEquals(<API label="org.mockito.ArgumentCaptor.getValue">captor.getValue</API>().<API label="None">getName</API>(), "myName");
+
+</code></pre>
+

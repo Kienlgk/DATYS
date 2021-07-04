@@ -1,0 +1,46 @@
+https://stackoverflow.com/questions/7585345
+I'll first quickly motivate the question with my use case. 
+My library needs to expose a Java exception classifier to a framework which it plugs in to. For example:
+
+<pre><code>
+enum Classification { FATAL, TRANSIENT, UNKNOWN }
+
+Classification classify(Throwable t) {
+    if (t instanceof MyTransientException)
+        return Classification.TRANSIENT;
+    else if (t instanceof MyFatalException)
+        return Classification.FATAL;
+    else
+        return Classification.UNKNOWN;
+}
+
+</code></pre>
+
+Sometimes, and for reasons out of my control, the passed exception is a wrapper around the one I'm interested in so I want to search the cause chain for it. My initial idea was:
+
+<pre><code>
+Classification classify(Throwable t) {
+    if (t == null)
+        return Classification.UNKNOWN;
+
+   if (t instanceof MyTransientException)
+        return Classification.TRANSIENT;
+    else if (t instanceof MyFatalException)
+        return Classification.FATAL;
+    else
+        return classify(<API label="com.google.common.cache.RemovalNotification.getCause">t.getCause</API>());
+}
+
+</code></pre>
+
+Unfortunately, this could result in infinite recursion if the passed exception has a <API label="">cycle</API> in its causal chain. It's highly unlikely that such an exception will be passed, and an argument could be made that it's an error elsewhere in the system if such an exception is created, but I'm very uncomfortable with having the possibility of my library being responsible for a production outage if it happens. Throwable's API and javadoc do not explicitly forbid this possibility beyond the idea that cycles are inherently nonsensical in a causal chain.
+
+I noticed that Guava has a @Beta method to extract the causal chain, <a href="https://google.github.io/guava/releases/22.0/api/docs/com/google/common/base/Throwables.html#getCausalChain-java.lang.Throwable-" rel="nofollow noreferrer"><API label="com.google.common.base.Throwables.getCausalChain">Throwables.getCausalChain</API></a>, but its implementation is susceptible to the same issue -- it will wind up throwing an OOME.
+
+I'm planning to use an <a href="https://google.github.io/guava/releases/22.0/api/docs/com/google/common/collect/Sets.html#newIdentityHashSet--" rel="nofollow noreferrer">identity hash set</a> to detect the <API label="">cycle</API> and mitigate the risk, but I wanted to hear how others view this issue. Do you think I'm being overly defensive? What would you do?
+
+==========
+It's great that you are being so conscientious. But you don't want to get into the business of manufacturing kevlar boots.
+
+If a user does something that would make even <code>Throwable.printStackTrace</code> go into infinite recursion, that user is beyond help. Don't even worry about this.
+

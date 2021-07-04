@@ -1,0 +1,109 @@
+https://stackoverflow.com/questions/17695056
+I am trying to match this method which I have used in my Dao class. But I always get the following exception indicating that the call was not made on the method.
+
+It's either the method is not matched, or I am doing something wrong.
+
+<pre><code>
+String pSql = "SELECT * FROM employee";
+Object[] pArgs = new Object[] {""};
+int[] pArgTypes =  new int[] {};
+
+/* Return 1 <API label="">when</API> the call to <API label="">update</API>() is made indicating a successful database <API label="">update</API> */
+<API label="org.mockito.Mockito.when">when</API>(<API label="">mJdbcTemplate.update</API>(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.AdditionalMatchers.aryEq">aryEq</API>(pArgs), <API label="org.mockito.AdditionalMatchers.aryEq">aryEq</API>(pArgTypes))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(1);
+
+</code></pre>
+
+Here is the stack trace of the exception:
+
+<pre><code>
+Wanted but not invoked:
+<API label="">jdbcTemplate.update</API>(, , );
+-> at com.test.GenericDaoJdbcImplTest$WhenInsertUpdateDeleteIsCalledWith.successfulUpdateShouldReturnTrue(GenericDaoJdbcImplTest.java:197)
+
+However, there were other interactions with this mock:
+-> at com.test.GenericDaoJdbcImplTest.insertUpdateDelete(GenericDaoJdbcImpl.java:121)
+
+   at <API label="">org.mockito.exceptions.Reporter.wantedButNotInvoked</API>(Reporter.java:269)
+    at <API label="">org.mockito.internal.verification.checkers.MissingInvocationChecker.check</API>(MissingInvocationChecker.java:42)
+    at <API label="">org.mockito.internal.verification.Times.verify</API>(Times.java:36)
+    at <API label="">org.mockito.internal.verification.MockAwareVerificationMode.verify</API>(MockAwareVerificationMode.java:21)
+    at <API label="">org.mockito.internal.MockHandler.handle</API>(MockHandler.java:80)
+    at <API label="">org.mockito.internal.InvocationNotifierHandler.handle</API>(InvocationNotifierHandler.java:36)
+    at <API label="">org.mockito.internal.creation.MethodInterceptorFilter.intercept</API>(MethodInterceptorFilter.java:48)
+    at <API label="">org.springframework.jdbc.core.JdbcTemplate$$EnhancerByMockitoWithCGLIB$$92326890.update</API>()
+    at com.test.GenericDaoJdbcImplTestTest$WhenInsertUpdateDeleteIsCalledWith.successfulUpdateShouldReturnTrue(GenericDaoJdbcImplTest.java:197)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:597)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:597)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:197)
+
+</code></pre>
+
+My <code>GenericDaoJdbcImplTest</code> is an abstract class. Here is the class which I am testing.
+
+<pre><code>
+public abstract class GenericDaoJdbcImpl
+        implements GenericJdbcDao {
+
+   @Autowired
+    @Qualifier(value = "jdbcTemplate")
+    private JdbcTemplate mJdbcTemplate;
+
+   private Class mType;
+
+   public JdbcTemplate getJdbcTemplate() {
+        return mJdbcTemplate;
+    }
+
+   public void setJdbcTemplate(final JdbcTemplate pJdbcTemplate) {
+        this.mJdbcTemplate = pJdbcTemplate;
+    }
+
+   public GenericDaoJdbcImpl(final Class pType) {
+        this.mType = pType;
+    }
+
+   public abstract MODEL <API label="">add</API>(final MODEL mModel);
+
+   public abstract MODEL <API label="">modify</API>(final MODEL mModel);
+
+   public abstract MODEL <API label="">read</API>(PRIMARYKEY pId);
+
+   public abstract List <API label="">list</API>();
+
+   public abstract void <API label="">delete</API>(PRIMARYKEY pId);
+
+   @Override
+    public boolean insertUpdateDelete(final String pSql, final Object[] pArgs,
+            final int[] pArgTypes) {
+
+       Assert.hasLength(pSql, "No SQL provided to execute");
+        <API label="">Assert.notNull</API>(pArgs, "No data provided to insert/update/delete");
+        <API label="">Assert.notNull</API>(pArgTypes, "No data types provided for");
+        <API label="">Assert.isTrue</API>(pArgs.length == pArgTypes.length, "Mis-match in data and data type count");
+
+       return (<API label="">mJdbcTemplate.update</API>(pSql, pArgs, pArgTypes) > 0);
+    }
+}
+
+</code></pre>
+
+==========
+Try using an <code>ArgumentCaptor</code>, these conditions tend to be less restrictive and allow for validating complex arguments after the call.
+
+<pre><code>
+@Captor
+ArgumentCaptor objCap;
+@Captor
+ArgumentCaptor intCap;
+
+<API label="org.mockito.Mockito.when">when</API>(<API label="">mJdbcTemplate.update</API>(<API label="org.mockito.Matchers.anyString">anyString</API>(), <API label="org.mockito.ArgumentCaptor.capture">objCap.capture</API>(), <API label="org.mockito.ArgumentCaptor.capture">intCap.capture</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(1);
+
+</code></pre>
+

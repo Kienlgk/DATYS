@@ -1,0 +1,74 @@
+https://stackoverflow.com/questions/17572679
+for example, the code are like this, it is a little complicated, how can i use google's guava lib in this context and clean my code?
+
+<pre><code>
+@Test
+public void testMap2() {
+    Map map = new HashMap();
+    addToMap(map, "cib", "1004", "2");
+    addToMap(map, "cib", "1005", "3");
+    addToMap(map, "cib", "1006", "1");
+    addToMap(map, "cib", "1007", "5");
+
+   addToMap(map, "icbc", "1004", "2");
+    addToMap(map, "icbc", "1005", "3");
+    addToMap(map, "icbc", "1006", "1");
+    addToMap(map, "icbc", "1007", "5");
+    <API label="">System.out.println</API>(map);
+
+}
+
+private void addToMap(Map map, String key, String name, String value) {
+    if(<API label="None">map.containsKey</API>(key)) {
+        <API label="None">map.get</API>(key).<API label="None">put</API>(name, value);
+    } else {
+        Map map1 = new HashMap();
+        <API label="None">map1.put</API>(name, value);
+        <API label="None">map.put</API>(key, map1);
+    }
+}
+
+</code></pre>
+
+==========
+Yes, it's called <a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/collect/Table.html" rel="nofollow noreferrer"><code>Table</code></a>:
+
+
+ A collection that associates an ordered pair of keys, called a <API label="">row</API> key
+  and a <API label="">column</API> key, with a single value. A table may be sparse, with
+  only a small fraction of <API label="">row</API> key / <API label="">column</API> key pairs possessing a
+  corresponding value.
+  The mappings corresponding to a given <API label="">row</API> key may
+  be viewed as a Map whose keys are the columns. The <API label="">reverse</API> is also
+  <API label="">available</API>, associating a <API label="">column</API> with a <API label="">row</API> key / value map. Note that,
+  in some implementations, data access by <API label="">column</API> key may have fewer
+  supported operations or worse performance than data access by <API label="">row</API> key.
+
+
+There are few implementations:
+
+
+<a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/collect/ArrayTable.html" rel="nofollow noreferrer"><code>ArrayTable</code></a> (backed by two-dimentional array, see the documentation), 
+<a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/collect/ForwardingTable.html" rel="nofollow noreferrer"><code>ForwardingTable</code></a> (implements decorator pattern), 
+<a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/collect/HashBasedTable.html" rel="nofollow noreferrer"><code>HashBasedTable</code></a> (~ <code>HashMap</code>), 
+<a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/collect/ImmutableTable.html" rel="nofollow noreferrer"><code>ImmutableTable</code></a> (immutable and null-hostile), 
+<a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/collect/TreeBasedTable.html" rel="nofollow noreferrer"><code>TreeBasedTable</code></a> (~ <code>TreeMap</code>)
+
+
+Also see the <a href="https://github.com/google/guava/wiki/NewCollectionTypesExplained" rel="nofollow noreferrer">Wiki explaining Guava new collection types</a>, specifically code example:
+
+<pre><code>
+Table weightedGraph = <API label="com.google.common.collect.HashBasedTable.create">HashBasedTable.create</API>();
+<API label="None">weightedGraph.put</API>(v1, v2, 4);
+<API label="None">weightedGraph.put</API>(v1, v3, 20);
+<API label="None">weightedGraph.put</API>(v2, v3, 5);
+
+<API label="None">weightedGraph.row</API>(v1); // returns a Map mapping v2 to 4, v3 to 20
+<API label="None">weightedGraph.column</API>(v3); // returns a Map mapping v1 to 20, v2 to 5
+
+</code></pre>
+
+which demonstrates clean way to achieve what you want.
+
+P.S. <a href="https://github.com/google/guava/wiki" rel="nofollow noreferrer">Guava Wiki is your friend!</a>
+

@@ -1,0 +1,17 @@
+https://stackoverflow.com/questions/34646554
+The documentation for <a href="https://web.archive.org/web/20160111154433/https://code.google.com/p/guava-libraries/wiki/PreconditionsExplained" rel="noreferrer">Guava Preconditions</a> notes:
+
+
+ Projects which use <code>com.google.common</code> should generally avoid the use of
+  <code>Objects.requireNonNull(Object)</code>. Instead, use whichever of
+  <code><API label="com.google.common.base.Preconditions.checkNotNull">checkNotNull</API>(Object)</code> or <code><API label="com.google.common.base.Verify.verifyNotNull">Verify.verifyNotNull</API>(Object)</code> is appropriate to
+  the situation. (The same goes for the message-accepting overloads.)
+
+
+Can someone explain the rationale for this suggestion?
+
+Is it for the purpose of consistency or is there something fundamentally wrong with the implementation of <code>Objects.requireNonNull</code>?
+
+==========
+It's just for consistency.  The implementations are the same.
+

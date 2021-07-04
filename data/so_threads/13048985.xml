@@ -1,0 +1,61 @@
+https://stackoverflow.com/questions/13048985
+Like many others I was excited to hear that <a href="http://corner.squareup.com/2012/10/mockito-android.html" rel="noreferrer">Mockito now works with Android</a> and followed <a href="http://www.paulbutcher.com/2012/05/mockito-on-android-step-by-step" rel="noreferrer">this tutorial</a> to see it with my own eyes. Everything seemed fan-flapping-tastic and I got underway incorporating the mocking solution into my Android Test Project...
+
+The error
+
+However, on setting up my application's test project to leverage the <code>mockito-all-1.9.5</code>, <code>dexmaker-1.0</code> and <code>dexmaker-mockito-1.0</code> jars I encountered a problem with my very first test case. Precisely <a href="http://code.google.com/p/dexmaker/issues/detail?id=16" rel="noreferrer">this problem</a> in fact. The part that I would like assistance on is;
+
+<pre><code>
+Caused by: java.lang.VerifyError: org/mockito/cglib/core/ReflectUtils
+at <API label="">org.mockito.cglib.core.KeyFactory$Generator.generateClass</API>(KeyFactory.java:167)
+at <API label="">org.mockito.cglib.core.DefaultGeneratorStrategy.generate</API>(DefaultGeneratorStrategy.java:25)
+at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:217)
+at <API label="">org.mockito.cglib.core.KeyFactory$Generator.create</API>(KeyFactory.java:145)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:117)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:109)
+at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:105)
+at org.mockito.cglib.proxy.Enhancer.(Enhancer.java:70)
+
+</code></pre>
+
+I have been informed that this "simply doesn't quite work yet" since the stack trace implies that the DexMaker jar is <API label="">not</API> being used - reference <a href="http://code.google.com/p/dexmaker/issues/detail?id=16#c3" rel="noreferrer">this response</a>. However, I am suspicious that I am doing something wrong with respect to my project set-up so I'm looking to draw from the collective knowledge base here to see if indeed this is user error or a beta-bug.
+
+My Android Test Project set-up
+
+Please <API label="">find</API> below a screenshot of my test project's configuration. The project was created via the Android Wizard and shares no special features other than the inclusion of the Mockito and DexMaker jars (mentioned above) under the <code>libs</code> directory.
+
+
+
+The Test
+
+Never mind the content of the test (the test fails before the unit test is executed) the set-up is as described below;
+
+<pre><code>
+public class TestSpotRatingCalculator extends InstrumentationTestCase {
+  @Mock
+  private AService aService; // Changed the service names being used here - <API label="">not</API> important.
+  @Mock
+  private BService bService;
+  @Mock
+  private CService cService;
+  @Mock
+  private DService dService;
+
+ /**
+   * @see android.test.AndroidTestCase#setUp()
+   */
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);  // Failure here with aforementioned stacktrace...
+  }
+
+</code></pre>
+
+If anyone out there has an idea what is wrong then please sound-off here.
+
+==========
+As hinted at <a href="http://code.google.com/p/dexmaker/issues/detail?id=8" rel="nofollow">here</a> the dexmaker-android combo only works 100% when the instrumented tests are run against a real device.
+
+Running the tests against a real device do <API label="">not</API> exhibit this failure.
+

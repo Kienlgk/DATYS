@@ -1,0 +1,18 @@
+https://stackoverflow.com/questions/54225021
+I have a method findSubmission. Imagine I have possible return values in an array submission. Right now, I am returning by their indices. But I would like to return all the values of the submission one after the other without using their indices like the way I do right now.
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(submissionService.findSubmission(<API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(submission[0], submission[1], submission[2], submission[3], submission[4])
+
+</code></pre>
+
+==========
+You can use :
+
+<pre><code>
+import org.mockito.AdditionalAnswers;
+
+<API label="org.mockito.Mockito.when">when</API>(submissionService.findSubmission(<API label="org.mockito.Mockito.anyLong">Mockito.anyLong</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenAnswer</API>(<API label="org.mockito.AdditionalAnswers.returnsElementsOf">AdditionalAnswers.returnsElementsOf</API>(<API label="None">Arrays.asList</API>(submission)));
+
+</code></pre>
+

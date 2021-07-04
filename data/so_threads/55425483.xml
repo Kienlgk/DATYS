@@ -1,0 +1,25 @@
+https://stackoverflow.com/questions/55425483
+I have a expected List <API label="">of</API> Strings:
+
+<pre><code>
+List expected = <API label="None">Arrays.asList</API>("a", "b");
+
+</code></pre>
+
+I want these assertions be evaluated with these results:
+
+<pre><code>
+{"a", "a", "b", "b"} -> true
+{"a", "b", "c"} -> false
+
+</code></pre>
+
+Essentially, I want assertJ to <API label="">ignore</API>/remove any duplicates that is <API label="">being</API> evaluated. How can I do this with the Assertions API? 
+
+==========
+Try <a href="http://static.javadoc.io/org.assertj/assertj-core/3.12.2/org/assertj/core/api/AbstractIterableAssert.html#<API label="">containsOnly</API>-ELEMENT...-" rel="nofollow noreferrer"><code><API label="org.assertj.core.api.AbstractIterableAssert.containsOnly">containsOnly</API></code></a>, to <API label="">quote</API> the javadoc:
+
+
+ Verifies that the actual group <API label="">contains</API> only the <API label="">given</API> <API label="">values</API> and nothing else, in any order and ignoring duplicates (i.e. once a <API label="">value</API> is found, its duplicates are also considered found). 
+
+

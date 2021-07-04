@@ -1,0 +1,118 @@
+https://stackoverflow.com/questions/27303562
+Given this target code:
+
+<pre><code>
+...
+<API label="None">sessionWrapper.execute</API>(arenaCreateCql, arenaGuid, arenaName, displayName, authorName, createdOn);
+...
+
+</code></pre>
+
+And Mockito code to validate that line:
+
+<pre><code>
+...
+@Captor
+private ArgumentCaptor createdOnCaptor;
+...
+@Test
+public void testThat_Execute_CreatesNewArena() throws Exception {
+    ...
+    <API label="org.mockito.Mockito.inOrder">inOrder</API>.<API label="org.mockito.InOrder.verify">verify</API>(mockSessionWrapper).<API label="None">execute</API>(
+        <API label="org.mockito.Matchers.eq">eq</API>(arenaCreateCql), <API label="org.mockito.Matchers.eq">eq</API>(testArenaGuid), <API label="org.mockito.Matchers.eq">eq</API>(testArenaName), <API label="org.mockito.Matchers.eq">eq</API>(testArenaDisplayName), <API label="org.mockito.Matchers.eq">eq</API>(testAuthorName), <API label="org.mockito.ArgumentCaptor.capture">createdOnCaptor.capture</API>());
+    ...
+    <API label="None">assertNotNull</API>(<API label="org.mockito.ArgumentCaptor.getValue">createdOnCaptor.getValue</API>());
+}
+
+</code></pre>
+
+This works using Mockito 1.9.5. When upgrading 1.10.8, the <API label="org.mockito.InOrder.verify">verify</API> passes, but the <API label="org.mockito.ArgumentCaptor.getValue">getValue</API>() fails with this error:
+
+<pre><code>
+org.mockito.exceptions.base.MockitoException: 
+No argument value was captured!
+You might have forgotten to use <API label="org.mockito.ArgumentCaptor.capture">argument.capture</API>() in <API label="org.mockito.InOrder.verify">verify</API>()...
+...or you used <API label="org.mockito.ArgumentCaptor.capture">capture</API>() in stubbing but stubbed method was not called.
+Be aware that it is recommended to use <API label="org.mockito.ArgumentCaptor.capture">capture</API>() only with <API label="org.mockito.InOrder.verify">verify</API>()
+
+</code></pre>
+
+Edit to add MCVE. The following code runs green with Mockito 1.9.5, red with Mockito 1.10.8.
+
+MockitoExample.java:
+
+<pre><code>
+package org.makeyourcase.example;
+
+import java.util.Date;
+
+public class MockitoExample {
+
+   private MockitoExampleExecutor executor;
+
+   public void <API label="">execute</API>(){
+        <API label="">executor.execute</API>("var1", new Date());
+    }
+}
+
+</code></pre>
+
+MockitoExampleExecutor.java:
+
+<pre><code>
+package org.makeyourcase.example;
+
+public class MockitoExampleExecutor {
+
+   public void <API label="">execute</API>(Object... bindVariables){
+    }
+}
+
+</code></pre>
+
+MockitoExample_UT:
+
+<pre><code>
+package org.makeyourcase.example;
+
+import java.util.Date;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import static <API label="None">org.junit.Assert.assertNotNull</API>;
+import static <API label="org.mockito.Matchers.eq">org.mockito.Matchers.eq</API>;
+import static <API label="org.mockito.Mockito.verify">org.mockito.Mockito.verify</API>;
+
+@RunWith(MockitoJUnitRunner.class)
+public class MockitoExample_UT {
+
+   @Mock
+    private MockitoExampleExecutor mockitoExampleExecutor;
+    @Captor
+    private ArgumentCaptor dateCaptor;
+    @InjectMocks
+    private MockitoExample subject;
+
+   @Test
+    public void testThat_Execute_InvokesCalendar() throws Exception {
+        <API label="">subject.execute</API>();
+        <API label="org.mockito.Mockito.verify">verify</API>(mockitoExampleExecutor).<API label="">execute</API>(<API label="org.mockito.Matchers.eq">eq</API>("var1"), <API label="org.mockito.ArgumentCaptor.capture">dateCaptor.capture</API>());
+        <API label="None">assertNotNull</API>(<API label="org.mockito.ArgumentCaptor.getValue">dateCaptor.getValue</API>());
+    }
+}
+
+</code></pre>
+
+One other piece of info came to light as a result of creating the MCVE - the test works fine if the Date is the only element passed for <code>bindVariables</code>. That is, <API label="">remove</API> "var1" from target and test code, then the test runs fine under 1.9.5 and 1.10.8. Also, it doesn't matter that the captor is for a Date. The same issue occurs if the parameter is of another type, such as Integer.
+
+==========
+Thanks, this is probably a bug, I've created the report on <a href="https://github.com/mockito/mockito/issues/188" rel="nofollow">GH-188</a>.
+
+Not sure when it will be fixed though. Fixed in <a href="https://github.com/mockito/mockito/issues/188" rel="nofollow">GH-211</a>.
+

@@ -1,0 +1,24 @@
+https://stackoverflow.com/questions/41226532
+I am trying to create a simple cache where I can store some data elements in a map. I need to keep this data around for ~ 16 hours or so, after that I can let the older items expire.  I am instantiating my LoadingCache thusly:
+
+<pre><code>
+ cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+                .<API label="com.google.common.cache.CacheBuilder.concurrencyLevel">concurrencyLevel</API>(4)
+                .<API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>()
+                .<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(16, TimeUnit.HOURS)
+                .<API label="com.google.common.cache.CacheBuilder.build">build</API>(
+                        new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+                            public V <API label="com.google.common.cache.CacheLoader.load">load</API>(K key) throws Exception {
+                                return getByKey(key);
+                            }
+                        });
+
+</code></pre>
+
+There is a process that adds ~ 16 items to the list every minute. Every 12 minutes or so, the cache gets completely wiped out. I'm baffled by what is causing the cache to be wiped out, well in advance of the time set in the <API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>().
+
+==========
+my guess is that <code><API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>()</code> is responsible. if the cache is the only one referencing the items, a garbage collection may decide to delete the entries. From the Guava doc:
+
+If <API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>, <API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API>, or <API label="com.google.common.cache.CacheBuilder.softValues">softValues</API> are requested, it is possible for a key or value present in the cache to be reclaimed by the garbage collector.
+

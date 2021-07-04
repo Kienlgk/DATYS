@@ -1,0 +1,14 @@
+https://stackoverflow.com/questions/34078660
+I see there is a <code>Multimap</code> that allows duplicate <API label="">values</API> for a key <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimap.html" rel="nofollow">http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimap.html</a>
+
+I also noticed guava has a <code>Table</code> which allows multiple <API label="">keys</API>, but not duplicated <API label="">values</API>. <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Table.html" rel="nofollow">http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Table.html</a>
+
+I can't find anywhere where there is a "Table" that allows duplicated <API label="">values</API>, or a "Multimap" that allows multiple <API label="">keys</API>.
+
+Is this something that exists already, or would I have to implement this myself?
+
+I just want to implement a <code>Multimap</code> with 2 <API label="">keys</API> i.e. <code></code>
+
+==========
+There's nothing I'm aware of that supports that need.  However, it's not terribly difficult to just e.g. use a <code>Multimap</code> where you write a custom pair class yourself, or conversely to use a <code>Table</code> and manage things yourself.
+

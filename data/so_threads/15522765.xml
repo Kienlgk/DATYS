@@ -1,0 +1,95 @@
+https://stackoverflow.com/questions/15522765
+I want to perform search operations on Google Gauva collections in the GWT application.
+Those are working correctly in standalone application.But in GWT they are producing 
+runtime problems.I'm showing my sample code of onModuleLoad() of EntryPoint class.
+Iset the buildpath for both guava-gwt-14.0.1.jar and guava-10.0.jar
+
+<pre><code>
+public void onModuleLoad() {
+
+   List sList=new ArrayList();
+    <API label="None">sList.add</API>("arun kumar");
+    <API label="None">sList.add</API>("ashok kumar");
+    <API label="None">sList.add</API>("ravi kumar");
+    <API label="None">sList.add</API>("kiran kumar");
+    <API label="None">sList.add</API>("rama");
+    <API label="None">sList.add</API>("ram");
+    <API label="None">sList.add</API>("rama krishna");
+    <API label="None">sList.add</API>("phani");
+    <API label="None">sList.add</API>("vikram");
+    <API label="None">sList.add</API>("veeru");
+    <API label="None">sList.add</API>("arjun");
+    <API label="None">sList.add</API>("naresh");
+
+
+   //pattern matching
+    Collection filterdNamesKumar=<API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(sList, <API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>("kumar"));
+    //starts with
+    Collection filterdNamesRam=<API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(sList, <API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>("^ram"));
+    Collection filterdNamesAr=<API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(sList, <API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>("^ar"));
+
+   <API label="None">System.out.println</API>(<API label="None">filterdNamesAr.toString</API>());
+    <API label="None">System.out.println</API>(<API label="None">filterdNamesKumar.toString</API>());
+    <API label="None">System.out.println</API>(<API label="None">filterdNamesRam.toString</API>());
+
+   Map emps=new HashMap();
+    <API label="None">emps.put</API>("emp1","01/02/2013");
+    <API label="None">emps.put</API>("emp2", "10/12/2013");
+    <API label="None">emps.put</API>("emp3","20/11/2013");
+    <API label="None">emps.put</API>("emp4", "25/09/2013");
+    <API label="None">emps.put</API>("emp5", "15/12/2013");
+    <API label="None">emps.put</API>("emp6", "20/08/2013");
+    <API label="None">emps.put</API>("emp7", "02/02/2012");
+
+   for(String s:<API label="None">emps.keySet</API>()){
+        String strDate=<API label="None">emps.get</API>(s);
+        DateTimeFormat dateFormat=<API label="None">DateTimeFormat.getFormat</API>("dd/MM/yyyy");
+        Date empDate=<API label="None">dateFormat.parse</API>(strDate);
+
+
+
+           Date startDate=<API label="None">dateFormat.parse</API>("01/11/2013");
+            Date endDate=<API label="None">dateFormat.parse</API>("31/12/2013");
+            Range range=<API label="com.google.common.collect.Range.closed">Ranges.closed</API>(startDate, endDate);
+            boolean b=<API label="com.google.common.collect.Range.apply">range.apply</API>(empDate);
+            if(b){
+                Window.alert("date found between boundaries");
+            }
+
+   }   
+
+}
+
+</code></pre>
+
+error:
+
+<pre><code>
+[DEBUG] [googlegauva] - Validating newly compiled units
+[TRACE] [googlegauva] - Finding entry point classes
+    [ERROR] [googlegauva] - Errors in 'file:/D:/arun/eclipse_Myna/GoogleGauva/src/com/arun/gauva/client/GoogleGauva.java'
+        [ERROR] [googlegauva] - Line 57: The method <API label="">containsPattern</API>(String) is undefined for the type Predicates
+        [ERROR] [googlegauva] - Line 59: The method <API label="">containsPattern</API>(String) is undefined for the type Predicates
+        [ERROR] [googlegauva] - Line 60: The method <API label="">containsPattern</API>(String) is undefined for the type Predicates
+    [ERROR] [googlegauva] - Unable to find type 'com.arun.gauva.client.GoogleGauva'
+        [ERROR] [googlegauva] - Hint: Previous compiler errors may have made this type unavailable
+        [ERROR] [googlegauva] - Hint: Check the inheritance chain from your module; it may not be inheriting a required module or a module may not be adding its source path entries properly
+[ERROR] [googlegauva] - Failed to load module 'googlegauva' from user agent 'Mozilla/5.0 (Windows NT 6.1; rv:5.0.1) Gecko/20100101 Firefox/5.0.1' at 127.0.0.1:52248
+[DEBUG] [googlegauva] - Validating newly compiled units
+[TRACE] [googlegauva] - Finding entry point classes
+    [ERROR] [googlegauva] - Errors in 'file:/D:/arun/eclipse_Myna/GoogleGauva/src/com/arun/gauva/client/GoogleGauva.java'
+        [ERROR] [googlegauva] - Line 57: The method <API label="">containsPattern</API>(String) is undefined for the type Predicates
+        [ERROR] [googlegauva] - Line 59: The method <API label="">containsPattern</API>(String) is undefined for the type Predicates
+        [ERROR] [googlegauva] - Line 60: The method <API label="">containsPattern</API>(String) is undefined for the type Predicates
+    [ERROR] [googlegauva] - Unable to find type 'com.arun.gauva.client.GoogleGauva'
+        [ERROR] [googlegauva] - Hint: Previous compiler errors may have made this type unavailable
+        [ERROR] [googlegauva] - Hint: Check the inheritance chain from your module; it may not be inheriting a required module or a module may not be adding its source path entries properly
+[ERROR] [googlegauva] - Failed to load module 'googlegauva' from user agent 'Mozilla/5.0 (Windows NT 6.1; rv:5.0.1) Gecko/20100101 Firefox/5.0.1' at 127.0.0.1:52251
+
+</code></pre>
+
+==========
+<a href="http://docs.guava-libraries.googlecode.com/git-history/release/javadoc/com/google/common/base/Predicates.html#<API label="">containsPattern</API>%28java.lang.String%29" rel="nofollow"><code><API label="None">Patterns.containsPattern</API></code></a> is annotated with <code>@GwtIncompatible</code> which means it's not in guava-gwt.
+
+BTW, you should use the same version for guava-gwt and guava.
+

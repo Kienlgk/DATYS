@@ -1,0 +1,52 @@
+https://stackoverflow.com/questions/30538454
+With Java 6 and Guava 12.0 I am trying to <API label="">filter</API> a list of Strings based on if they have a specific prefix or not. Is there a way to do this without using anonymous classes or a separate class for each distinct prefix I want?
+
+This works but it's ugly (even uglier with my company's imposed formatting I've removed).
+
+<pre><code>
+private String foo(String prefix, List stuff) {
+
+   Collection withPrefix = <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(stuff, new Predicate() {
+        @Override
+        public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(String input) {
+            return <API label="None">input.startsWith</API>(prefix);
+        }
+    });
+    //...
+}
+
+</code></pre>
+
+Of course I could do something like the following.
+
+<pre><code>
+public class PrefixCheckForAA implements Predicate {
+
+   @Override
+    public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(String input) {
+        return <API label="None">input.startsWith</API>("AA");
+    }
+}
+
+public class PrefixCheckForZZ implements Predicate {
+
+   @Override
+    public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(String input) {
+        return <API label="None">input.startsWith</API>("ZZ");
+    }
+}
+
+</code></pre>
+
+Is there any way to do this without anonymous classes or a bunch of seemingly redundant classes?
+
+==========
+While your own solution is perfectly valid, you can slim down your code even further by using Guava library functionality:
+
+<pre><code>
+Collection withPrefix = <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(stuff, <API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>("^AA"));
+
+</code></pre>
+
+For a list of all functionality of <code>Predicates</code>, please go <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/base/Predicates.html" rel="nofollow noreferrer">here</a>.
+

@@ -1,0 +1,11 @@
+https://stackoverflow.com/questions/11959260
+I'm trying to download the latest version of Google Guava via Spring's STS IDE and Maven. When I click add and search for the artifact Id: "guava" I only get the result for version 11 (see below). Version 13 is the latest version. Any ideas what's going on?
+
+
+
+==========
+Right click on the Global repository in the Maven Repositories view and click Full Index Enabled (warning: slow).
+
+Or, just <API label="">enter</API> the new version number by hand. It will search for and download the jar as part of the next build.
+
+ 

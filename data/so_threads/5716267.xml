@@ -1,0 +1,8 @@
+https://stackoverflow.com/questions/5716267
+We can use <code><API label="com.google.common.collect.Maps.uniqueIndex">Maps.uniqueIndex</API>()</code> to create a <code>Map</code> out of any <code>Iterable</code> which is very handy. But I need to create a <code>Multimap</code> and I'm having <code>Iterable</code>, is there any nice way to create a <code>Multimap</code> from <code>Iterable</code> just like - <code><API label="com.google.common.collect.Maps.uniqueIndex">Maps.uniqueIndex</API>()</code>
+
+If it doesn't have any utility method then would like to see other guava approach to this.
+
+==========
+I suspect you want <a href="http://guava-libraries.googlecode.com/svn/tags/release09/javadoc/com/google/common/collect/Multimaps.html#index%28java.lang.Iterable,%20com.google.common.base.Function%29" rel="nofollow"><code><API label="com.google.common.collect.">Multimaps.index</API></code></a>.
+

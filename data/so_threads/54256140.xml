@@ -1,0 +1,98 @@
+https://stackoverflow.com/questions/54256140
+Is there a way to get the HashCode of an InputStream in Java,
+I am trying to upload a picture using the <code></code> from PrimeFaces, converting it into a HashCode and comparing it to another picture.
+
+At the moment I'm trying this: 
+
+<pre><code>
+public void save(FileUploadEvent event) throws IOException {
+        HashCode <API label="None">hashCode</API> = null;
+        HashCode hashCodeCompare = null;
+        <API label="None">hashCode</API> = <API label="com.google.common.io.Files.asByteSource">Files.asByteSource</API>(new File(<API label="None">event.toString</API>())).<API label="None">hash</API>(<API label="None">Hashing.murmur3_128</API>(50));
+        hashCodeCompare = <API label="com.google.common.io.Files.asByteSource">Files.asByteSource</API>(new File(<API label="None">event.toString</API>())).<API label="None">hash</API>(<API label="None">Hashing.murmur3_128</API>(50));
+        hashCodeCompare = <API label="com.google.common.io.Files.asByteSource">Files.asByteSource</API>(new File(File">Files.asByteSource</API>(new File(FilePathOfFileToCompare)).<API label="">hash</API>(<API label="">Hashing.murmur3_128</API>(50));
+        boolean hashTrueFalse;
+        if(<API label="None">hashCode</API>.<API label="None">equals</API>(hashCodeCompare)) {
+            <API label="None">System.out.println</API>("true");	
+        } else{
+            <API label="None">System.out.println</API>("false");
+        }
+
+       try (InputStream input = <API label="None">event.getFile</API>().getInputstream()) {
+            String imageName = generateFileName() + "." + fileExtensions(<API label="None">event.getFile</API>().getFileName());
+            String imageLink = PICTURE_DESTINATION + "\\" + imageName;
+
+
+           Picture picture = new Picture();
+            picture.setPictureUrl(imageLink);
+            pictureService.createOrUpdate(picture);
+
+           personForm.getCurrentPersonDTO().setPictureDTO(pictureMapper.toDTO(picture));
+
+
+       } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+</code></pre>
+
+Is there any way to turn the <code>InputStream</code> into a hashcode?
+
+==========
+You have to <API label="">read</API> the InputStream if you are going to calculate a <API label="">hash</API> on the bytes it contains. First <API label="">read</API> the InputSteam to a byte[]. 
+
+With Guava use ByteStreams:
+
+<pre><code>
+InputStream in = ...;
+byte[] bytes = <API label="">ByteStreams.toByteArray</API>(in);
+
+</code></pre>
+
+An alternative popular way to do this is to use <a href="https://commons.apache.org/proper/commons-io/" rel="nofollow noreferrer">Commons IO</a>:
+
+<pre><code>
+InputStream in = ...;
+byte[] bytes = <API label="com.google.common.io.ByteStreams.toByteArray">IOUtils.toByteArray</API>(in);
+
+</code></pre>
+
+Then you can call <API label="None">Arrays.hashCode</API>() on the byte array:
+
+<pre><code>
+int <API label="None">hash</API> = <API label="None">java.util.Arrays.hashCode</API>(bytes);
+
+</code></pre>
+
+However you might consider using SHA256 as your <API label="None">hash</API> function instead as you are less likely to have a collision:
+
+<pre><code>
+MessageDigest digest = <API label="None">MessageDigest.getInstance</API>("SHA-256");
+byte[] sha256Hash = digest.digest(bytes);
+
+</code></pre>
+
+If you don't want to <API label="">read</API> the entire stream to an in memory byte array you can calculate the <API label="">hash</API> as the InputStream is being <API label="">read</API> by someone else. For example you might want to stream the InputStream to disk to into a db. Guava provides a class that wraps an InputStream that does this for you <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/<API label="">hash</API>/<API label="com.google.common.hash.HashingInputStream">HashingInputStream</API>.html" rel="nofollow noreferrer"><API label="com.google.common.hash.HashingInputStream">HashingInputStream</API></a>: 
+
+First wrap your InputStream with a HashinInputStream
+
+<pre><code>
+<API label="com.google.common.hash.HashingInputStream">HashingInputStream</API> hin = new <API label="com.google.common.hash.HashingInputStream">HashingInputStream</API>(<API label="None">Hashing.sha256</API>(), in);
+
+</code></pre>
+
+Then let that <API label="com.google.common.hash.HashingInputStream">HashingInputStream</API> be <API label="">read</API> in any way you like
+
+<pre><code>
+while(<API label="None">hin.read</API>() != -1);
+
+</code></pre>
+
+Then get the <API label="None">hash</API> from the <API label="com.google.common.hash.HashingInputStream">HashingInputStream</API>
+
+<pre><code>
+byte[] sha256Hash = <API label="None">hin.hash</API>().<API label="None">asBytes</API>();
+
+</code></pre>
+

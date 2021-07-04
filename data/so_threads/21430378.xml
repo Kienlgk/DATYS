@@ -1,0 +1,22 @@
+https://stackoverflow.com/questions/21430378
+What is the difference between:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(mock, <API label="org.mockito.Mockito.times">times</API>(1)).myMethod(<API label="org.mockito.Matchers.isA">Matchers.isA</API>(String.class));
+<API label="org.mockito.Mockito.verify">verify</API>(mock, <API label="org.mockito.Mockito.times">times</API>(1)).myMethod(<API label="org.mockito.Matchers.anyString">Matchers.anyString</API>());
+
+</code></pre>
+
+from the Mockito library? Both pass for my method and I'm wondering which one is "better" to use.
+
+==========
+<a href="http://site.mockito.org/mockito/docs/current/org/mockito/Matchers.html#<API label="">isA</API>(java.lang.Class)" rel="noreferrer"><code><API label="org.mockito.Matchers.isA">isA</API></code></a> checks that the class <API label="">matches</API> the expected class. In Mockito 1.x, <code>any</code>, <code><API label="org.mockito.Matchers.anyObject">anyObject</API></code>, and <a href="http://site.mockito.org/mockito/docs/current/org/mockito/Matchers.html#<API label="">anyString</API>()" rel="noreferrer"><code><API label="org.mockito.Matchers.anyString">anyString</API></code></a> ignore the argument entirely including its type, even though <code>any</code> can take a class parameter and <code><API label="org.mockito.Matchers.anyString">anyString</API></code> specifies it in the name.
+
+Typically, unless you have a reason to guard against an incompatible argument being passed in, you can probably stick with <code>any</code> and <code><API label="org.mockito.Matchers.anyString">anyString</API></code>. Mockito style prefers flexible test cases, which means verifying only the things that you are explicitly checking, and deliberately allowing everything else to be unspecified.
+
+UPDATE: Mockito committer <a href="https://stackoverflow.com/users/48136/brice">Brice</a> has offered <a href="https://stackoverflow.com/posts/comments/55631479">some historical background and future direction</a>:
+
+
+ For historical reference, <code>any</code> is a shorthand alias of <code>anything</code>, at that time the API was forcing one to cast, and contributors and/or commiters thought about passing the class as a param to avoid this cast, without changing the semantic of this API. However this change eventually modified what people thought that this API was doing. This will be fixed in mockito 2+
+
+

@@ -1,0 +1,67 @@
+https://stackoverflow.com/questions/26119232
+Given two multisets, for example, the first one:
+
+<pre><code>
+Green
+Green
+Blue
+Yellow
+Yellow
+Yellow
+Cyan
+Cyan
+
+</code></pre>
+
+And the second one:
+
+<pre><code>
+Green
+Yellow
+Yellow
+Magenta
+Black
+Black
+
+</code></pre>
+
+I need to get their <API label="">intersection</API> so that the result would look like:
+
+<pre><code>
+Green
+Green
+Green
+Yellow
+Yellow
+Yellow
+Yellow
+Yellow
+
+</code></pre>
+
+What is the efficient way to achieve this <API label="">in</API> Java?
+(Any link to a library or function would be appreciated.)
+
+==========
+It looks like you want the <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multisets.html#<API label="">sum</API>(com.google.common.collect.Multiset,%20com.google.common.collect.Multiset)" rel="nofollow"><API label="">sum</API></a> <API label="">of</API> the multisets, filtered to include only the elements that appear at least once <API label="">in</API> their <API label="">intersection</API>. Here's one way you could get the result you're looking for <API label="">in</API> Guava:
+
+<pre><code>
+ImmutableMultiset first = <API label="com.google.common.collect.ImmutableMultiset.of">ImmutableMultiset.of</API>(
+    "Green", "Green",
+    "Blue",
+    "Yellow", "Yellow", "Yellow",
+    "Cyan", "Cyan");
+ImmutableMultiset second = <API label="com.google.common.collect.ImmutableMultiset.of">ImmutableMultiset.of</API>(
+    "Green",
+    "Yellow", "Yellow",
+    "Magenta",
+    "Black", "Black");
+
+Multiset result = <API label="com.google.common.collect.Multisets.filter">Multisets.filter</API>(
+    <API label="com.google.common.collect.Multisets.sum">Multisets.sum</API>(first, second),
+    <API label="com.google.common.base.Predicates.in">Predicates.in</API>(<API label="com.google.common.collect.Multisets.intersection">Multisets.intersection</API>(first, second)));
+
+<API label="None">System.out.println</API>(result);  // [Green x 3, Yellow x 5]
+
+</code></pre>
+

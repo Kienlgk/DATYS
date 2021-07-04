@@ -1,0 +1,32 @@
+https://stackoverflow.com/questions/43407626
+I want to get & <API label="">remove</API> an item from <code>Cache</code>
+
+<pre><code>
+final Cache pendingRequest = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.build">build</API>();
+
+// get first
+pendingCall = <API label="com.google.common.cache.Cache.getIfPresent">pendingRequest.getIfPresent</API>(key);
+<API label="com.google.common.cache.Cache.invalidate">pendingRequest.invalidate</API>(key); // then <API label="">remove</API>.
+
+</code></pre>
+
+I also found another way
+
+<pre><code>
+pendingCall = <API label="com.google.common.cache.Cache.asMap">pendingRequest.asMap</API>().<API label="">remove</API>(key);
+
+</code></pre>
+
+Does <code><API label="com.google.common.cache.Cache.asMap">asMap</API></code> method clone all the items? Is it a heavy call?  Which manner is better if considering performance.
+
+==========
+There's no real difference between those calls because <a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/cache/Cache.html#<API label="">asMap</API>--" rel="nofollow noreferrer"><code>Cache#<API label="com.google.common.cache.Cache.asMap">asMap</API>()</code></a> is defined as:
+
+
+ Returns  a view of the entries stored in this cache as a thread-safe map. Modifications made to the map directly affect the cache.
+
+
+Calling <code><API label="com.google.common.cache.Cache.asMap">asMap</API>()</code> may be slightly less performant (because it's possible a view has to be created) but the time is constant (and negligible) and is an implementation detail (see internal Guava <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/cache/LocalCache.java" rel="nofollow noreferrer"><code>LocalCache</code> and <code>LocalManualCache</code> classes</a> for more details). 
+
+What's more important, <a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/cache/Cache.html#<API label="">invalidate</API>-java.lang.Object-" rel="nofollow noreferrer"><code>Cache#<API label="com.google.common.cache.Cache.invalidate">invalidate</API>(K)</code></a> is more idiomatic and I'd recommend using it instead of map view methods (edit after @BenManes' comment below) if you don't need returned value associated with the key, otherwise use map view.
+

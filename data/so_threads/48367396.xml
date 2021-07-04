@@ -1,0 +1,127 @@
+https://stackoverflow.com/questions/48367396
+I am running a spark action on oozie. The spark application creates hive context.
+Running with spark-submit works
+I made sure that the jar that I <API label="">run</API> includes guava 14.0 version and on the sharelib of oozie its the same version and still I <API label="">get</API> the following error :
+
+<pre><code>
+2018-01-21 15:04:56,753 [Driver] ERROR org.apache.spark.deploy.yarn.ApplicationMaster  - User class threw exception: org.apache.hadoop.hive.ql.metadata.HiveException: java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
+org.apache.hadoop.hive.ql.metadata.HiveException: java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
+    at org.apache.hadoop.hive.ql.metadata.Hive.registerAllFunctionsOnce(Hive.java:219)
+    at org.apache.hadoop.hive.ql.metadata.Hive.(Hive.java:337)
+    at <API label="">org.apache.hadoop.hive.ql.metadata.Hive.get</API>(Hive.java:298)
+    at <API label="">org.apache.hadoop.hive.ql.metadata.Hive.get</API>(Hive.java:273)
+    at org.apache.spark.sql.hive.client.ClientWrapper.client(ClientWrapper.scala:272)
+    at <API label="">org.apache.spark.sql.hive.client.ClientWrapper$$anonfun$withHiveState$1.apply</API>(ClientWrapper.scala:288)
+    at org.apache.spark.sql.hive.client.ClientWrapper.liftedTree1$1(ClientWrapper.scala:239)
+    at org.apache.spark.sql.hive.client.ClientWrapper.retryLocked(ClientWrapper.scala:238)
+    at org.apache.spark.sql.hive.client.ClientWrapper.withHiveState(ClientWrapper.scala:281)
+    at org.apache.spark.sql.hive.client.ClientWrapper.runHive(ClientWrapper.scala:488)
+    at org.apache.spark.sql.hive.client.ClientWrapper.runSqlHive(ClientWrapper.scala:478)
+    at org.apache.spark.sql.hive.HiveContext.setConf(HiveContext.scala:443)
+    at <API label="">org.apache.spark.sql.SQLContext$$anonfun$4.apply</API>(SQLContext.scala:272)
+    at <API label="">org.apache.spark.sql.SQLContext$$anonfun$4.apply</API>(SQLContext.scala:271)
+    at scala.collection.Iterator$class.foreach(Iterator.scala:727)
+    at scala.collection.AbstractIterator.foreach(Iterator.scala:1157)
+    at scala.collection.IterableLike$class.foreach(IterableLike.scala:72)
+    at scala.collection.AbstractIterable.foreach(Iterable.scala:54)
+    at org.apache.spark.sql.SQLContext.(SQLContext.scala:271)
+    at org.apache.spark.sql.hive.HiveContext.(HiveContext.scala:90)
+    at org.apache.spark.sql.hive.HiveContext.(HiveContext.scala:101)
+    at <API label="">com.frontline.shopfloor.integration.Integration$.main</API>(Integration.scala:46)
+    at <API label="">com.frontline.shopfloor.integration.Integration.main</API>(Integration.scala)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at <API label="">org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run</API>(ApplicationMaster.scala:552)
+Caused by: java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
+    at <API label="">org.apache.hadoop.hive.metastore.MetaStoreUtils.newInstance</API>(MetaStoreUtils.java:1562)
+    at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.(RetryingMetaStoreClient.java:67)
+    at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:82)
+    at org.apache.hadoop.hive.ql.metadata.Hive.createMetaStoreClient(Hive.java:3324)
+    at org.apache.hadoop.hive.ql.metadata.Hive.getMSC(Hive.java:3343)
+    at org.apache.hadoop.hive.ql.metadata.Hive.getAllFunctions(Hive.java:3568)
+    at org.apache.hadoop.hive.ql.metadata.Hive.reloadFunctions(Hive.java:230)
+    at org.apache.hadoop.hive.ql.metadata.Hive.registerAllFunctionsOnce(Hive.java:214)
+    ... 27 more
+Caused by: java.lang.reflect.InvocationTargetException
+    at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+    at <API label="">sun.reflect.NativeConstructorAccessorImpl.newInstance</API>(NativeConstructorAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingConstructorAccessorImpl.newInstance</API>(DelegatingConstructorAccessorImpl.java:45)
+    at <API label="">java.lang.reflect.Constructor.newInstance</API>(Constructor.java:526)
+    at <API label="">org.apache.hadoop.hive.metastore.MetaStoreUtils.newInstance</API>(MetaStoreUtils.java:1560)
+    ... 34 more
+Caused by: javax.jdo.JDOFatalInternalException: Error creating transactional connection factory
+NestedThrowables:
+java.lang.reflect.InvocationTargetException
+    at org.datanucleus.api.jdo.NucleusJDOHelper.getJDOExceptionForNucleusException(NucleusJDOHelper.java:587)
+    at org.datanucleus.api.jdo.JDOPersistenceManagerFactory.freezeConfiguration(JDOPersistenceManagerFactory.java:781)
+    at org.datanucleus.api.jdo.JDOPersistenceManagerFactory.createPersistenceManagerFactory(JDOPersistenceManagerFactory.java:326)
+    at org.datanucleus.api.jdo.JDOPersistenceManagerFactory.getPersistenceManagerFactory(JDOPersistenceManagerFactory.java:195)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at <API label="">javax.jdo.JDOHelper$16.run</API>(JDOHelper.java:1965)
+    at java.security.AccessController.doPrivileged(Native Method)
+    at <API label="">javax.jdo.JDOHelper.invoke</API>(JDOHelper.java:1960)
+    at javax.jdo.JDOHelper.invokeGetPersistenceManagerFactoryOnImplementation(JDOHelper.java:1166)
+    at javax.jdo.JDOHelper.getPersistenceManagerFactory(JDOHelper.java:808)
+    at javax.jdo.JDOHelper.getPersistenceManagerFactory(JDOHelper.java:701)
+    at org.apache.hadoop.hive.metastore.ObjectStore.getPMF(ObjectStore.java:418)
+    at org.apache.hadoop.hive.metastore.ObjectStore.getPersistenceManager(ObjectStore.java:447)
+    at <API label="">org.apache.hadoop.hive.metastore.ObjectStore.initialize</API>(ObjectStore.java:342)
+    at org.apache.hadoop.hive.metastore.ObjectStore.setConf(ObjectStore.java:298)
+    at org.apache.hadoop.util.ReflectionUtils.setConf(ReflectionUtils.java:73)
+    at <API label="">org.apache.hadoop.util.ReflectionUtils.newInstance</API>(ReflectionUtils.java:133)
+    at org.apache.hadoop.hive.metastore.RawStoreProxy.(RawStoreProxy.java:60)
+    at org.apache.hadoop.hive.metastore.RawStoreProxy.getProxy(RawStoreProxy.java:69)
+    at org.apache.hadoop.hive.metastore.HiveMetaStore$HMSHandler.newRawStore(HiveMetaStore.java:682)
+    at org.apache.hadoop.hive.metastore.HiveMetaStore$HMSHandler.getMS(HiveMetaStore.java:660)
+    at org.apache.hadoop.hive.metastore.HiveMetaStore$HMSHandler.createDefaultDB(HiveMetaStore.java:713)
+    at <API label="">org.apache.hadoop.hive.metastore.HiveMetaStore$HMSHandler.init</API>(HiveMetaStore.java:508)
+    at org.apache.hadoop.hive.metastore.RetryingHMSHandler.(RetryingHMSHandler.java:78)
+    at org.apache.hadoop.hive.metastore.RetryingHMSHandler.getProxy(RetryingHMSHandler.java:84)
+    at org.apache.hadoop.hive.metastore.HiveMetaStore.newRetryingHMSHandler(HiveMetaStore.java:6319)
+    at org.apache.hadoop.hive.metastore.HiveMetaStoreClient.(HiveMetaStoreClient.java:207)
+    at org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient.(SessionHiveMetaStoreClient.java:74)
+    ... 39 more
+Caused by: java.lang.reflect.InvocationTargetException
+    at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+    at <API label="">sun.reflect.NativeConstructorAccessorImpl.newInstance</API>(NativeConstructorAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingConstructorAccessorImpl.newInstance</API>(DelegatingConstructorAccessorImpl.java:45)
+    at <API label="">java.lang.reflect.Constructor.newInstance</API>(Constructor.java:526)
+    at org.datanucleus.plugin.NonManagedPluginRegistry.createExecutableExtension(NonManagedPluginRegistry.java:631)
+    at org.datanucleus.plugin.PluginManager.createExecutableExtension(PluginManager.java:325)
+    at org.datanucleus.store.AbstractStoreManager.registerConnectionFactory(AbstractStoreManager.java:281)
+    at org.datanucleus.store.AbstractStoreManager.(AbstractStoreManager.java:239)
+    at org.datanucleus.store.rdbms.RDBMSStoreManager.(RDBMSStoreManager.java:292)
+    at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+    at <API label="">sun.reflect.NativeConstructorAccessorImpl.newInstance</API>(NativeConstructorAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingConstructorAccessorImpl.newInstance</API>(DelegatingConstructorAccessorImpl.java:45)
+    at <API label="">java.lang.reflect.Constructor.newInstance</API>(Constructor.java:526)
+    at org.datanucleus.plugin.NonManagedPluginRegistry.createExecutableExtension(NonManagedPluginRegistry.java:631)
+    at org.datanucleus.plugin.PluginManager.createExecutableExtension(PluginManager.java:301)
+    at org.datanucleus.NucleusContext.createStoreManagerForProperties(NucleusContext.java:1069)
+    at org.datanucleus.NucleusContext.initialise(NucleusContext.java:359)
+    at org.datanucleus.api.jdo.JDOPersistenceManagerFactory.freezeConfiguration(JDOPersistenceManagerFactory.java:768)
+    ... 68 more
+Caused by: java.lang.IllegalAccessError: tried to access method com.google.common.collect.MapMaker.makeComputingMap(Lcom/google/common/base/Function;)Ljava/util/concurrent/ConcurrentMap; from class com.jolbox.bonecp.BoneCPDataSource
+    at com.jolbox.bonecp.BoneCPDataSource.(BoneCPDataSource.java:64)
+    at org.datanucleus.store.rdbms.datasource.BoneCPDataSourceFactory.makePooledDataSource(BoneCPDataSourceFactory.java:73)
+    at org.datanucleus.store.rdbms.ConnectionFactoryImpl.generateDataSources(ConnectionFactoryImpl.java:217)
+    at org.datanucleus.store.rdbms.ConnectionFactoryImpl.initialiseDataSources(ConnectionFactoryImpl.java:110)
+    at org.datanucleus.store.rdbms.ConnectionFactoryImpl.(ConnectionFactoryImpl.java:82)
+    ... 86 more
+
+</code></pre>
+
+From where else the wrong guava version can be taken ?
+
+==========
+You need to add some code that identifies the location of the Guava with the wrong version and then you can change it with the compitable version.
+
+Please check 
+
+<a href="https://stackoverflow.com/questions/1983839/determine-which-jar-file-a-class-is-from">Determine which JAR file a class is from</a>
+

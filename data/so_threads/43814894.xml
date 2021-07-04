@@ -1,0 +1,32 @@
+https://stackoverflow.com/questions/43814894
+I made a simple test :
+
+<pre><code>
+Person p = new Person();
+p.setFirstName("Stéphane");
+p.setLastName("Traumat");
+
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(p)
+.<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("firstName", "lastName")
+.<API label="">contains</API>(<API label="">tuple</API>("Stéphane", "Traumat"));
+
+</code></pre>
+
+And I get a strange result : 
+
+<pre><code>
+java.lang.AssertionError: 
+Expecting:
+<["Stéphane", "Traumat"]>
+to contain:
+<[("Stéphane", "Traumat")]>
+but could not find:
+<[("Stéphane", "Traumat")]>
+
+</code></pre>
+
+Anyone can help me ?
+
+==========
+Don't use a <API label="">tuple</API>, the result of <code><API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API></code> in your case is a simple <API label="">array</API>, please also have a look at the javadoc for <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractObjectAssert.html#<API label="">extracting</API>-java.lang.String...-" rel="nofollow noreferrer"><code><API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API></code></a>, it <API label="">contains</API> an example showing how to use it.
+

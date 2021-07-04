@@ -1,0 +1,55 @@
+https://stackoverflow.com/questions/60899616
+I've come across an interesting behavior of recursive comparison in assertj library. If you compare objects of classes that are sub-classes, fields of super classes seem to be skipped during the comparison. Is that a known issue? Or am I doing something wrong? Here is a brief example:
+
+<pre><code>
+import org.junit.Test;
+import static <API label="org.assertj.core.api.Assertions.assertThat">org.assertj.core.api.Assertions.assertThat</API>;
+
+public class ExampleTest {
+
+ @Test
+  public void <API label="">test</API>() {
+    MyException expected =
+            new MyException("Expected text message");
+    MyException actual = new MyException("Actual text message"); //<API label="">values</API> for the field Throwable.detailMessage are different
+    <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(actual).<API label="">usingRecursiveComparison</API>().<API label="">ignoringAllOverriddenEquals</API>().<API label="">isEqualTo</API>(expected);
+  }
+}
+
+class MyException extends RuntimeException {
+
+ MyException(String message) {
+    super(message);
+  }
+}
+
+</code></pre>
+
+This <API label="">test</API> will pass when actually it should not as <code><API label="None">actual.getMessage</API>()</code> and <code><API label="None">expected.getMessage</API>()</code> will show different <API label="">values</API>.
+
+==========
+Apparently, the lib skips comparison of the fields that are inherited from superclasses that reside in <code>java.lang</code>. As <code>MyException</code> is using a <code>detailMessage</code> field inherited from <code>java.lang.Throwable</code>, it is skipped. 
+Here is the code from <code>org.assertj.core.internal.Objects</code> that seems to be responsible for such a behavior: 
+
+<pre><code>
+/**
+   * Returns the declared fields of given class and its superclasses stopping at superclass in <code>java.lang</code>
+   * package whose fields are not included.
+   *
+   * @param clazz the class we want the declared fields.
+   * @return the declared fields of given class and its superclasses.
+   */
+  public static Set <API label="">getDeclaredFieldsIncludingInherited</API>(Class clazz) {
+    <API label="None">checkNotNull</API>(clazz, "expecting Class parameter not to be null");
+    Set declaredFields = getDeclaredFieldsIgnoringSyntheticAndStatic(clazz);
+    // get fields declared in superclass
+    Class superclazz = clazz.getSuperclass();
+    while (superclazz != null && !<API label="None">superclazz.getName</API>().<API label="None">startsWith</API>("java.lang")) {
+      <API label="None">declaredFields.addAll</API>(getDeclaredFieldsIgnoringSyntheticAndStatic(superclazz));
+      superclazz = superclazz.getSuperclass();
+    }
+    return declaredFields;
+  }
+
+</code></pre>
+

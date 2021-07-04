@@ -1,0 +1,48 @@
+https://stackoverflow.com/questions/16919751
+In my java project, I have the following line of code:
+
+<pre><code>
+<API label="None">CharMatcher.JAVA_LETTER_OR_DIGIT.matchesAnyOf</API>("string");
+
+</code></pre>
+
+This line works perfectly in eclipse (Windows, Guava 14.0.1, Java 1.6.0_22-b04). When compiling on our integration VM (debian, Guava 14.0.1 Java 1.6.0_22-b04), the line produces the following error:
+
+<pre><code>
+[javac] /opt/quantis/src/Quantis_EJB/ejbModule/internals/QtsSessionManagerBean.java:298: cannot find symbol
+[javac] symbol  : method <API label="">matchesAnyOf</API>(java.lang.String)
+[javac] location: class com.google.common.base.CharMatcher
+[javac]         <API label="None">CharMatcher.JAVA_LETTER_OR_DIGIT.matchesAnyOf</API>("string");
+
+</code></pre>
+
+It's not a classpath issue, as other lines requiring guava 14 features works well. Following lines produces no error:
+
+<pre><code>
+<API label="None">CharMatcher.JAVA_LETTER_OR_DIGIT.matchesNoneOf</API>("string");
+<API label="com.google.common.hash.Hashing.sha512">Hashing.sha512</API>().<API label="None">newHasher</API>().<API label="None">putString</API>("string");
+
+</code></pre>
+
+Any idea about why just this symbol and not the other are not resolved? Spcific bug in linux JDK? Conflicts with other potential jar in my classpath (we have a lot of other dependancies)?
+
+==========
+Since you don't use Maven, you might be managing your dependencies manually. In that case, have you tried simply greping all your dependencies to find in which jars the class exists?
+
+<pre><code>
+grep -E com.google.common.base.CharMatcher lib/*
+
+</code></pre>
+
+It also works if your build process bundles something containing the dependencies, the important is to have them all in one place.
+
+The other option is to find out where the class comes from programatically, from the runtime. If you comment out the offending line to be able to compile and you can run it in some way (unit test or other), you can find out the origin of the class using the following code:
+
+<pre><code>
+<API label="None">System.out.println</API>(CharMatcher.class.getProtectionDomain()
+        .getCodeSource().<API label="None">getLocation</API>())
+
+</code></pre>
+
+The offender could be an old Google Collections jar, the predecessor of Guava, if it had <code>CharMatcher</code> (the "Since 1.0" seems to indicate it), or another jar embedding the Guava classes.
+

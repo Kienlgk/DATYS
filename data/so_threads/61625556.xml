@@ -1,0 +1,185 @@
+https://stackoverflow.com/questions/61625556
+We are using HashBiMap in our application and we created it like this
+
+<pre><code>
+HashBiMap map = <API label="com.google.common.collect.HashBiMap.create">HashBiMap.create</API>();
+
+</code></pre>
+
+and we have guava-26.0-jre version of guava.
+
+Recently noticed our application getting hung and not able to process any other requests. Got a thread dump and noticed things like these
+
+<pre><code>
+Thread.State: RUNNABLE
+native=false, suspended=false, blockCount=1, waitCount=4, cpu=9h, 12m, 45s, 434ms, user=9h, 10m, 59s, 990ms
+    com.google.common.collect.HashBiMap.seekByKey(HashBiMap.java:223)
+    <API label="com.google.common.collect.HashBiMap.get">com.google.common.collect.HashBiMap.get</API>(HashBiMap.java:254)
+
+Thread.State: RUNNABLE
+native=false, suspended=false, blockCount=1, waitCount=6, cpu=9h, 11m, 49s, 453ms, user=9h, 10m, 3s, 760ms
+    com.google.common.collect.HashBiMap.seekByKey(HashBiMap.java:223)
+    <API label="com.google.common.collect.HashBiMap.get">com.google.common.collect.HashBiMap.get</API>(HashBiMap.java:254)
+
+Thread.State: RUNNABLE
+native=false, suspended=false, blockCount=274, waitCount=6615, cpu=22h, 31m, 29s, 966ms, user=22h, 27m, 30s, 540ms
+    com.google.common.collect.HashBiMap.seekByKey(HashBiMap.java:223)
+    <API label="com.google.common.collect.HashBiMap.get">com.google.common.collect.HashBiMap.get</API>(HashBiMap.java:254)
+
+Thread.State: RUNNABLE
+native=false, suspended=false, blockCount=91, waitCount=2443, cpu=22h, 29m, 51s, 541ms, user=22h, 25m, 54s, 140ms
+    com.google.common.collect.HashBiMap.seekByKey(HashBiMap.java:223)
+    <API label="com.google.common.collect.HashBiMap.get">com.google.common.collect.HashBiMap.get</API>(HashBiMap.java:254)
+
+</code></pre>
+
+There were several other threads like above that got blocked on a call to <API label="com.google.common.collect.HashBiMap.get">get</API>, but the longest that was waiting was this with cpu=22h, 31m, 29s, 966ms
+
+<pre><code>
+Thread.State: RUNNABLE
+native=false, suspended=false, blockCount=3, waitCount=32, cpu=5h, 46m, 7s, 733ms, user=5h, 45m, 500ms
+    com.google.common.collect.HashBiMap.seekByValue(HashBiMap.java:234)
+    <API label="com.google.common.collect.HashBiMap.put">com.google.common.collect.HashBiMap.put</API>(HashBiMap.java:274)
+    <API label="com.google.common.collect.HashBiMap.forcePut">com.google.common.collect.HashBiMap.forcePut</API>(HashBiMap.java:301)
+
+</code></pre>
+
+There was only one thread thats waiting on the <API label="com.google.common.collect.HashBiMap.forcePut">forcePut</API> like above.
+
+Would there be any reason for why <API label="com.google.common.collect.HashBiMap.get">HashBiMap.get</API> would go into a loop to find the value for a key and never returns.
+
+==========
+TL;DR
+
+As suggested by Xaerxess, uses <a href="https://guava.dev/releases/29.0-jre/api/docs/com/google/common/collect/Maps.html#<API label="om.google.common.collect.BiMap">synchronizedBiMap</API>-com.google.common.collect.BiMap-" rel="nofollow noreferrer">Maps#<API label="com.google.common.collect.Maps.synchronizedBiMap">synchronizedBiMap</API></a> in case the map is accessed by multiple threads. You never knows what can happens when there is multiple threads.
+
+For someone who is curious on whats happened
+
+
+ Would there be any reason for why <API label="com.google.common.collect.HashBiMap.get">HashBiMap.get</API> would go into a loop
+  to find the value for a key and never returns.
+
+
+
+
+It is an interesting example on how multiple thread <API label="">create</API> "unexpected" result.
+Let's take a look in line HashBiMap.java:223  of method <code>seekByKey</code>  
+
+<pre><code>
+private BiEntry seekByKey(@Nullable Object key, int keyHash) {
+  for (BiEntry entry = hashTableKToV[keyHash & mask];
+      entry != null;
+      entry = entry.nextInKToVBucket) {
+    if (keyHash == entry.keyHash && <API label="None">Objects.equal</API>(key, entry.key)) {
+      return entry;
+    }
+  }
+  return null;
+}
+
+</code></pre>
+
+And line 223 is  
+
+<pre><code>
+      entry = entry.nextInKToVBucket) {
+
+</code></pre>
+
+Blocking in this line means there is an infinite loop, which is due to circular reference of <code>entry</code> and <code>entry.nextInKToVBucket</code>.
+
+One of the possible case is that: In the <code><API label="">put</API></code> method,  
+
+<pre><code>
+private V <API label="">put</API>(@Nullable K key, @Nullable V value, boolean force) {
+  ...
+
+ BiEntry newEntry = new BiEntry<>(key, keyHash, value, valueHash);
+  if (oldEntryForKey != null) {
+    ...
+  } else {
+    <API label="">insert</API>(newEntry, null);
+    rehashIfNecessary();
+    return null;
+  }
+}
+
+</code></pre>
+
+suppose unfortunately there are two calls with same key and value from two threads simultaneously, created two new entry A and B. Then in <code><API label="">insert</API></code> method,
+
+<pre><code>
+private void <API label="">insert</API>(BiEntry entry, @Nullable BiEntry oldEntryForKey) {
+  int keyBucket = entry.keyHash & mask; // 1
+  entry.nextInKToVBucket = hashTableKToV[keyBucket]; // Step 2
+  hashTableKToV[keyBucket] = entry; // 3
+  ...
+}
+
+</code></pre>
+
+Suppose A completes <API label="">first</API>, <code>hashTableKToV[keyBucket]</code> = A, <code>A.nextInKToVBucket</code> = null. when B comes, and completes Step 2, <code>B.nextInKToVBucket</code> = A. Suppose before <API label="">execute</API> step 3, Thread of A is executing <code>rehashIfNecessary</code>, and unfortunately rehash is required. 
+
+<pre><code>
+private void rehashIfNecessary() {
+  BiEntry[] oldKToV = hashTableKToV;
+  if (<API label="None">Hashing.needsResizing</API>(<API label="">size</API>, <API label="None">oldKToV.length</API>, LOAD_FACTOR)) {
+    int newTableSize = <API label="None">oldKToV.length</API> * 2;
+
+   this.hashTableKToV = <API label="None">createTable</API>(newTableSize);  // Step 4
+    ...
+
+   for (BiEntry entry = firstInKeyInsertionOrder; 
+        entry != null;
+        entry = entry.nextInKeyInsertionOrder) {
+      <API label="None">insert</API>(entry, entry); // step 5
+    }
+    ...
+  }
+}
+
+</code></pre>
+
+When step 4 is completed, <code>hashTableKToV</code> is cleared. It is unlucky that Thread of B <API label="">execute</API> step 3 in this moment, and <code>hashTableKToV[keyBucket]</code> = B. Thread of A continues with step 5, which <API label="">insert</API> A again, and <code>A.nextInKToVBucket</code> = A after step 2, causing a circular reference. And hence infinite loop in <code>seekByKey</code>.
+
+Here is an example for how to reproduce above case (not 100%, may need to try several <API label="">times</API>):
+
+<pre><code>
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
+public class HashBiMapConcurrentTest {
+    public static void <API label="None">main</API>(String[] args) throws InterruptedException {
+        BiMap biMap = <API label="com.google.common.collect.HashBiMap.create">HashBiMap.create</API>();
+        ExecutorService executors = Executors.newFixedThreadPool(4);
+        Collection tasks = new ArrayList<>();
+        Callable task = () -> {
+            for (int i = 0; i < 1000; i++) {
+                <API label="com.google.common.collect.HashBiMap.put">biMap.put</API>("A" + i, "B" + i);
+                <API label="com.google.common.collect.HashBiMap.put">biMap.get</API>("A" + i);
+            }
+            <API label="None">System.out.println</API>("Done");
+            return 0;
+        };
+        <API label="None">tasks.add</API>(task);
+        <API label="None">tasks.add</API>(task);
+        List futures = <API label="None">executors.invokeAll</API>(tasks);
+        for (Future future : futures) {
+            while (!<API label="None">future.isDone</API>()) {
+                Thread.sleep(10);
+            }
+        }
+        <API label="None">executors.shutdown</API>();
+    }
+}
+
+</code></pre>
+

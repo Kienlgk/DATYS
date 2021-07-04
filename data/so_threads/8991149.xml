@@ -1,0 +1,19 @@
+https://stackoverflow.com/questions/8991149
+I have a collection and I would like to know if at <API label="">least</API> one element meets some condition.  Essentially, what <a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/some" rel="noreferrer">some</a> does in JavaScript, I would like to do on a collection!
+
+==========
+Check out <a href="http://code.google.com/p/guava-libraries/">Guava</a>'s <a href="http://docs.guava-libraries.googlecode.com/git-history/v11.0.1/javadoc/com/google/common/collect/Iterables.html"><code>Iterables</code></a> class and its <a href="http://docs.guava-libraries.googlecode.com/git-history/v11.0.1/javadoc/com/google/common/collect/Iterables.html#<API label="com.google.common.collect.Iterables.any">any</API>%28java.lang.Iterable,%20com.google.common.base.Predicate%29"><code><API label="com.google.common.collect.Iterables.any">any</API>()</code></a> implementation.
+
+More or less the same thing as the Commons Collections example in the other answer, but genericized:
+
+<pre><code>
+List strings = <API label="None">Arrays.asList</API>("ohai", "wat", "fuuuu", "kthxbai");
+boolean well = <API label="com.google.common.collect.Iterables.any">Iterables.any</API>(strings, new Predicate() {
+    @Override public boolean <API label="None">apply</API>(@Nullable String s) {
+        return <API label="com.google.common.base.Ascii.equalsIgnoreCase">s.equalsIgnoreCase</API>("fuuuu");
+    }
+});
+System.out.printf("Do <API label="">any</API> match? %s%n", well ? "Yep" : "Nope");
+
+</code></pre>
+

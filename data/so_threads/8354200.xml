@@ -1,0 +1,119 @@
+https://stackoverflow.com/questions/8354200
+I have a list <API label="">of</API> objects that I need to transform to a map where the keys are a function <API label="">of</API> each element, and the values are lists <API label="">of</API> another function <API label="">of</API> each element. Effectively this is grouping the elements by a function <API label="">of</API> them.
+
+For example, suppose a simple element class:
+
+<pre><code>
+class Element {
+    int f1() { ... }
+    String f2() { ... }
+}
+
+</code></pre>
+
+and a list <API label="">of</API> these:
+
+<pre><code>
+[
+    { f1=100, f2="Alice" },
+    { f1=200, f2="Bob" },
+    { f1=100, f2="Charles" },
+    { f1=300, f2="Dave" }
+]
+
+</code></pre>
+
+then I would like a map as follows:
+
+<pre><code>
+{
+    {key=100, value=[ "Alice", "Charles" ]},
+    {key=200, value=[ "Bob" ]},
+    {key=300, value=[ "Dave" ]}
+}
+
+</code></pre>
+
+Can anyone suggest a succinct way <API label="">of</API> doing this in Java without iterating? A combination <API label="">of</API> LambdaJ's <code>group</code> method with Guava's <code>Maps.transform</code> nearly gets there, but <code>group</code> doesn't generate a map.
+
+==========
+Guava has <a href="http://docs.guava-libraries.googlecode.com/git-history/v10.0.1/javadoc/com/google/common/collect/Maps.html#uniqueIndex%28java.lang.Iterable,%20com.google.common.base.Function%29">Maps.uniqueIndex(Iterable values, Function keyFunction)</a> and <a href="http://docs.guava-libraries.googlecode.com/git-history/v10.0.1/javadoc/com/google/common/collect/Multimaps.html#index%28java.lang.Iterable,%20com.google.common.base.Function%29"><API label="com.google.common.collect.Multimaps.index">Multimaps.index</API>(Iterable values, Function keyFunction)</a>, but they don't transform the values. There are <a href="http://code.google.com/p/guava-libraries/issues/detail?id=679">some</a> <a href="http://code.google.com/p/guava-libraries/issues/detail?id=56">requests</a> to add utility methods that do what you want, but for now, you'll have to roll it yourself using <API label="com.google.common.collect.Multimaps.index">Multimaps.index</API>() and <API label="com.google.common.collect.Multimaps.transformValues">Multimaps.transformValues</API>():
+
+<pre><code>
+static class Person {
+    private final Integer age;
+    private final String name;
+
+   public Person(Integer age, String name) {
+        this.age = age;
+        this.name = name;
+    }
+
+   public Integer getAge() {
+        return age;
+    }
+
+   public String <API label="None">getName</API>() {
+        return name;
+    }
+}
+
+private enum GetAgeFunction implements Function {
+    INSTANCE;
+
+   @Override
+    public Integer <API label="None">apply</API>(Person person) {
+        return person.getAge();
+    }
+}
+
+private enum GetNameFunction implements Function {
+    INSTANCE;
+
+   @Override
+    public String <API label="None">apply</API>(Person person) {
+        return <API label="None">person.getName</API>();
+    }
+}
+
+public void example() {
+    List persons = <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(
+            new Person(100, "Alice"),
+            new Person(200, "Bob"),
+            new Person(100, "Charles"),
+            new Person(300, "Dave")
+    );
+
+   ListMultimap ageToNames = getAgeToNamesMultimap(persons);
+
+   <API label="None">System.out.println</API>(ageToNames);
+
+   // prints {100=[Alice, Charles], 200=[Bob], 300=[Dave]}
+}
+
+private ListMultimap getAgeToNamesMultimap(List persons) {
+    ImmutableListMultimap ageToPersons = <API label="com.google.common.collect.Multimaps.index">Multimaps.index</API>(persons, GetAgeFunction.INSTANCE);
+    ListMultimap ageToNames = <API label="com.google.common.collect.Multimaps.transformValues">Multimaps.transformValues</API>(ageToPersons, GetNameFunction.INSTANCE);
+
+   // <API label="com.google.common.collect.Multimaps.transformValues">Multimaps.transformValues</API>() returns a *lazily* transformed view <API label="">of</API> "ageToPersons"
+    // If we want to iterate multiple times over it, it's better to create a copy
+    return <API label="com.google.common.collect.ImmutableListMultimap.copyOf">ImmutableListMultimap.copyOf</API>(ageToNames);
+}
+
+</code></pre>
+
+
+
+A re-usable utility method could be:
+
+<pre><code>
+public static  ImmutableListMultimap keyToValuesMultimap(Iterable elements, Function keyFunction, Function valueFunction) {
+    ImmutableListMultimap keysToElements = <API label="com.google.common.collect.ImmutableListMultimap.index">Multimaps.index</API>(elements, keyFunction);
+    ListMultimap keysToValuesLazy = <API label="com.google.common.collect.ImmutableListMultimap.transformValues">Multimaps.transformValues</API>(keysToElements, valueFunction);
+    return <API label="com.google.common.collect.ImmutableListMultimap.copyOf">ImmutableListMultimap.copyOf</API>(keysToValuesLazy);
+}
+
+</code></pre>
+
+I guess we could improve the generics in the signature by using <code>Function</code> or something, but I don't have the time to delve further...
+

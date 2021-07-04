@@ -1,0 +1,128 @@
+https://stackoverflow.com/questions/55368558
+I'm encountering a weird issue / bug <API label="">with</API> assert j <API label="">and</API> groovy <API label="">with</API> step verifier testing mongo db. I've included some code <API label="">to</API> help you reproduce this locally <API label="">and</API> also I <API label="">have</API> made the test work by replacing the closure <API label="">with</API> just a string. 
+
+I <API label="">have</API> the following code:
+
+<pre><code>
+  @Document
+    @ToString(includePackage = false, includeFields = true)
+    class Image {
+        @Id private String id
+        private String name
+
+       Image() {
+        }
+
+       Image(String id, String name) {
+            this.id = id
+            this.name = name
+        }
+
+       String <API label="">getId</API>() {
+            return id
+        }
+
+       void <API label="">setId</API>(String id) {
+            this.id = id
+        }
+
+       String <API label="">getName</API>() {
+            return name
+        }
+
+       void setName(String name) {
+            this.name = name
+        }
+}       
+
+</code></pre>
+
+ImageRepository.groovy
+
+<pre><code>
+interface ImageRepository extends ReactiveCrudRepository{
+    Mono findByName(String name)
+}
+
+</code></pre>
+
+<API label="">and</API> the following test
+
+<pre><code>
+@RunWith(SpringRunner)
+@DataMongoTest
+class EmbeddedImageRepositoryTests {
+
+   @Autowired
+    ImageRepository repository
+
+   @Autowired
+    MongoOperations operations
+
+   @Before
+    void setup() {
+        operations.dropCollection(Image)
+        <API label="None">operations.insert</API>(new Image([
+                id  : '1',
+                name: 'learning-spring-boot-cover.jpg'
+        ]))
+        <API label="None">operations.insert</API>(new Image([
+                id  : '2',
+                name: 'learning-spring-boot-2nd-edition.jpg'
+        ]))
+        <API label="None">operations.insert</API>(new Image([
+                id  : '3',
+                name: 'bazinga.png'
+        ]))
+        operations.findAll(Image).each { println it }
+    }
+
+   @Test
+    void findAllShouldWork() {
+        Flux images = repository.findAll()
+        <API label="None">StepVerifier.create</API>(images)
+                .recordWith({ new ArrayList<>() })
+                .expectNextCount(3)
+                .consumeRecordedWith(
+                {
+                    <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(it).<API label="None">hasSize</API>(3)
+                    <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(it)
+                            .<API label="org.assertj.core.api.AbstractIterableAssert.extracting">extracting</API>({it.name})
+                            .<API label="org.assertj.core.api.AbstractIterableAssert.contains">contains</API>(
+                            'learning-spring-boot-cover.jpg',
+                            'learning-spring-boot-2nd-edition.jpg',
+                            'bazinga.png')
+                })
+                .expectComplete()
+                .<API label="None">verify</API>()
+    }
+}
+
+</code></pre>
+
+The test fails <API label="">and</API> the offending line is this after some 
+
+<pre><code>
+.<API label="">extracting</API>({it.name})
+
+</code></pre>
+
+When it is changed <API label="">to</API> 
+
+<pre><code>
+.<API label="">extracting</API>('name')
+
+</code></pre>
+
+Then the test passes. Has anybody had the same problem <API label="">with</API> using assert J <API label="">and</API> groovy <API label="">and</API> step verifier?
+
+==========
+I haven't used AssertJ <API label="">with</API> groovy but my guess is Groovy is confused when resolving which <code><API label="org.assertj.core.api.AbstractIterableAssert.extracting">extracting</API></code> methods <API label="">to</API> use, if I had <API label="">to</API> pick the ones confusing Groovy I would pick:
+
+
+<a href="https://static.javadoc.io/org.assertj/assertj-core/3.12.2/org/assertj/core/api/AbstractIterableAssert.html#<API label="">extracting</API>-java.util.function.Function-" rel="nofollow noreferrer">https://static.javadoc.io/org.assertj/assertj-core/3.12.2/org/assertj/core/api/AbstractIterableAssert.html#<API label="">extracting</API>-java.util.function.Function-</a> 
+<a href="https://static.javadoc.io/org.assertj/assertj-core/3.12.2/org/assertj/core/api/AbstractIterableAssert.html#<API label="">extracting</API>-<API label="">org.assertj.core.api.iterable</API>.ThrowingExtractor-" rel="nofollow noreferrer">https://static.javadoc.io/org.assertj/assertj-core/3.12.2/org/assertj/core/api/AbstractIterableAssert.html#<API label="">extracting</API>-<API label="">org.assertj.core.api.iterable</API>.ThrowingExtractor-</a>
+
+
+but you <API label="">have</API> a few more overloaded <code><API label="org.assertj.core.api.AbstractIterableAssert.extracting">extracting</API></code> <API label="">in</API> <a href="https://static.javadoc.io/org.assertj/assertj-core/3.12.2/org/assertj/core/api/AbstractIterableAssert.html#method.summary" rel="nofollow noreferrer">https://static.javadoc.io/org.assertj/assertj-core/3.12.2/org/assertj/core/api/AbstractIterableAssert.html#method.summary</a>.
+

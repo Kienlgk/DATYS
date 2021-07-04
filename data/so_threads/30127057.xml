@@ -1,0 +1,82 @@
+https://stackoverflow.com/questions/30127057
+I tried to follow the example offered in the answer to this very similar question, but it does not work for me. I <API label="">get</API> the following error message:
+
+<pre><code>
+java.lang.IllegalArgumentException: Cannot subclass final class class com.myproject.test.support.ExampleEnumerable
+    at <API label="">org.mockito.cglib.proxy.Enhancer.generateClass</API>(Enhancer.java:447)
+    at <API label="">org.mockito.cglib.core.DefaultGeneratorStrategy.generate</API>(DefaultGeneratorStrategy.java:25)
+    at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:217)
+    at org.mockito.cglib.proxy.Enhancer.createHelper(Enhancer.java:378)
+    at <API label="">org.mockito.cglib.proxy.Enhancer.createClass</API>(Enhancer.java:318)
+    at <API label="">org.powermock.api.mockito.repackaged.ClassImposterizer.createProxyClass</API>(ClassImposterizer.java:123)
+    at <API label="">org.powermock.api.mockito.repackaged.ClassImposterizer.imposterise</API>(ClassImposterizer.java:57)
+    at org.powermock.api.mockito.internal.mockcreation.MockCreator.createMethodInvocationControl(MockCreator.java:110)
+    at <API label="">org.powermock.api.mockito.internal.mockcreation.MockCreator.mock</API>(MockCreator.java:58)
+    at <API label="">org.powermock.api.mockito.PowerMockito.mock</API>(PowerMockito.java:143)
+
+</code></pre>
+
+I need a simple <API label="">mock</API> instance of an <code>enum class</code>. I don't need to <API label="None">mock</API> any of its methods.
+
+Here is the class I want to <API label="None">mock</API>:
+
+<pre><code>
+public enum ExampleEnumerable implements IEnumerable {
+    EXAMPLE_ENUM_1("Test Enum 1"),
+    EXAMPLE_ENUM_2("Test Enum 2");
+
+   final String alias;
+
+   ExampleEnumerable(final String alias) {
+        this.alias = alias;
+    }
+
+   @SuppressWarnings({"VariableArgumentMethod", "unchecked"})
+    @Override
+    public @Nullable
+    String getAlias(final @Nonnull IEnumerable... context) {
+        return alias;
+    }
+}
+
+</code></pre>
+
+I have the following TestNG setup:
+
+<pre><code>
+import static <API label="None">org.powermock.api.mockito.PowerMockito.mock</API>;
+
+@PrepareForTest({ ExampleEnumerable.class})
+@Test(groups = {"LoadableBuilderTestGroup"})
+public class LoadableBuilderTest {
+
+   private ExampleEnumerable mockEnumerable;
+
+   @BeforeMethod
+    public void setUp() {
+        mockEnumerable = <API label="None">mock</API>(ExampleEnumerable.class);
+    }
+}
+
+</code></pre>
+
+==========
+I got this working by extending the PowerMockTestCase class that handles this kind of thing for TestNG:
+
+<pre><code>
+@PrepareForTest(TestEnumerable.class)
+@Test(groups = {"LoadableBuilderTestGroup"})
+public class LoadableBuilderTest extends PowerMockTestCase {
+
+private TestEnumerable mockEnumerable;
+
+@SuppressWarnings("unchecked")
+    @BeforeMethod
+    public void setUp() {
+        mockEnumerable = <API label="None">PowerMockito.mock</API>(TestEnumerable.class);
+
+   }
+}
+
+</code></pre>
+

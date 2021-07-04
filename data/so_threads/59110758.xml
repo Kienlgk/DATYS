@@ -1,0 +1,32 @@
+https://stackoverflow.com/questions/59110758
+When I use the <code>@Mock</code> annotation, along with <code><API label="org.mockito.MockitoAnnotations.initMocks">initMocks</API>(this)</code> in the setup method, the mocked objects show as <code>"null"</code> in the debugger (note the double quotes) and all of its members are null or 0. When I use the <code><API label="org.mockito.Mockito.mock">Mockito.mock</API>()</code> method, I see <code>"Mock for MyClass, hashCode: 15422...."</code>, which is what I expect. I'm not sure what I'm doing wrong with the annotation method, but there are other questions that deal with this. My question here is, what in the world is a quoted <code>"null"</code>?
+
+==========
+You shouldn't expect mocks to behave like real objects. They aren't. They often involve all sorts of reflective operations and low-level manipulation of the jvm using objects and functions you wouldn't normally touch unless you want java to start behaving weird.
+
+Therefore, they should not be inspected in a debugger without expecting weird behaviour. Even reading a value from them in a debugger can change the state of the <API label="">mock</API>. Say you configure your <API label="">mock</API> to fail if a value is examined more than once, then you inspect the value in the debugger, what happens to the <API label="">mock</API>?
+
+To answer your question thoroughly though, I cloned the mockito repo and searched for quoted nulls from the src/main directory using the following incantation:
+
+<pre><code>
+find . -name *.java -exec grep -Hn "\"null\"" {} \;
+
+</code></pre>
+
+And discovered the following results (edited)
+
+jomi = /java/org/mockito/internal
+
+<pre><code>
+j/o/m/i/creation/bytebuddy/SubclassByteBuddyMockMaker:121: return type == null ? "null" : "'" + <API label="None">type.getCanonicalName</API>() + "', loaded by classloader : '" + <API label="None">type.getClassLoader</API>() + "'";
+j/o/m/i/creation/bytebuddy/SubclassByteBuddyMockMaker:125: return instance == null ? "null" : describeClass(<API label="None">instance.getClass</API>());
+j/o/m/i/matchers/text/ValuePrinter:27: return "null";
+j/o/m/i/stubbing/answers/Returns:37: throw <API label="org.mockito.exceptions.Reporter.wrongTypeOfReturnValue">wrongTypeOfReturnValue</API>(<API label="None">invocationInfo.printMethodReturnType</API>(), "null", <API label="None">invocationInfo.getMethodName</API>());
+j/o/m/i/verification/argumentmatching/ArgumentMatchingTool:48: return <API label="None">m.toString</API>().<API label="None">equals</API>(arg == null ? "null" : <API label="None">arg.toString</API>());
+
+</code></pre>
+
+So the quoted null is returned in a few places rather than null itself. I suspect the developers were trying to avoid null propagation and that this is properly classified as an implementation of the <a href="http://www.two-sdg.demon.co.uk/curbralan/papers/europlop/NullObject.pdf" rel="nofollow noreferrer">Null Object pattern</a> ([Anderson1996] Bruce Anderson, "Null Object", PLoP '96).
+
+The null object pattern is used to avoid propogating nulls by returning a real object that will allow you to avoid null pointer exceptions, but which behaves as if it were null in other cases. This is an OO concept and works really well with polymorphism, but a string is also an object (sort of) and can be represented by a null-object when necessary. You can check for the null value rather than nulls, and have no real problems when the value is accidentally addressed by downstream programmers (or, in your case, by the IDE that is trying to display the value). 
+

@@ -1,0 +1,39 @@
+https://stackoverflow.com/questions/36260084
+I have MultiMap <API label="">from</API> Guava library. I want to sort it only by keys. I have tried:
+
+<pre><code>
+Multimap sortedMultiMap =
+    <API label="com.google.common.collect.TreeMultimap.create">TreeMultimap.create</API>(<API label="com.google.common.collect.Ordering.from">Ordering.from</API>(new Comparator() {
+        @Override
+        public int <API label="None">compare</API>(String lhs, String rhs) {
+            //my comparison here
+        }
+    }), <API label="com.google.common.collect.Ordering.natural">Ordering.natural</API>());//i want not to sort values at all,MyObj doesn't implement Comparable
+<API label="com.google.common.collect.TreeMultimap.putAll">sortedMultiMap.putAll</API>(notSortedMultiMap);
+
+</code></pre>
+
+But as you can see, <API label="com.google.common.collect.TreeMultimap.create">TreeMultiMap.create</API> method has 2 arguments - comparators for keys and values. How i can sort MultiMap only by keys?
+
+==========
+Update after answer <API label="">from</API> Louis Wasserman Even if my original answer solved the problem and answered the question I think this is the more elegant solution. 
+
+<pre><code>
+Multimap multimap = 
+    <API label="com.google.common.collect.MultimapBuilder.treeKeys">MultimapBuilder.treeKeys</API>(/* you comparator here */).linkedListValues().<API label="com.google.common.collect.MultimapBuilder.build">build</API>();
+
+</code></pre>
+
+
+
+You can use <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Ordering.html#<API label="">arbitrary</API>()" rel="nofollow"><code><API label="com.google.common.collect.Ordering.arbitrary">Ordering.arbitrary</API>()</code></a> as the second argument, it does not require the objects to implement <code>Comparable</code>.
+
+If insertion order is needed you can use something like
+
+<pre><code>
+Multimap sortedMultiMap = <API label="com.google.common.collect.Multimaps.newMultimap">Multimaps.newMultimap</API>(
+            <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>(/* your comparator here*/),
+            Lists::<API label="com.google.common.collect.Lists.newLinkedList">newLinkedList</API>);
+
+</code></pre>
+

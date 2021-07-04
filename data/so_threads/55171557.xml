@@ -1,0 +1,188 @@
+https://stackoverflow.com/questions/55171557
+I have implemented this Guava cache in 1 of my SpringBoot service:
+
+<pre><code>
+public class CachedMenuServiceImpl implements MenuService {
+
+       private  LoadingCache menuChartCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+                .<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(15)
+                .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(15, TimeUnit.MINUTES)
+                .<API label="com.google.common.cache.CacheBuilder.build">build</API>(
+                        new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+                            public MenuChart2 <API label="com.google.common.cache.CacheLoader.load">load</API>(String menuSymbol) throws ExecutionException {
+                                   return generateCharts (menuSymbol);    
+                            }
+                        }
+                );
+
+
+
+   @Override
+    public MenuChart2 getCharts (String menuSymbol) throws ExecutionException {
+
+       return <API label="com.google.common.cache.LoadingCache.get">menuChartCache.get</API>(menuSymbol);      
+    }
+
+
+public MenuChart2 generateCharts (String MenuSymbol) throws ExecutionException {
+
+       MenuChart2 menuChart2;
+
+      …
+       return menuChart2;
+}
+
+
+public MenuChart2 generateCharts (String menuSymbol) throws ExecutionException {
+
+
+       if (<API label="None">LOG.isDebugEnabled</API>()) {
+            LOG.debug ("generating charts for {} ", menuSymbol);
+        }
+
+       Menu menu = findBySymbol(menuSymbol).<API label="None">get</API>();
+
+       Map last30DPerDay =   
+
+               menuPriceByDayService.findAllOrderByUpdateDate(menu, DateUtils.monthlyDate(), 30)
+                .<API label="None">stream</API>()
+                .<API label="None">sorted</API>(comparing(MenuPriceByDay::getUpdateDate))
+                .collect(Collectors
+                        .<API label="None">toMap</API>(MenuPriceByDay::getUpdateLocalDate, p -> new MenuChart2().new Statistics( p.getMinPrice().<API label="None">doubleValue</API>(), 
+                                                                                                                            p.getMaxPrice().<API label="None">doubleValue</API>(),
+                                                                                                                            p.getAvgPrice().<API label="None">doubleValue</API>())));
+
+           Map last3MPerDay =    
+
+                   menuPriceByDayService.findAllOrderByUpdateDate(menu, DateUtils.quarterlyDate(), 92)
+                    .<API label="None">stream</API>()
+                    .<API label="None">sorted</API>(comparing(MenuPriceByDay::getUpdateDate))
+                    .collect(Collectors
+                            .<API label="None">toMap</API>(MenuPriceByDay::getUpdateLocalDate, p -> new MenuChart2().new Statistics( p.getMinPrice().<API label="None">doubleValue</API>(), 
+                                                                                                                                p.getMaxPrice().<API label="None">doubleValue</API>(),
+                                                                                                                                p.getAvg;
+
+           Map last6MPerDay =    
+
+                   menuPriceByDayService.findAllOrderByUpdateDate(menu, DateUtils.semestralDate(), 26)
+                    .<API label="None">stream</API>()
+                    .<API label="None">sorted</API>(comparing(MenuPriceByDay::getUpdateDate))
+                    .collect(Collectors
+                            .<API label="None">toMap</API>(MenuPriceByDay::getUpdateLocalDate, p -> new MenuChart2().new Statistics( p.getMinPrice().<API label="None">doubleValue</API>(), 
+                                                                                                                                p.getMaxPrice().<API label="None">doubleValue</API>(),
+                                                                                                                                p.getAvgPrice().<API label="None">doubleValue</API>())));
+
+           Map last1YPerDay =    
+
+                   menuPriceByDayService.findAllOrderByUpdateDate(menu, DateUtils.yearlylDate(), 52)
+                    .<API label="None">stream</API>()
+                    .<API label="None">sorted</API>(comparing(MenuPriceByDay::getUpdateDate))
+                    .collect(Collectors
+                            .<API label="None">toMap</API>(MenuPriceByDay::getUpdateLocalDate, p -> new MenuChart2().new Statistics( p.getMinPrice().<API label="None">doubleValue</API>(), 
+                                                                                                                                p.getMaxPrice().<API label="None">doubleValue</API>(),
+                                                                                                                                p.getAvgPrice().<API label="None">doubleValue</API>())));
+
+
+           Map priceStatisticsXhour =
+
+                   menuPriceService.findAll(menu).parallelStream()
+                            .<API label="None">filter</API>(cp -> cp.getUpdateDate().<API label="None">after</API>(<API label="None">DateUtils.yesterday</API>()))
+                            .<API label="None">sorted</API>(comparing(MenuPrice::getUpdateDate))
+                            .collect(Collectors.groupingBy(cp -> cp.getUpdateLocalDateHour(),
+                                    Collectors.summarizingDouble(cp -> cp.getPriceInDouble())))
+                            .<API label="None">entrySet</API>().parallelStream().<API label="None">sorted</API>(Map.Entry.comparingByKey())
+                            .collect(<API label="None">Collectors.toMap</API>(Map.Entry::getKey, Map.Entry::getValue,
+                                    (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+
+
+           MenuChart2 menuChart2 = new MenuChart2();
+
+           menuChart2.setLas24HPerHour (priceStatisticsXhour);
+            menuChart2.setLast30DPerDay (last30DPerDay);
+            menuChart2.setLast1YPerDay  (last1YPerDay);
+            menuChart2.setLast3MPerDay  (last3MPerDay);
+            menuChart2.setLast6MPerDay  (last6MPerDay);
+
+           return menuChart2;
+
+   }
+
+</code></pre>
+
+but when I access to it I got this error:
+
+<pre><code>
+com.google.common.util.concurrent.UncheckedExecutionException: java.lang.IllegalStateException: Duplicate key com.tdk.api.json.MenuChart2$Statistics@6f377595
+    at <API label="">com.google.common.cache.LocalCache$Segment.get</API>(LocalCache.java:2218)
+    at <API label="">com.google.common.cache.LocalCache.get</API>(LocalCache.java:4147)
+    at <API label="">com.google.common.cache.LocalCache.getOrLoad</API>(LocalCache.java:4151)
+    at <API label="">com.google.common.cache.LocalCache$LocalLoadingCache.get</API>(LocalCache.java:5140)
+    at com.tdk.backend.service.CachedMenuServiceImpl.getCharts(CachedMenuServiceImpl.java:189)
+    at <API label="">com.tdk.backend.service.CachedMenuServiceImpl$$FastClassBySpringCGLIB$$2ea84be7.invoke</API>()
+    at <API label="">org.springframework.cglib.proxy.MethodProxy.invoke</API>(MethodProxy.java:218)
+
+</code></pre>
+
+...
+
+<pre><code>
+Caused by: java.lang.IllegalStateException: Duplicate key com.tdk.api.json.MenuChart2$Statistics@6f377595
+    at <API label="">java.util.stream</API>.Collectors.lambda$throwingMerger$0(Collectors.java:133)
+    at <API label="">java.util.HashMap.merge</API>(HashMap.java:1254)
+    at <API label="">java.util.stream</API>.Collectors.lambda$<API label="">toMap</API>$58(Collectors.java:1320)
+    at <API label=""><API label="">java.util.stream</API>.ReduceOps$3ReducingSink.accept</API>(ReduceOps.java:169)
+    at <API label=""><API label="">java.util.stream</API>.SortedOps$SizedRefSortingSink.end</API>(SortedOps.java:352)
+    at <API label=""><API label="">java.util.stream</API>.AbstractPipeline.copyInto</API>(AbstractPipeline.java:482)
+    at <API label="">java.util.stream</API>.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:471)
+    at <API label="">java.util.stream</API>.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:708)
+    at <API label=""><API label="">java.util.stream</API>.AbstractPipeline.evaluate</API>(AbstractPipeline.java:234)
+    at <API label="">java.util.stream</API>.ReferencePipeline.collect(ReferencePipeline.java:499)
+    at com.tdk.backend.service.CachedMenuServiceImpl.generateCharts(CachedMenuServiceImpl.java:238)
+    at <API label="">com.tdk.backend.service.CachedMenuServiceImpl$1.load</API>(CachedMenuServiceImpl.java:86)
+    at <API label="">com.tdk.backend.service.CachedMenuServiceImpl$1.load</API>(CachedMenuServiceImpl.java:84)
+    at com.google.common.cache.LocalCache$LoadingValueReference.loadFuture(LocalCache.java:3708)
+    at com.google.common.cache.LocalCache$Segment.loadSync(LocalCache.java:2416)
+    at com.google.common.cache.LocalCache$Segment.lockedGetOrLoad(LocalCache.java:2299)
+    at <API label="">com.google.common.cache.LocalCache$Segment.get</API>(LocalCache.java:2212)
+    ... 101 common frames omitted
+
+</code></pre>
+
+==========
+The exception doesn't appear to be coming from the Guava cache.  It appears to be coming from you using a <API label="">stream</API> and collecting it into a map. The exception is occurring when you call <code>.<API label="None">get</API>(..)</code> because it is a <code>LoadingCache</code>, so when it runs the code in the generate method, the exception is generated.  You are probably doing something like 
+
+<pre><code>
+.<API label="None">stream</API>().collect(
+                <API label="None">Collectors.toMap</API>(o -> someFunctionToGetKey(),
+                                 o -> someFunctionToGetValue())
+        );
+
+</code></pre>
+
+In this implementation however, you are not providing logic on what to happen if two of the same keys are generated.  You need to specify a third parameter which defines the behavior to take if a duplicate key is encountered.  For example, consider we have this basic pojo 
+
+<pre><code>
+@Data
+class Model {
+    private int id;
+    private String name;
+}
+
+</code></pre>
+
+And we have <code>List list = new ArrayList<>();</code>
+
+You can then do:
+
+<pre><code>
+                <API label="None">list.stream</API>()
+                .collect(<API label="None">Collectors.toMap</API>(
+                        Model::getId,
+                        Model::getName,
+                        (v1,v2) -> v2
+                ));
+
+</code></pre>
+
+The third parameter, <code>(v2,v2) -> v2</code> instructs the collector on what to do if there are two entries in the list with the same id.  In this example, it is just using the most recent value of <code>name</code> for the key <code>id</code>.
+

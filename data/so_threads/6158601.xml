@@ -1,0 +1,121 @@
+https://stackoverflow.com/questions/6158601
+In looking at different options for overriding <code><API label="None">hashCode</API>()</code>, I was directed to <code><API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>(Object[])</code> in Google's guava-libraries (<a href="http://guava-libraries.googlecode.com/svn/trunk/javadoc/com/google/common/base/Objects.html#hashCode%28java.lang.Object...%29" rel="nofollow" title="<API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>(Object[]) javadoc">javadoc</a>).  The javadoc states that it delegates to <code><API label="None">Arrays.hashCode</API>(Object[])</code>.  Is it safe to use this method in many different object types?  Isn't this prone to hash collision, or is this not likely simply because containers usually only contain one type of object?
+
+As a simple example, consider the following classes,
+
+<pre><code>
+public class Student { 
+    private final String name;
+
+   public Student(String name) {
+        this.name = name;
+    }
+
+   @Override
+    public int <API label="None">hashCode</API>() {
+        return <API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>(name);
+    }
+}
+
+public class Teacher {
+    private final String name;
+
+   public Teacher(String name) {
+        this.name = name;
+    }
+
+   @Override
+    public int <API label="None">hashCode</API>() {
+        return <API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>(name);
+    }
+}
+
+public class HashCodeDriver {
+    public static void <API label="None">main</API>(String[] args) {
+        final String name = "moe";
+        Student s = new Student(name);
+        Teacher t = new Teacher(name);
+
+       long studentHash = <API label="None">s.hashCode</API>();
+        long teacherHash = <API label="None">t.hashCode</API>();
+        <API label=""None>System.out.println</API>("studentHash=" + studentHash + " teacherHash=" + teacherHash);
+        if(studentHash == teacherHash) {
+            <API label="None">System.out.println</API>("hash codes match");
+        }
+        else {
+            <API label="None">System.out.println</API>("hash codes don't match");
+        }
+    }
+}
+
+</code></pre>
+
+Output:
+
+<pre><code>
+studentHash=108322 teacherHash=108322
+hash codes match
+
+</code></pre>
+
+The objects are two different types but are generating the same hash code.  Isn't this a problem?  Should I pass in the class as the first parameter to prevent this collision?  For example,
+
+<pre><code>
+public class Student {
+    private final String name;
+
+   public Student(String name) {
+        this.name = name;
+    }
+
+   @Override
+    public int <API label="None">hashCode</API>() {
+        return <API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>(Student.class, name);
+    }
+}
+
+public class Teacher {
+    private final String name;
+
+   public Teacher(String name) {
+        this.name = name;
+    }
+
+   @Override
+    public int <API label="None">hashCode</API>() {
+        return <API label="com.google.common.base.Objects.hashCode">Objects.hashCode</API>(Teacher.class, name);
+    }
+}
+
+</code></pre>
+
+Is this why the javadoc warns about only supplying a single object to this method?  From the javadoc,
+
+
+ Warning: When a single object is supplied, the returned hash code does not <API label="">equal</API> the hash code of that object.
+
+
+==========
+It's not a problem when 2 different objects of 2 different types have the same hash code.
+
+Hopefully, when you are going to build your <code>HashMap</code> you are not going to mix Students and Teachers as the keys to that map.  And even in the case when you want to do <code>HashMap</code> you will be OK, because
+
+<pre><code>
+assertFalse( new Teacher( "John Smith" ).<API label="None">equals</API>( new Student( "John Smith" ) );
+
+</code></pre>
+
+This is why it's important to override both <code><API label="None">hashCode</API></code> and <code><API label="None">equals</API></code>.
+
+The only drawback of delegating to <code><API label="None">Arrays.hashCode</API>(Object[])</code> may be that sometimes it may be too expensive from the performance point of view.
+
+For example, in your case, this would be a much better hash method for either Teacher or Student.
+
+<pre><code>
+@Override
+public int <API label="None">hashCode</API>() {
+    return <API label="None">name.hashCode</API>();
+}
+
+</code></pre>
+

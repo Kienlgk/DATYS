@@ -1,0 +1,41 @@
+https://stackoverflow.com/questions/41246744
+I would like to iterate through the <API label="">values</API> of a particular key for a <code>LinkedHashMultiMap</code> (Guava), by insertion order.
+
+Is this possible? And, if so, how?
+
+Why a <code>LinkedHashMultiMap</code>? Well, my existing data structure was a <code>HashMultiMap</code> and I figured if I changed it to a <code>LinkedHashMultiMap</code>, that would be compatible with my existing code and I could iterate the <API label="">values</API> somehow.
+
+But looking at the docs, I can't quite figure it out - that said, I'm new to the <code>LinkedHashMultiMap</code> class.
+
+==========
+Iteration in insertion order for <code>LinkedHashMultimap</code> <a href="https://google.github.io/guava/releases/20.0/api/docs/com/google/common/collect/LinkedHashMultimap.html" rel="nofollow noreferrer">is a documented behavior</a>
+
+
+ Implementation of <code>Multimap</code> that does not allow duplicate key-value <API label="">entries</API> and that returns collections whose iterators follow the ordering in which the data was added to the multimap.
+
+
+and will work out of the box, see <a href="https://github.com/google/guava/wiki/NewCollectionTypesExplained#implementations-1" rel="nofollow noreferrer">wiki page on <code>Multimap</code> implementations</a>:
+
+<pre><code>
+| Implementation       | Keys behave like... | Values behave like.. |
+|:---------------------|:--------------------|:---------------------|
+| LinkedHashMultimap** | LinkedHashMap       | LinkedHashSet        |
+
+`**` `LinkedHashMultimap` preserves insertion order of <API label="">entries</API>,  
+as well as the insertion order of <API label="">keys</API>, and the set of <API label="">values</API> associated with any one key.
+
+</code></pre>
+
+Code example:
+
+<pre><code>
+LinkedHashMultimap m = <API label="com.google.common.collect.LinkedHashMultimap.create">LinkedHashMultimap.create</API>();
+
+<API label="">m.put</API>("a", "foo");
+<API label="">m.put</API>("b", "bar");
+<API label="">m.put</API>("a", "baz");
+
+<API label="None">m.get</API>("a").<API label="None">forEach</API>(System.out::println); // outputs "foo" and "baz"
+
+</code></pre>
+

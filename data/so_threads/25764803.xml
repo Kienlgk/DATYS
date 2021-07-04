@@ -1,0 +1,57 @@
+https://stackoverflow.com/questions/25764803
+In java suppose I have 2 lists 
+
+<pre><code>
+List list1
+List list2
+
+<API label="None">object1.getName</API>(); returns a String
+<API label="None">object2.getName</API>(); return a String
+
+</code></pre>
+
+is there any way to compare the names and <API label="">get</API> a <API label="">difference</API> of the two list
+
+those 2 objects are defined in the 3rd party library, and I can't override the equals and compareto methods
+
+I am in favour of googles Guava or commons collections library 
+
+but the <code><API label="com.google.common.collect.Sets.symmetricDifference">Sets.symmetricDifference</API>(Set1, Set2)</code> ask for 2 to be passed in,
+even i juse <API label="com.google.common.collect.Sets.newHashSet">Sets.newHashSet</API>(lis1) and <API label="com.google.common.collect.Sets.newHashSet">Sets.newHashSet</API>(lis2) to create two sets
+but still they have <API label="">difference</API> type of objects in the sets. 
+
+or in commons <code>CollectionUtils.disjunction(lis1, list2)</code> the lists still has to contain the same object type
+
+without doing 2 expensive for loops, is there any other way?
+
+==========
+First, we'll build two maps, one for each list, mapping names to objects.  Then we iterate over the differences between the key sets, processing whichever kind of object had that name.  The maps let us avoid scanning through the list looking for the object with that name.  (In using Map rather than Multimap, I'm relying on <a href="https://stackoverflow.com/questions/25764803/spot-the-<API label="">difference</API>-between-two-lists#comment40324177_25767608">the asker's comment on another answer</a> that within each list, names are unique.  If you're still using Java 7, replace the method reference with a Function implementation.)
+
+<pre><code>
+Map map1 = <API label="com.google.common.collect.Maps.uniqueIndex">Maps.uniqueIndex</API>(list1, Object1::<API label="None">getName</API>);
+Map map2 = <API label="com.google.common.collect.Maps.uniqueIndex">Maps.uniqueIndex</API>(list2, Object1::<API label="None">getName</API>);
+for (String name : <API label="com.google.common.collect.Sets.difference">Sets.difference</API>(<API label="None">map1.keySet</API>(), <API label="None">map2.keySet</API>()))
+    processObject1(<API label="None">map1.get</API>(name));
+for (String name : <API label="com.google.common.collect.Sets.difference">Sets.difference</API>(<API label="None">map2.keySet</API>(), <API label="None">map1.keySet</API>()))
+    processObject2(<API label="None">map2.get</API>(name));
+
+</code></pre>
+
+If all you want to do is build lists or sets of the objects in exactly one list, <code>processObject1</code> and <code>processObject2</code> can just add the objects to collections.
+
+<code><API label="com.google.common.collect.Maps.uniqueIndex">uniqueIndex</API></code>'s iteration order is that of the input iterable, and <code><API label="com.google.common.collect.Sets.difference">difference</API></code> returns a SetView with the same iteration order as its first argument, so you can process objects in the order they appeared in the input lists, if that order is relevant to your problem.
+
+
+
+Java 8 streams provide basically the same functionality:
+
+<pre><code>
+Map map1 = <API label="None">list1.stream</API>().collect(<API label="None">Collectors.toMap</API>(<API label="None">Function.identity</API>(), Object1::<API label="None">getName</API>));
+Map map2 = <API label="None">list2.stream</API>().collect(<API label="None">Collectors.toMap</API>(<API label="None">Function.identity</API>(), Object2::<API label="None">getName</API>));
+<API label="None">map1.keySet</API>().<API label="None">stream</API>().<API label="None">filter</API>(n -> !<API label="None">map2.keySet</API>().<API label="None">contains</API>(n)).<API label="None">map</API>(map1::<API label="None">get</API>).forEachOrdered(o1 -> processObject1(o1));
+<API label="None">map2.keySet</API>().<API label="None">stream</API>().<API label="None">filter</API>(n -> !<API label="None">map1.keySet</API>().<API label="None">contains</API>(n)).<API label="None">map</API>(map2::<API label="None">get</API>).forEachOrdered(o2 -> processObject1(o2));
+
+</code></pre>
+
+Again, you can replace the <code>forEachOrdered</code> call with <code>collect(<API label="None">Collectors.toList</API>())</code> if you just want to collect the objects.
+

@@ -1,0 +1,220 @@
+https://stackoverflow.com/questions/28448347
+Imagine, I have following class:
+
+<pre><code>
+public class TestClass {
+    public class Index {
+
+   }
+    public class IndexData {
+        private final Index index;
+
+       private final ReentrantReadWriteLock <API label="">lock</API> =
+            new ReentrantReadWriteLock();
+
+       public IndexData(final Index index) {
+            super();
+            this.index = index;
+        }
+
+       public Index <API label="">getIndex</API>() {
+            return index;
+        }
+
+       public Lock getReadLock() {
+            return lock.readLock();
+        }
+
+       public Lock getWriteLock() {
+            return lock.writeLock();
+        }   
+    }
+
+   public void <API label="">add</API>(final InputClass input)
+    {
+        final IndexData index = <API label="None">getIndex</API>(input);
+
+       final Lock <API label="">lock</API> = index.getWriteLock();
+        <API label="None">lock.lock</API>();
+        try {
+            // Do something here, which requires synchronization
+        } finally {
+            <API label="None">lock.unlock</API>();
+        }
+    }
+
+   protected IndexData <API label="">getIndex</API>(final InputClass input) {
+        // Some logic of getting the index for input
+        return null;
+    }
+}
+
+</code></pre>
+
+I want to write a unit test, which verifies that
+
+
+in the <code><API label="None">add</API></code> method, <code>index.getWriteLock()</code> is used (not <code>index.getReadLock()</code>),
+the <API label="">lock</API> is taken and
+released.
+
+
+Using Mockito I can write a test like this:
+
+<pre><code>
+@Test
+public void testAddUsesWriteLock() {
+    // Prepare
+    final TestClass objectUnderTest = <API label="org.mockito.Mockito.spy">Mockito.spy</API>(new TestClass());
+    final InputClass input = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(InputClass.class);
+    final IndexData indexData = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(IndexData.class);
+    <API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(indexData).<API label="org.mockito.stubbing.Stubber.when">when</API>(objectUnderTest).<API label="None">getIndex</API>(input);
+    final Lock <API label="">lock</API> = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Lock.class);
+    <API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(<API label="">lock</API>).<API label="org.mockito.stubbing.Stubber.when">when</API>(indexData).getWriteLock();
+
+   // Invoke method under test
+    <API label="None">objectUnderTest.add</API>(input);
+
+   // Verify
+    <API label="org.mockito.Mockito.verify">Mockito.verify</API>(indexData).getWriteLock();
+    <API label="org.mockito.Mockito.verify">Mockito.verify</API>(indexData, <API label="org.mockito.Mockito.never">Mockito.never</API>()).getReadLock();
+    <API label="org.mockito.Mockito.verify">Mockito.verify</API>(<API label="">lock</API>).<API label="None">lock</API>();
+    <API label="org.mockito.Mockito.verify">Mockito.verify</API>(<API label="">lock</API>).<API label="None">unlock</API>();
+}
+
+</code></pre>
+
+How can I do the same thing with EasyMock?
+
+Concrete: How can I the <code><API label="None">getIndex</API></code> method return a <API label="">mock</API> in EasyMock (line <code><API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(indexData).<API label="org.mockito.stubbing.Stubber.when">when</API>(objectUnderTest).<API label="None">getIndex</API>(input)</code>) ?
+
+Note: You can find the code of this example <a href="https://www.evernote.com/shard/s35/sh/9f97e511-1581-49d8-b8f6-0e6982186b4a/a1c17b315809caed9bab5e25ef30f4a7" rel="noreferrer">here</a> .
+
+==========
+In the spirit of providing a possible solution (and contrary to my comments above) you could try one of the following
+
+Option 1
+
+If <code>TestClass</code> implements an interface you could achieve a similar test using <a href="http://easymock.org/api/org/easymock/IExpectationSetters.html#andDelegateTo-java.lang.Object-" rel="noreferrer">andDelegateTo()</a> as described in this post that talks about <a href="http://blog.octo.com/en/easymock-facts-fallacies/" rel="noreferrer">Easymock not supporting spying</a>
+
+Option 2
+
+Remove your need for spying by extending the <code>TestClass</code> specifically for your testing requirements. This is a common approach to dealing with legacy code bases where you cannot alter the code under test.
+
+I will use Mockito in this example so that it is aligned with your question, however the concept will work the same with Easymock.
+
+<pre><code>
+public class TestClassUsingMockito {
+    /**
+    We extend the original class under test so that we can override the creation of IndexData and
+    thereby remove the responsibility of creating this object from the @Test method
+    */
+    private class ClassForTesting extends TestClass {
+
+       private Lock <API label="">lock</API>;
+        private IndexData indexData;
+
+       public ClassForTesting(IndexData indexData, Lock <API label="">lock</API>) {
+            this.indexData = indexData;
+            <API label="">this.lock</API> = <API label="">lock</API>;
+        }
+
+       @Override
+        protected IndexData <API label="">getIndex</API>(InputClass input) {
+            return indexData;
+        }
+    }
+
+   /**
+    Look Ma' no more Spys!
+    */
+    @Test
+    public void testAddUsesWriteLock() {        
+        // Prepare
+        final Lock <API label="">lock</API> = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Lock.class);
+        final IndexData indexData = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(IndexData.class);
+        <API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(<API label="">lock</API>).<API label="org.mockito.stubbing.Stubber.when">when</API>(indexData).getWriteLock();
+        // ... now use your new subclass for testing
+        final TestClass objectUnderTest = new ClassForTesting(indexData, <API label="">lock</API>);
+        final InputClass input = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(InputClass.class);
+
+       // Invoke method under test
+        <API label="None">objectUnderTest.add</API>(input);
+
+       // Verify
+        <API label="org.mockito.Mockito.verify">Mockito.verify</API>(indexData).getWriteLock();
+        <API label="org.mockito.Mockito.verify">Mockito.verify</API>(indexData, <API label="org.mockito.Mockito.never">Mockito.never</API>()).getReadLock();
+        <API label="org.mockito.Mockito.verify">Mockito.verify</API>(<API label="">lock</API>).<API label="None">lock</API>();
+        <API label="org.mockito.Mockito.verify">Mockito.verify</API>(<API label="">lock</API>).<API label="None">unlock</API>(); 
+    }
+}
+
+</code></pre>
+
+What is the analogon of Mockito.spy/doReturn in EasyMock?
+
+So having removed the need for a Spy() in your tests the Mockito call
+
+<pre><code>
+<API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(<API label="">lock</API>).<API label="org.mockito.stubbing.Stubber.when">when</API>(indexData).getWriteLock();
+
+</code></pre>
+
+Can be written in EasyMock as
+
+<pre><code>
+expect(indexData.getWriteLock()).andStubReturn(<API label="">lock</API>);
+
+</code></pre>
+
+EasyMock example of the same Mockito test above
+
+<pre><code>
+public class TestClassUsingEasymock extends EasyMockSupport {
+
+   private class ClassForTesting extends TestClass {
+
+       private Lock <API label="">lock</API>;
+        private IndexData indexData;
+
+       public ClassForTesting(IndexData indexData, Lock <API label="">lock</API>) {
+            this.indexData = indexData;
+            <API label="None">this.lock</API> = <API label="">lock</API>;
+        }
+
+       @Override
+        protected IndexData <API label="">getIndex</API>(InputClass input) {
+            return indexData;
+        }
+    }
+
+
+   @Test
+    public void testAddUsesWriteLock() {
+        // Prepare
+        final Lock <API label="">lock</API> = createNiceMock(Lock.class);       
+        final IndexData indexData = createNiceMock(IndexData.class);
+        EasyMock.expect(indexData.getWriteLock()).andStubReturn(<API label="">lock</API>);
+
+       // ... now use your new subclass for testing
+        final TestClass objectUnderTest = new ClassForTesting(indexData, <API label="">lock</API>);
+        final InputClass input = createNiceMock(InputClass.class);
+
+       <API label="None">lock.lock</API>();
+        EasyMock.expectLastCall();
+
+       <API label="None">lock.unlock</API>();
+        EasyMock.expectLastCall();
+
+       replayAll();
+
+       // Invoke method under test
+        <API label="None">objectUnderTest.add</API>(input);
+
+       // Verify
+        verifyAll();
+    }
+}
+
+</code></pre>
+

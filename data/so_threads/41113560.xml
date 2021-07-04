@@ -1,0 +1,89 @@
+https://stackoverflow.com/questions/41113560
+I am using Guava <code>LoadingCache</code> to populate some data into it and I want to <API label="">remove</API> all the entries from that <code>LoadingCache</code> every 1 minute.
+
+<pre><code>
+public class MetricHolder {
+  private final ExecutorService executor = Executors.newFixedThreadPool(2);
+  private final LoadingCache clientIdMetricCounterCache =
+      <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(1, TimeUnit.MINUTES)
+          .<API label="com.google.common.cache.CacheBuilder.removalListener">removalListener</API>(<API label="com.google.common.cache.RemovalListeners.asynchronous">RemovalListeners.asynchronous</API>(new SendToDatabase(), executor))
+          .<API label="com.google.common.cache.CacheBuilder.build">build</API>(new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+            @Override
+            public AtomicLongMap <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) throws Exception {
+              return <API label="com.google.common.util.concurrent.AtomicLongMap.create">AtomicLongMap.create</API>();
+            }
+          });
+
+ private static class Holder {
+    private static final MetricHolder INSTANCE = new MetricHolder();
+  }
+
+ public static MetricHolder <API label="">getInstance</API>() {
+    return Holder.INSTANCE;
+  }
+
+ private MetricHolder() {}
+
+ public void <API label="">increment</API>(String clientId, String name) throws ExecutionException {
+    <API label="com.google.common.cache.LoadingCache.get">clientIdMetricCounterCache.get</API>(clientId).<API label="None">incrementAndGet</API>(name);
+  }
+
+ public LoadingCache getClientIdMetricCounterCache() {
+    return clientIdMetricCounterCache;
+  }
+
+ private static class SendToDatabase implements RemovalListener {
+    @Override
+    public void <API label="com.google.common.cache.RemovalListener.onRemoval">onRemoval</API>(RemovalNotification notification) {
+      String key = <API label="None">notification.getKey</API>();
+      AtomicLongMap value = <API label="None">notification.getValue</API>();
+      <API label="None">System.out.println</API>(key);
+      <API label="None">System.out.println</API>(value);
+      // sending these key/value to some other system
+
+   }
+  }
+}
+
+</code></pre>
+
+I am calling <code><API label="">increment</API></code> method from lot of different places in the code in a multithreaded way. So for a period of 1 minute it will populate lot of metrics in <code>clientIdMetricCounterCache</code>. Now I want to drop all those metrics reliably after every 1 minute and send all those metrics to database.
+
+In my case, sometimes write to <code><API label="">increment</API></code> method might be very slow but still I want to drop all those entries every 1 minute and I am not doing any read at all on this cache, just writing to it and then dropping those records by sending to some other system. Below is what I saw in the Guava <a href="https://github.com/google/guava/wiki/CachesExplained" rel="nofollow noreferrer">wiki</a>
+
+
+ Caches built with CacheBuilder do not perform cleanup and evict values
+  "automatically," or instantly after a value expires, or anything of
+  the sort. Instead, it performs small amounts of maintenance during
+  write operations, or during occasional read operations if writes are
+  rare.
+
+
+So how does <code><API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API></code> works? Does it work like a scheduler which will run every 1 minute and delete all the entries whatever is there in <code>clientIdMetricCounterCache</code> and then again it will wake up after 1 minute and delete all the entries from the same cache and keep going like that? After reading the wiki, I doubt it works like that. If it doesn't, then how can I reliably drop those records every 1 minute and send to some other system as my writes can be rare for some time?
+
+Looks like I may have to use <code>Guava TimeLimiter</code> interface and <code>SimpleTimeLimiter</code> or may be <code>ScheduledExecutorService</code> to reliably timeout the call and then drop the entries? If yes, can anyone provide an example how will this work in my current example?
+
+==========
+To me, it looks like you're misusing the cache, where a Map would do. You're using no expiration, no <API label="">size</API> limit, no caching, you're just gathering stats.
+
+About the only feature you're using is the loading aspect, and that's not really worth it.
+
+I'd suggest to use an <code>AtomicReference</code> instead:
+
+
+When updating, you <API label="">get</API> the version for the current minute via <code>AtomicReference::<API label="None">get</API></code>.
+Using the <code>clientId</code>, you look up an <code>AtomicLongMap</code> in your <code>ConcurrentHashMap</code> and <API label="">create</API> a new one if not found (use <code>putIfAbsent</code> on Java 7 or <code><API label="None">computeIfAbsent</API></code> on Java 8).
+Using the <code>name</code>, you update the <code>AtomicLongMap</code> just like you posted.
+Once per minute you replace everything via <code>AtomicReference::<API label="None">getAndSet</API></code>.
+
+
+With the replacement, you can be sure that your stats don't interfere, however, you should wait a bit after <code><API label="None">getAndSet</API></code> as there may be threads who just obtained the reference and are about to write.
+
+It will produce more garbage than the original approach, but all the garbage will be short living, so you might actually make the GC more happy.
+
+It's simple and need no deep knowledge of a library or its implementation details.
+
+
+
+I guess, <code>volatile</code> instead of <code>AtomicReference</code> would also do.
+

@@ -1,0 +1,14 @@
+https://stackoverflow.com/questions/20280882
+I'm looking to guava <a href="http://docs.guava-libraries.googlecode.com/git-history/release/javadoc/com/google/common/collect/TreeRangeMap.html" rel="nofollow noreferrer">TreeRangeMap</a> that seem to very well suit my needs for a project. The java docs says that is based on a (java standard ?) TreeMap that have O(<API label="">log</API>(n)) time for <API label="com.google.common.collect.TreeRangeMap.get">get</API>, <API label="com.google.common.collect.TreeRangeMap.put">put</API> and next. 
+
+But the TreeRangeMap should be some kind of <API label="">range</API> tree implementation that according to this <a href="https://stackoverflow.com/questions/17466218/what-are-the-differences-between-segment-trees-interval-trees-binary-indexed-t">SO question</a> have O(k + <API label="">log</API>(n)) time complexity for queries, O(n) space, with k being the <API label="">range</API> <API label="">size</API>?. Can somebody confirm this?
+
+I'm also very interested in the time complexity of <a href="http://docs.guava-libraries.googlecode.com/git-history/release/javadoc/com/google/common/collect/TreeRangeMap.html#<API label="">subRangeMap</API>%28com.google.common.collect.Range%29" rel="nofollow noreferrer"><API label="com.google.common.collect.TreeRangeMap.subRangeMap">TreeRangeMap.subRangeMap</API>()</a> operation. Does it have the same O(k + <API label="">log</API>(n))?
+
+Thanks.
+
+==========
+It's a view, not an actual mutation or anything. <code><API label="com.google.common.collect.TreeRangeMap.subRangeMap">subRangeMap</API></code> returns in O(1) time, and the <code>RangeMap</code> it returns has <code>O(<API label="">log</API> n)</code> additive cost for each of its query operations -- that is, all of its operations still take <code>O(<API label="">log</API> n)</code>, just with a <API label="">higher</API> <API label="">constant</API> factor.
+
+Source: I'm "the guy who implemented it."
+

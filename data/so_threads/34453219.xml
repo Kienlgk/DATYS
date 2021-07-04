@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/34453219
+I want a limited <API label="">size</API> map with some duplicated <API label="">keys</API>. When <API label="">size</API> is reached I want delete the oldest entry.
+
+for example, this data set:
+
+<pre><code>
+MAX_SIZE=5;
+<API label="None">map.put</API>(100,"OLDEST");
+<API label="None">map.put</API>(101,"XXXX");
+<API label="None">map.put</API>(101,"YYYY");
+<API label="None">map.put</API>(102,"ZZZZ");
+<API label="None">map.put</API>(103,"GGGG");
+
+</code></pre>
+
+Then I want to insert a new entry in the map
+
+<pre><code>
+myLength = <API label="None">map.size</API>()
+if(myLength>=MAX_SIZE){
+   <API label="None">map.remove</API>(the OLDEST)
+}    
+<API label="None">map.put</API>(105,"NEW")
+
+</code></pre>
+
+I was thinking in guava multimap, but how delete the oldest entry in multimap?
+
+They KEY is a Long, maybe  I need do a for?  (not efficient)
+
+<pre><code>
+oldest=MAX_LONG
+for(Long key:map){
+     if(key</pre>
+
+==========
+Use a <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/LinkedListMultimap.html" rel="nofollow">LinkedListMultimap</a>: it preserves the insertion order, so removing the oldest entry is just a matter of removing the first element of the list returned by <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/LinkedListMultimap.html#<API label="">entries</API>%28%29" rel="nofollow"><API label="com.google.common.collect.LinkedListMultimap.entries">entries</API>()</a>
+

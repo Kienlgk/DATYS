@@ -1,0 +1,59 @@
+https://stackoverflow.com/questions/32065666
+I am getting an java.lang.ExceptionInInitializerError when using TestNg + PowerMock + Mockito:
+
+<pre><code>
+Caused by: java.lang.NullPointerException
+at <API label="">org.mockito.internal.configuration.plugins.Plugins.getStackTraceCleanerProvider</API>(Plugins.java:17)
+
+</code></pre>
+
+The root of the problem is:
+
+<pre><code>
+java.lang.ClassCastException: Cannot cast class org.powermock.api.mockito.internal.mockmaker.PowerMockMaker to interface org.mockito.plugins.MockMaker
+
+</code></pre>
+
+My dependency tree:
+
+<pre><code>
+[INFO] +- org.powermock:powermock-api-mockito:jar:1.6.2:test
+[INFO] |  +- org.mockito:mockito-all:jar:1.10.19:test
+[INFO] |  \- org.powermock:powermock-api-support:jar:1.6.2:test
+[INFO] |     \- org.powermock:powermock-reflect:jar:1.6.2:test
+[INFO] |        \- org.objenesis:objenesis:jar:2.1:test
+[INFO] +- org.powermock:powermock-module-testng:jar:1.6.2:test
+[INFO] |  +- org.powermock:powermock-core:jar:1.6.2:test
+[INFO] |  |  \- org.javassist:javassist:jar:3.19.0-GA:test
+[INFO] |  \- org.powermock:powermock-module-testng-common:jar:1.6.2:test
+
+</code></pre>
+
+Test class:
+
+<pre><code>
+@PrepareForTest({CrossSiteServletRequestFilter.class})
+@PowerMockIgnore({"org.apache.log4j.*"})
+@Test
+public class CrossSiteServletRequestFilterTest extends PowerMockTestCase{
+    @Mock
+    private HttpServletRequest request;
+
+   @BeforeSuite
+    public void beforeSuite() {
+        URL log4jCfg = <API label="None">CrossSiteServletRequestFilterTest.class.getClassLoader</API>().<API label="None">getResource</API>("log/log4j.xml");
+        <API label="None">DOMConfigurator.configure</API>(log4jCfg);
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this); //<---It crashes here
+
+</code></pre>
+
+I am completely lost with this error and appreciate any help.
+
+==========
+You are not supposed to use <code><API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API></code> with TestNG.
+
+The <a href="http://site.mockito.org/mockito/docs/current/org/mockito/MockitoAnnotations.html" rel="nofollow">Javadoc</a> is saying to use it for JUnit (and I think <code>MockitoJUnitRunner</code>/<code>MockitoRule</code> is a better way) but not for TestNG.
+
+BTW, <code>PowerMockTestCase</code> is the equivalent of <code>MockitoJUnitRunner</code> when you use TestNG. 
+So, just <API label="">remove</API> the line and it should work.
+

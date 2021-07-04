@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/15834676
+I'm using Mockito. I want to throw a <code>RuntimeException</code> <API label="">when</API> an unstubbed method is called.
+
+Is there any way to do this?
+
+==========
+You can set a default <API label="">answer</API> for a <API label="">mock</API>. All methods that aren't stubbed will use this default <API label="">answer</API>.
+
+<pre><code>
+public void testUnstubbedException() {
+    // Create a <API label="">mock</API> with all methods throwing a RuntimeException by default
+    SomeClass someClass = <API label="org.mockito.Mockito.mock">mock</API>( SomeClass .class, new RuntimeExceptionAnswer() );
+
+   <API label="org.mockito.Mockito.doReturn">doReturn</API>(1).<API label="org.mockito.stubbing.Stubber.when">when</API>(someClass).<API label="None">getId</API>(); // Must use <API label="org.mockito.Mockito.doReturn">doReturn</API>
+
+   int id = <API label="None">someClass.getId</API>(); // Will return 1
+
+   someClass.unstubbedMethod(); // Will throw RuntimeException
+}
+
+public static class RuntimeExceptionAnswer implements Answer {
+
+   public Object <API label="">answer</API>( InvocationOnMock invocation ) throws Throwable {
+        throw new RuntimeException ( <API label="org.mockito.invocation.InvocationOnMock.getMethod">invocation.getMethod</API>().<API label="None">getName</API>() + " is not stubbed" );
+    }
+
+}
+
+</code></pre>
+
+Note that you cannot use <code><API label="org.mockito.Mockito.when">when</API></code> with this functionality, since the method is called before <code><API label="org.mockito.Mockito.when">when</API></code> (<a href="https://stackoverflow.com/questions/14440270/how-does-mockito-when-invocation-work">How does mockito <API label="org.mockito.Mockito.when">when</API>() invocation work?</a>) and it will throw a <code>RuntimeException</code> before the <API label="">mock</API> goes into stubbing mode.
+
+Therefore, you must use <code><API label="org.mockito.Mockito.doReturn">doReturn</API></code> for this to work.
+

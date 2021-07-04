@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/6942096
+I have just started using google's Guava collection (<a href="http://guava-libraries.googlecode.com/svn/trunk/javadoc/com/google/common/collect/ComparisonChain.html">ComparisonChain</a> and <a href="http://guava-libraries.googlecode.com/svn/trunk/javadoc/com/google/common/base/Objects.html">Objects</a>).  In my pojo I am overiding the equals method, so I did this first:
+
+<pre><code>
+return <API label="com.google.common.collect.ComparisonChain.start">ComparisonChain.start</API>()
+         .<API label="com.google.common.collect.ComparisonChain.compare">compare</API>(this.id, other.id)
+         .<API label="com.google.common.collect.ComparisonChain.result">result</API>() == 0;
+
+</code></pre>
+
+However, I then realized that I could also use this :
+
+<pre><code>
+return <API label="com.google.common.base.Objects.equal">Objects.equal</API>(this.id, other.id);
+
+</code></pre>
+
+And I fail to see when comparison chain would be better as you can easily add further conditions like so:
+
+<pre><code>
+return <API label="com.google.common.base.Objects.equal">Objects.equal</API>(this.name, other.name) 
+       && <API label="com.google.common.base.Objects.equal">Objects.equal</API>(this.number, other.number);
+
+</code></pre>
+
+The only benefit I can see if you specifically need an int returned. It has two extra method calls (<API label="">start</API> and <API label="">result</API>) and is more complex to a noob.  
+
+Are there obvious benefits of ComparisonChain I missing ?
+
+(Yes, I am also overriding hashcode with appropriate <code>Objects.hashcode()</code>)
+
+==========
+<code>ComparisonChain</code> allow you to check whether an object is less-than or greater-than another object by comparing multiple properties (like sorting a grid by multiple columns).
+It should be used when implementing <code>Comparable</code> or <code>Comparator</code>.
+
+<code><API label="com.google.common.base.Objects.equal">Objects.equal</API></code> can only check for equality.
+

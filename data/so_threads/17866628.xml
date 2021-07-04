@@ -1,0 +1,55 @@
+https://stackoverflow.com/questions/17866628
+I've been using this method to <API label="">get</API> the top 100 elements by count from a Map. Does anyone know how guava implements these? 
+
+<pre><code>
+    <API label="None">Ordering</API> <API label="">valueComparator</API> = 
+       <API label="Ordering.natural">Ordering</API>.<API label="None">natural</API>().<API label="None">onResultOf</API>(
+         <API label="com.google.common.base.Functions.forMap">Functions.forMap</API>(WordCounts)).<API label=None"">compound</API>(<API label="None">Ordering</API>.<API label="None">natural</API>());
+
+   ImmutableSortedMap SortedWordCounts = 
+      <API label="ImmutableSortedMap.copyOf">ImmutableSortedMap.copyOf</API>(WordCounts, 
+        <API label="None">Collections.reverseOrder</API>(<API label="None">valueComparator</API>));
+    Map TopWordCounts = 
+    <API label="None">SortedWordCounts.headMap</API>(<API label="None">SortedWordCounts.keySet</API>().<API label="None">asList</API>().
+         <API label="">get</API>(100));
+
+</code></pre>
+
+I didn't see much detail here
+<a href="http://guava-libraries.googlecode.com/svn/trunk/gwt-javadoc/com/google/common/collect/ImmutableSortedMap.html" rel="nofollow">http://guava-libraries.googlecode.com/svn/trunk/gwt-javadoc/com/google/common/collect/ImmutableSortedMap.html</a>
+
+I'm trying to think whether this is inefficient and whether I should use a top k algorithm like <a href="http://en.wikipedia.org/wiki/Selection_algorithm#Linear_general_selection_algorithm_-_Median_of_Medians_algorithm" rel="nofollow">http://en.wikipedia.org/wiki/Selection_algorithm#Linear_general_selection_algorithm_-_Median_of_Medians_algorithm</a>
+To run an algorithm like that I'd have to convert the map to an array, and then likely back to a map, which makes me think it might not be worth it. 
+
+==========
+So, if you're storing counts with Guava, you should really be using a <code>Multiset</code>.  If you do that, then you can use the convenient method <code><API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API></code> to <API label="">get</API> a multiset in highest-to-lowest count order.  
+
+To <API label="">get</API> the top 100 elements like this, you could write
+
+<pre><code>
+<API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>(multiset).<API label="None">elementSet</API>().<API label="None">asList</API>().<API label="None">subList</API>(0, 100);
+
+</code></pre>
+
+which returns you an <code>ImmutableList</code> of the top 100 elements, in a single line.
+
+If you want to use a fancier selection algorithm, Guava already has that implemented as <a href="http://docs.guava-libraries.googlecode.com/git-history/release/javadoc/com/google/common/collect/Ordering.html#greatestOf%28java.lang.Iterable,%20int%29" rel="noreferrer"><code><API label="None">Ordering.greatestOf</API></code></a> and <code><API label="None">Ordering.leastOf</API></code>.  These use a fancy-pants variation on the selection algorithm you cited that doesn't require an O(n) copy of the collection into a big array, but it still runs in linear time.
+
+If you need both the elements and the counts, you should really not try to use an <code>ImmutableSortedMap</code> or anything like that with a <API label="">comparator</API> that looks up the elements; you should copy into a new <code>Multiset</code>.  The way I would write this, if efficiency were my top priority, would be:
+
+<pre><code>
+<API label="">Ordering</API> highestCountFirst = 
+  new <API label="None">Ordering</API>() {
+    @Override public int <API label="None">compare</API>(Multiset.Entry e1, Multiset.Entry e2) {
+      return <API label="None">Ints.compare</API>(<API label="None">e1.getCount</API>(), <API label="None">e2.getCount</API>());
+    }
+  };
+ImmutableMultiset.Builder top100Builder = <API label="com.google.common.collect.ImmutableMultiset.builder">ImmutableMultiset.builder</API>();
+for (Multiset.Entry topEntry : 
+       <API label=""com.google.common.collect.ImmutableMultiset.builder>c</API>(<API label="None">multiset.entrySet</API>(), 100)) {
+  top100Builder.addCopies(topEntry.getElement(), <API label="None">topEntry.getCount</API>());
+}
+return <API label="None">top100Builder.build</API>();
+
+</code></pre>
+

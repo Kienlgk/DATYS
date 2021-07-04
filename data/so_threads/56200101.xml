@@ -1,0 +1,14 @@
+https://stackoverflow.com/questions/56200101
+I am writing some code that needs to work with numeric ranges. I am using Google Guava library; I need some basic operations, like <API label="">union</API> and <API label="">intersection</API>. 
+
+Looking at Google Guava Documentation, <API label="None">intersection</API> between ranges can be easily made with <API label="com.google.common.collect.Range.intersection">range.intersection</API>(range) method, but I can't find any <API label="">union</API> method; the only viable option seems using RangeSet class, but it will bring even more issues: for example, it's not very intuitive to scroll every range in RangeSet...
+
+Is there any way to merge set using Google Guava or other libraries?
+
+It would be ok even to change library, if there are any better/more intuitive option.
+
+==========
+<code><API label="None">span</API></code> will take the <API label="">union</API> of two ranges that <API label="">touch</API> each other.
+
+In any other case, you will have to use <code>RangeSet</code>, though it's not very clear to me what's so unintuitive about it.
+

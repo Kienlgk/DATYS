@@ -1,0 +1,62 @@
+https://stackoverflow.com/questions/46790838
+In AssertJ you can do the following to assert the contents <API label="">of</API> a <API label="">list</API>:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="">list</API>).<API label="org.assertj.core.api.AbstractListAssert.extracting">extracting</API>("name").<API label="org.assertj.core.api.AbstractListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>("Alice", "Bob");
+
+</code></pre>
+
+I often <API label="">find</API> myself wanting to do more complex assertions on the elements themselves, e.g., asserting that Alice is a tall brunette <API label="">and</API> Bob is tiny <API label="">and</API> bald.
+What is the best way to do this using AssertJ?
+
+My own solution is to do:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="">list</API>).<API label="org.assertj.core.api.AbstractListAssert.extracting">extracting</API>("name").<API label="org.assertj.core.api.AbstractListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>("Alice", "Bob");
+<API label="None">list.stream</API>()
+    .<API label="None">filter</API>(person -> "Alice".<API label="None">equals</API>(<API label="None">person.getName</API>()))
+    .<API label="None">forEach</API>(alice -> {
+        <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(alice).<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("<API label="">size</API>").<API label="org.assertj.core.api.AbstractObjectAssert.isEqualTo">isEqualTo</API>("tall")
+        <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(alice).<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("hair").<API label="org.assertj.core.api.AbstractObjectAssert.isEqualTo">isEqualTo</API>("brunette")
+    });
+<API label="None">list.stream</API>()
+    .<API label="None">filter</API>(person -> "Bob".<API label="None">equals</API>(<API label="None">person.getName</API>()))
+    .<API label="None">forEach</API>(bob -> {
+        <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(bob).<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("<API label="">size</API>").<API label="org.assertj.core.api.AbstractObjectAssert.isEqualTo">isEqualTo</API>("tiny")
+        <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(bob).<API label="assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("hair").<API label="assertj.core.api.AbstractObjectAssert.isNull">isNull</API>()
+    });
+
+</code></pre>
+
+or equivalently (java 7) :
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="">list</API>).<API label="org.assertj.core.api.AbstractListAssert.extracting">extracting</API>("name").<API label="org.assertj.core.api.AbstractListAssert.containsExactlyInAnyOrder">containsExactlyInAnyOrder</API>("Alice", "Bob");
+for(Person person : <API label="">list</API>){
+    switch (<API label="None">testCase.getName</API>()){
+        case "Alice":
+            <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(person).<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("<API label="">size</API>").<API label="org.assertj.core.api.AbstractObjectAssert.isEqualTo">isEqualTo</API>("tall")
+            <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(person).<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("hair").<API label="org.assertj.core.api.AbstractObjectAssert.isEqualTo">isEqualTo</API>("brunette")
+            break;
+        case "Bob":
+            <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(person).<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("<API label="">size</API>").<API label="org.assertj.core.api.AbstractObjectAssert.isEqualTo">isEqualTo</API>("tiny")
+            <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(person).<API label="org.assertj.core.api.AbstractObjectAssert.extracting">extracting</API>("hair").<API label="assertj.core.api.AbstractObjectAssert.isNull">isNull</API>()
+            break;
+    }
+}
+
+</code></pre>
+
+but I am wondering if there is a better solution.
+
+I like the fact that this solution makes a distinction between the expected elements <API label="">being</API> <API label="">in</API> the <API label="">list</API> <API label="">and</API> the elements themselves <API label="">being</API> correct.
+
+==========
+For filtering, you can directly use any flavor <API label="">of</API> <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractIterableAssert.html#<API label="">filteredOn</API>-java.util.function.Predicate-" rel="nofollow noreferrer"><API label="org.assertj.core.api.AbstractIterableAssert.filteredOn">filteredOn</API></a>, <API label="">then</API> either <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractIterableAssert.html#<API label="">allMatch</API>-java.util.function.Predicate-java.lang.String-" rel="nofollow noreferrer"><API label="org.assertj.core.api.AbstractIterableAssert.allMatch">allMatch</API></a> or <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractIterableAssert.html#<API label="">allSatisfy</API>-java.util.function.Consumer-" rel="nofollow noreferrer"><API label="org.assertj.core.api.AbstractIterableAssert.allSatisfy">allSatisfy</API></a> (when I say directly I mean no need to <API label="">stream</API> your collection <API label="">in</API> order to <API label="">filter</API> it).
+
+I suggest to explore AssertJ API, you <API label="">have</API> other assertions like <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractIterableAssert.html#<API label="">anySatisfy</API>-java.util.function.Consumer-" rel="nofollow noreferrer"><API label="org.assertj.core.api.AbstractIterableAssert.anySatisfy">anySatisfy</API></a> or using <a href="http://joel-costigliola.github.io/assertj/assertj-core-conditions.html" rel="nofollow noreferrer">conditions</a> <API label="">with</API> method like <code><API label="org.assertj.core.api.AbstractIterableAssert.are">are</API></code>, <code><API label="org.assertj.core.api.AbstractIterableAssert.areAtLeast">areAtLeast</API></code>, ...  the vast majority <API label="">of</API> the API has javadoc <API label="">with</API> examples to show how to use it.
+
+Additionally one can <API label="">have</API> a look at the <a href="https://github.com/joel-costigliola/assertj-examples/tree/master/assertions-examples/src/test/java/org/assertj/examples" rel="nofollow noreferrer">examples</a> <API label="">in</API> the assertj-examples project.
+
+Hope it helps
+

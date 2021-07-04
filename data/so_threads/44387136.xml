@@ -1,0 +1,118 @@
+https://stackoverflow.com/questions/44387136
+Here is my problem:
+
+We are using cloudera 5.7.0 with java 1.8.0_74 and we have spark 1.6.0, janusgraph 0.1.1, hbase 1.2.0.
+
+I run the following code in gremlin shell:
+
+<pre><code>
+:load data/call-janusgraph-schema-groovy
+writeGraphPath='conf/my-janusgraph-hbase.properties'
+writeGraph=<API label="None">JanusGraphFactory.open</API>(writeGraphPath)
+defineCallSchema(writeGraph)
+<API label="None">writeGraph.close</API>()
+
+readGraph=<API label="None">GraphFactory.open</API>('conf/hadoop-graph/hadoop-call-script.properties')
+gRead=readGraph.traversal()
+gRead.V().valueMap()
+
+//so far so good everything works perfectly
+
+blvp=<API label="None">BulkLoaderVertexProgram.build</API>().keepOriginalIds(true).writeGraph(writeGraphPath).<API label="None">create</API>(readGraph)
+<API label="None">readGraph.compute</API>(SparkGraphComputer).workers(1).program(blvp).<API label="None">submit</API>().<API label="None">get</API>()
+
+</code></pre>
+
+It stars executing the spark job and first stage runs smoothly however at the second stage I <API label="">get</API> an Exception:
+
+<pre><code>
+java.lang.NoSuchMethodError: <API label="">com.google.common.base.Stopwatch.createStarted</API>()Lcom/google/common/base/Stopwatch;
+at org.janusgraph.graphdb.database.idassigner.StandarIdPool.waitForIDBlockGetter(StandartIDPool.java:136).......
+
+</code></pre>
+
+I think it is a guava version problem
+
+Here is how I start the gremlin shell
+
+<pre><code>
+#!/bin/bash
+
+export JAVA_HOME=/mnt/hdfs/jdk.1.8.0_74
+
+export HADOOP_HOME=/opt/cloudera/parcels/CDH-5.7.0-1.cdh5.7.0.p0.45/lib/hadoop
+export HADOOP_CONF_DIR= /etc/hadoop/conf.cloudera.yarn
+export YARN_HOME=/opt/cloudera/parcels/CDH-5.7.0-1.cdh5.7.0.p0.45/lib/hadoop-yarn
+export YARN_CONF_DIR=$HADOOP_CONF_DIR
+export SPARK_HOME=/opt/cloudera/parcels/CDH-5.7.0-1.cdh5.7.0.p0.45/lib/spark
+export SPARK_CONF_DIR=$SPARK_HOME/conf
+export HBASE_HOME=/opt/cloudera/parcels/CDH-5.7.0-1.cdh5.7.0.p0.45/lib/hbase
+export HBASE_CONF_DIR=$HBASE_HOME/conf
+
+source "$HADOOP_CONF_DIR"/hadoop-env.sh
+source "$SPARK_HOME"/bin/load-spark-env.sh
+source "$HBASE_CONF_DIR"/hbase-env.sh
+
+export JAVA_OPTIONS="$JAVA_OPTIONS -Djava.library.path=/opt/cloudera/parcels/CDH-5.7.0-1.cdh5.7.0.p0.45/lib/hadoop/lib/native -Dtinkerpop.ext=ext -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL -javaagent:/mnt/hdfs/janusgraph-0.1.1-hadoop2/lib/jamm-0.3.0.jar -Dhdp.version=$HDP_VERSION"
+
+GREMLINHOME=/mnt/hdfs/janusgraph-0.1.1-hadoop2
+export HADOOP_GREMLIN_LIBS=$GREMLINHOME/lib
+
+export CLASSPATH=$HADOOP_HOME/etc/hadoop
+
+export CLASSPATH=$CLASSPATH:$HBASE_HOME/conf
+
+export CLASSPATH=$GREMLINHOME/lib/*:$YARN_HOME/*:$YARN_CONF_DIR:$SPARK_HOME/lib/*:$SPARK_CONF_DIR:$CLASSPATH
+
+cd $GREMLINHOME
+export GREMLIN_LOG_LEVEL=info
+exec $GREMLINHOME/bin/gremlin.sh $*
+
+</code></pre>
+
+and here is my conf/hadoop-graph/hadoop-call-script.properties file:
+
+<pre><code>
+gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.GraphInputFormat=org.apache.tinkerpop.gremlin.hadoop.structure.io.script.ScriptInputFormat
+gremlin.hadoop.inputLocation=/user/hive/warehouse/tablex/000000_0
+gremlin.hadoop.scriptInputFormat.script=/user/me/janus/script-input-call.groovy
+gremlin.hadoop.outputLocation=output
+gremlin.hadoop.jarsInDistributedCache=true
+
+spark.driver.maxResultSize=8192
+spark.yarn.executor.memoryOverhead=5000
+spark.executor.cores=1
+spark.executor.instances=1000
+spark.master=yarn-client
+spark.executor.memory=10g
+spark.driver.memory=10g
+spark.serializer=org.apache.spark.serializer.JavaSerializer
+
+</code></pre>
+
+If I change the line "spark.master=yarn-client" to "spark.master=local[*]" then it runs perfectly and loads the data to the janusgraph, no exception is thrown. However I need to use yarn, it is a must for me. Thus I added the guava-18.0.jar to hdfs and add the line "spark.executor.extraClassPath=hdfs:///user/me/guava-18.0.jar" to hadoop-call-script.properties.
+It did not solve the problem.
+
+Currently I am out of ideas and helpless, any help is appreciated.
+
+Not: I am aware that mvn shading is something related to this problem, however in this case since I am using janusgraph codes to <API label="">create</API> a spark job I am not able to intervene and shade the guava packages.
+
+Thx in advance,
+Ali
+
+==========
+The problem occurs when you <API label="">submit</API> a Spark job that will use Janusgraph to read/write from/to HBase. The real cause of the problem is each of this component requires a different version of guava which has very fast-paced commits and compatibility between versions is not ensured. Here is quick look at version dependency -
+
+
+Spark v1.6.1 - Guava v14.0.1
+HBase v1.2.4 - Guava v12.0
+Janusgraph 0.1.1 - Guava v18.0
+
+
+Even if you make all three jars available in CLASSPATH you will keep getting guava specific due to the conflicting versions. The way I solved it was by rebuilding Janusgraph and shading guava with relocation in janusgraph-core and janusgraph-hbase-<API label="">parent</API>.
+
+After resolving this I encountered few other dependency issues related to jetty conflicts in Spark and HBase, for which I excluded mortbay from janusgraph-hbase-<API label="">parent</API> shading.
+
+Hope this helps, if you need more information on this I shall update the answer.
+

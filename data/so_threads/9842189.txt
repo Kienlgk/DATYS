@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/9842189
+I store Guava Library and a testing file Test.java in C:\Program Files\Java\jdk1.6.0_25\bin and execute following commands in command prompt:
+
+
+
+When I <API label="">remove</API> the import commands from my code, program execute properly (last command). Can anybody help me where is the problem because it is showing errors with imports.
+
+My code is following:
+
+<code>
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
+public class Test {
+    public static void <API label="">main</API>(String[] args) {
+        try {
+            String key = "hello";
+            Multimap myMap = <API label="com.google.common.collect.HashMultimap.create">HashMultimap.create</API>();
+            <API label="com.google.common.collect.HashMultimap.put">myMap.put</API>(key, 1);
+            <API label="com.google.common.collect.HashMultimap.put">myMap.put</API>(key, 5000);
+            <API label="com.google.common.collect.HashMultimap.get">System.out.println</API>(<API label=>myMap.get</API>(key));
+        }
+        catch (Exception e) {
+            <API label="None">System.out.println</API>(e);
+        }
+    }
+}
+</code>
+
+
+
+==========
+It looks like you're missing a period in <code>guava-11.0.2.jar</code>.  Your console appears to indicate that you're typing <code>guava-11.0.2jar</code>, without a period between the <code>2</code> and the <code>jar</code>.
+

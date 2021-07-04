@@ -1,0 +1,141 @@
+https://stackoverflow.com/questions/25314202
+Proguard is having issues with the Lombok library when using Gradle in Android Studio to complile the library. I found some config info to fix butterknife, the other annotation library we use.
+
+<pre><code>
+-keepattributes *Annotation*
+-dontwarn butterknife.internal.**
+-keep class **$$ViewInjector { *; }
+-keepnames class * { @butterknife.InjectView *;}
+
+</code></pre>
+
+Does anyone know the flags to add to make Lombok happy.
+
+Proguard config file
+
+<pre><code>
+# This is a configuration file for ProGuard.
+# http://proguard.sourceforge.net/index.html#manual/usage.html
+
+# Optimizations: If you don't want to optimize, use the
+# proguard-android.txt configuration file instead of this one, which
+# turns off the optimization flags.  Adding optimization introduces
+# certain risks, since for example not all optimizations performed by
+# ProGuard works on all versions of Dalvik.  The following flags turn
+# off various optimizations known to have issues, but the list may not
+# be complete or up to date. (The "arithmetic" optimization can be
+# used if you are only targeting Android 2.0 or later.)  Make sure you
+# test thoroughly if you go this route.
+#-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*,!code/allocation/variable
+-dontobfuscate
+#-optimizationpasses 5
+-allowaccessmodification
+-dontpreverify
+
+# The remainder of this file is identical to the non-optimized version
+# of the Proguard configuration file (except that the other file has
+# flags to turn off optimization).
+
+#-dontusemixedcaseclassnames
+#-dontskipnonpubliclibraryclasses
+-verbose
+
+-keepattributes *Annotation*
+-dontwarn butterknife.internal.**
+-keep class **$$ViewInjector { *; }
+-keepnames class * { @butterknife.InjectView *;}
+-keep public class com.google.vending.licensing.ILicensingService
+-keep public class com.android.vending.licensing.ILicensingService
+
+# For native methods, see http://proguard.sourceforge.net/manual/examples.html#native
+-keepclasseswithmembernames class * {
+    native ;
+}
+
+# keep setters in Views so that animations can still work.
+# see http://proguard.sourceforge.net/manual/examples.html#beans
+-keepclassmembers public class * extends android.view.View {
+   void set*(***);
+   *** get*();
+}
+
+# We want to keep methods in Activity that could be used in the XML attribute onClick
+-keepclassmembers class * extends android.app.Activity {
+   public void *(android.view.View);
+}
+
+# For enumeration classes, see http://proguard.sourceforge.net/manual/examples.html#enumerations
+-keepclassmembers enum * {
+    public static **[] <API label="">values</API>();
+    public static ** <API label="">valueOf</API>(java.lang.String);
+}
+
+-keep class * implements android.os.Parcelable {
+  public static final android.os.Parcelable$Creator *;
+}
+
+-keepclassmembers class **.R$* {
+    public static ;
+}
+
+# The support library contains references to newer platform versions.
+# Don't warn about those in case this app is linking against an older
+# platform version.  We know about them, and they are safe.
+-dontwarn android.support.**
+
+</code></pre>
+
+A few of the errors I'm seeing...
+
+<pre><code>
+Warning:lombok.core.Agent$NetbeansPatcherInfo$1: can't find superclass or interface java.lang.instrument.ClassFileTransformer
+Warning:lombok.core.AnnotationProcessor: can't find superclass or interface javax.annotation.processing.AbstractProcessor
+Warning:lombok.delombok.DocCommentIntegrator$CommentAttacher_8$1: can't find superclass or interface com.sun.tools.javac.parser.Tokens$Comment
+Warning:lombok.delombok.PrettyCommentsPrinter: can't find superclass or interface com.sun.tools.javac.tree.JCTree$Visitor
+Warning:lombok.delombok.PrettyCommentsPrinter$1UsedVisitor: can't find superclass or interface com.sun.tools.javac.tree.TreeScanner
+Warning:lombok.delombok.ant.DelombokTask: can't find superclass or interface org.apache.tools.ant.Task
+Warning:lombok.eclipse.EclipseAstProblemView$LombokProblem: can't find superclass or interface org.eclipse.jdt.internal.compiler.problem.DefaultProblem
+Warning:lombok.eclipse.agent.ExtensionMethodCompletionProposal: can't find superclass or interface org.eclipse.jdt.internal.codeassist.InternalCompletionProposal
+Warning:lombok.eclipse.handlers.SetGeneratedByVisitor: can't find superclass or interface org.eclipse.jdt.internal.compiler.ASTVisitor
+Warning:lombok.installer.InstallerGUI$12: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$13: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$2: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$3: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$4: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$6: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$6$2: can't find superclass or interface javax.swing.filechooser.FileFilter
+Warning:lombok.installer.InstallerGUI$7: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$8: can't find superclass or interface java.awt.event.ActionListener
+Warning:lombok.installer.InstallerGUI$9: can't find superclass or interface java.awt.event.ActionListener
+...
+Warning: there were 10560 unresolved references to classes or interfaces.
+         You may need to add missing library jars or update their versions.
+         If your code works fine without the missing classes, you can suppress
+         the warnings with '-dontwarn' options.
+         (http://proguard.sourceforge.net/manual/troubleshooting.html#unresolvedclass)
+Warning: there were 128 instances of library classes depending on program classes.
+         You must avoid such dependencies, since the program classes will
+         be processed, while the library classes will remain unchanged.
+         (http://proguard.sourceforge.net/manual/troubleshooting.html#dependency)
+Warning: there were 103 unresolved references to program class members.
+         Your input classes appear to be inconsistent.
+         You may need to recompile the code.
+         (http://proguard.sourceforge.net/manual/troubleshooting.html#unresolvedprogramclassmember)
+:just10:proguardGooglePhoneDevDebug FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':just10:proguardGooglePhoneDevDebug'.
+> java.io.IOException: Please correct the above warnings first.
+
+</code></pre>
+
+==========
+If you're using a <code>compile</code> directive in your gradle build file, change it to <code>provided</code>
+
+In Eclipse, there's a similar solution where you can break the jar into a lombok-api.jar that you include in your libs. I tried looking for the instructions, but can't find the page that explained how you'd do that (This was over a year ago, so it may have changed). 
+
+Thanks to Roel (below), here's the commandline to use:
+<code>java -jar lombok.jar publicApi</code>
+

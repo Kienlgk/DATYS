@@ -1,0 +1,28 @@
+https://stackoverflow.com/questions/4345633
+Consider this example which prints out some device type stats. ("DeviceType" is an enum with a dozenish values.)
+
+<pre><code>
+Multiset histogram = getDeviceStats();
+for (DeviceType type : <API label="com.google.common.collect.Multiset.elementSet">histogram.elementSet</API>()) {
+    <API label="None">System.out.println</API>(type + ": " + <API label="com.google.common.collect.Multiset.count">histogram.count</API>(type));
+}
+
+</code></pre>
+
+What's the simplest, most elegant way to print the distinct elements in the order of their <API label="">frequency</API> (most common type first)?  
+
+With a quick look at the <a href="https://google.github.io/guava/releases/2.0/api/docs/com/google/common/collect/Multiset.html" rel="nofollow noreferrer"><code>Multiset</code></a> interface, there's no <API label="">ready</API>-made method for this, and none of Guava's <code>Multiset</code> implementations (<code>HashMultiset</code>, <code>TreeMultiset</code>, etc) seem to automatically keep elements <API label="">frequency</API>-ordered either.
+
+==========
+I just added this feature to Guava, see <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/collect/Multisets.html#<API label="">copyHighestCountFirst</API>-com.google.common.collect.Multiset-" rel="nofollow noreferrer">here</a> for the Javadoc.
+
+Edit: usage example of <code><API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>()</code> as per the original question:
+
+<pre><code>
+Multiset histogram = getDeviceStats();
+for (DeviceType type : <API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>(histogram).<API label="com.google.common.collect.Multiset.elementSet">elementSet</API>()) {
+    <API label="None">System.out.println</API>(type + ": " + <API label="com.google.common.collect.Multiset.count">histogram.count</API>(type));
+}
+
+</code></pre>
+

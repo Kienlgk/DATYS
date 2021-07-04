@@ -1,0 +1,60 @@
+https://stackoverflow.com/questions/17695356
+I can't seem to overcome this problem.  I'm trying to mock an overloaded method that takes 1 argument 
+
+<pre><code>
+class ClassWithOverloadedMethod {
+    private boolean <API label="">isValid</API>(ClassA a){
+        return true;
+    }
+
+   private boolean <API label="">isValid</API>(ClassB B){
+        return false;
+    }
+}
+
+</code></pre>
+
+Mock setup
+
+<pre><code>
+ClassWithOverloadedMethod uut = <API label="None">PowerMockito.spy</API>(new ClassWithOverloadedMethod());
+<API label="None">PowerMockito.doReturn</API>(true).<API label="None">when</API>(uut, "isValid", <API label="org.mockito.Matchers.isA">Matchers.isA</API>(ClassB.class));
+
+</code></pre>
+
+but PowerMockito keeps returning this error
+
+<pre><code>
+java.lang.NullPointerException
+at <API label="">java.lang.Class.isAssignableFrom</API>(Native Method)
+at org.powermock.reflect.internal.WhiteboxImpl.checkIfParameterTypesAreSame(WhiteboxImpl.java:2432)
+at <API label="">org.powermock.reflect.internal.WhiteboxImpl.getMethods</API>(WhiteboxImpl.java:1934)
+at org.powermock.reflect.internal.WhiteboxImpl.getBestMethodCandidate(WhiteboxImpl.java:1025)
+at org.powermock.reflect.internal.WhiteboxImpl.findMethodOrThrowException(WhiteboxImpl.java:948)
+at org.powermock.reflect.internal.WhiteboxImpl.doInvokeMethod(WhiteboxImpl.java:882)
+at org.powermock.reflect.internal.WhiteboxImpl.invokeMethod(WhiteboxImpl.java:713)
+at org.powermock.reflect.Whitebox.invokeMethod(Whitebox.java:401)
+at <API label="">org.powermock.api.mockito.internal.expectation.PowerMockitoStubberImpl.when</API>(PowerMockitoStubberImpl.java:93)
+
+</code></pre>
+
+I'm using PowerMockito 1.5 with Mockito 1.9.5
+
+==========
+Try using one of the <code><API label="org.mockito.Mockito.when">when</API>()</code> methods that accepts a Method object. You can use Whitebox to retrieve the method instance you want by specifying the parameter type which should get around your current issue.
+
+So something like
+
+<pre><code>
+Method m = <API label="None">Whitebox.getMethod</API>(ClassWithOverloadedMethod.class, ClassB.class);
+<API label="None">PowerMockito.doReturn</API>(true).<API label="None">when</API>(uut, m).withArguments(<API label="org.mockito.Matchers.any">Matchers.any</API>(ClassB.class));
+
+</code></pre>
+
+See Also
+
+
+<a href="http://powermock.googlecode.com/svn/docs/powermock-1.5.1/apidocs/org/powermock/api/mockito/expectation/PowerMockitoStubber.html#when(java.lang.Class,%20java.lang.reflect.Method)" rel="noreferrer">http://powermock.googlecode.com/svn/docs/powermock-1.5.1/apidocs/org/powermock/api/mockito/expectation/PowerMockitoStubber.html#when(java.lang.Class,%20java.lang.reflect.Method)</a>
+<a href="http://powermock.googlecode.com/svn/docs/powermock-1.5.1/apidocs/org/powermock/reflect/Whitebox.html#getMethod(java.lang.Class,%20java.lang.Class...)" rel="noreferrer">http://powermock.googlecode.com/svn/docs/powermock-1.5.1/apidocs/org/powermock/reflect/Whitebox.html#getMethod(java.lang.Class,%20java.lang.Class...)</a>
+
+

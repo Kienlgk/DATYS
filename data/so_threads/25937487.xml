@@ -1,0 +1,40 @@
+https://stackoverflow.com/questions/25937487
+I have an container object that contains a google/Guava <code>Optional</code> and I want to access the content of this <code>Optinal</code> in jsp.
+
+<pre><code>
+import com.google.common.base.Optional;
+public class Container {       
+   private Optional user;
+   public Optional getUser(){return this.user;}
+}
+
+public class User{
+   private String name;
+   public String <API label="">getName</API>() {return this.name;}
+}
+
+</code></pre>
+
+A <code>Optional</code> has a method <code><API label="com.google.common.base.Optional.get">get</API>()</code> to obtain the inner object. <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Optional.html#get%28%29" rel="nofollow">http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Optional.html#get%28%29</a>
+
+I have already tried (<code>${container}</code> ins an instance of <code>Container</code>): 
+
+<pre><code>
+
+
+
+
+</code></pre>
+
+none of them work (Tomcat 7.42). Does anybody has an idea how to solve this, without adding a new property to the container (<code>getUser2(){return <API label="com.google.common.base.Optional.get">this.user.get</API>();}</code>)?
+
+==========
+Thanks to Sotirios Delimanolis
+
+since Servlet 3.0 / JSP 2.2 one can use
+
+<pre><code>
+ 
+
+</code></pre>
+

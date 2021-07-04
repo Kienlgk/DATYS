@@ -1,0 +1,39 @@
+https://stackoverflow.com/questions/4493643
+Suppose I have the following class:
+
+<pre><code>
+public class Foo {  
+
+   private List list = <API label="None">Lists.newArrayList</API>(1, 2, 3, 4, 5);
+    private Iterator iterator = <API label="com.google.common.collect.Iterators.cycle">Iterators.cycle</API>(list);  
+
+   public void bar(){  
+        Integer value = <API label="None">iterator.next</API>();  
+        doSomethingWithAnInteger(value);
+    }  
+}  
+
+</code></pre>
+
+If an instance of Foo is acessed simultaneously by two threads, I need that each thread gets a different value from <code><API label="None">iterator.next</API>()</code>. Does the <code>bar()</code> method have to be made synchronized? Or is <code><API label="None">iterator.next</API>()</code> guaranteed to be thread-safe?
+
+In this example, I am using an ArrayList as the underlying Iterable. Does the thread-safety of the cyclic iterator depend on the specific iterable implementation?
+
+Thank you.
+
+==========
+Pretty much nothing in Guava is guaranteed to be thread safe unless documented as such.
+
+You do not have to synchronize the entire bar method, but you should wrap the call to  <API label="None">iterator.next</API>() in a synchronized block. eg:
+
+<pre><code>
+public void bar(){  
+    Integer value;
+    synchronized (iterator) {
+        value = <API label="None">iterator.next</API>();  
+    }
+    doSomethingWithAnInteger(value);
+}  
+
+</code></pre>
+

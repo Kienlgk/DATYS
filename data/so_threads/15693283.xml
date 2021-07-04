@@ -1,0 +1,94 @@
+https://stackoverflow.com/questions/15693283
+I'm trying to understand how Mockito's internals function.  So far the code has been difficult for me to understand, and I'm looking for a high-level survey of the fundamental workings of Mockito.
+
+<a href="http://grepcode.com/project/repo1.maven.org/maven2/org.mockito/mockito-all/" rel="nofollow">Mockito @ GrepCode</a>
+
+I've written some sample code to demonstrate my current understanding:
+
+<pre><code>
+class C {
+    String s;
+    public void getS() { return s; }
+    // ...
+}
+
+C cm = <API label="org.mockito.Mockito.mock">mock</API>( C.class);
+<API label="org.mockito.Mockito.when">when</API>( <API label="None">cm.method</API>() ).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>( "string value");
+
+</code></pre>
+
+As far as I can tell, the 'mock' <API label="">method</API> is <API label="">only</API> seeing the return value for cm.getS().  How can it know what the <API label="">name</API> of the <API label="">method</API> is (in order to <API label="org.mockito.Mockito.stub">stub</API> it)?  Also, how can it know the arguments passed to the <API label="">method</API>?
+
+The mockito API <API label="">method</API> <API label="">calls</API> an internal object's <API label="">method</API>:
+
+<pre><code>
+// org.mockito.Mockito
+public static  OngoingStubbing <API label="">when</API>(T methodCall) {
+    return <API label="org.mockito.internal.MockitoCore.when">MOCKITO_CORE.when</API>(methodCall);
+}
+
+</code></pre>
+
+I've followed the <API label="">method</API> invocations into several different abstractions and classes and objects, but the code is so decoupled that it is difficult to understand this way.
+
+<pre><code>
+//  org.mockito.internal.MockitoCore
+public  OngoingStubbing <API label="">when</API>(T methodCall) {
+    <API label="org.mockito.internal.progress.MockingProgress.stubbingStarted">mockingProgress.stubbingStarted</API>();
+    return (OngoingStubbing) <API label="org.mockito.internal.MockitoCore.stub">stub</API>();
+}
+
+</code></pre>
+
+So if anyone understands the internals or has a link to a discussion/blog post, please share :)
+
+==========
+(Sorry this got long. TL;DR: Mockito records the <API label="">method</API> call behind the scenes.)
+
+<pre><code>
+C cm = <API label="org.mockito.Mockito.mock">mock</API>(C.class);
+
+</code></pre>
+
+At this point, you may think that <code>cm</code> is an instance of <code>C</code>...and you would be wrong. Instead, <code>cm</code> is an instance of a <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/reflect/Proxy.html" rel="noreferrer">proxy object</a> <code>Mockito</code> writes that implements <code>C</code> (and thus can be assigned to fields/variables of type C) but records everything you ask for and behaves the way you <API label="org.mockito.Mockito.stub">stub</API> it to.
+
+Let's write a <API label="">mock</API> class manually...and give it one more <API label="">method</API>, let's say <code>int <API label="None">add</API>(int a, int b)</code>, which adds <code>a</code> and <code>b</code> in the actual class.
+
+<pre><code>
+class MockC extends C {
+  int returnValue;
+
+ @Override int <API label="">add</API>(int a, int b) {
+    return returnValue;
+  }
+}
+
+</code></pre>
+
+There! Now whenever you call <code><API label="None">add</API></code>, it won't <API label="">add</API> the two numbers, but instead just return the single return value. Makes sense. But what if you want to <API label="org.mockito.Mockito.verify">verify</API> the <API label="">calls</API> later?
+
+<pre><code>
+class MockC extends C {
+  List parameterValues = new ArrayList<>();
+  int returnValue;
+
+ @Override int <API label="">add</API>(int a, int b) {
+    <API label="None">parameterValues.add</API>(new Object[] { a, b });
+    return returnValue;
+  }
+}
+
+</code></pre>
+
+So now you can <API label="">check</API> the <code>parameterValues</code> list and make sure it was called as expected.
+
+Here's the thing: Mockito generates a <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/reflect/Proxy.html" rel="noreferrer">proxy</a> using <a href="https://github.com/cglib/cglib" rel="noreferrer">CGLIB</a> that acts like MockC automatically, keeping all of the interactions and return <API label="">values</API> in one big static list. The list is called <a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/internal/verification/RegisteredInvocations.java#RegisteredInvocations" rel="noreferrer"><code>RegisteredInvocations</code></a>, and instead of an <code>Object[]</code> every <API label="">method</API> call for every <API label="">mock</API> is an <a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/internal/invocation/InvocationImpl.java" rel="noreferrer"><code>Invocation</code></a>, but the idea is the same.
+
+To understand a little more about <code>RegisteredInvocations</code> and why the <code><API label="org.mockito.internal.verification.RegisteredInvocations.removeLast">removeLast</API></code> <API label="">method</API> it exposes is so important, <API label="">read</API> the code in <a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/internal/stubbing/InvocationContainerImpl.java" rel="noreferrer"><code>InvocationContainer</code></a>. Because Mockito records every call, it will naturally record the interaction contained within <code><API label="">when</API></code>. As soon as Mockito sees <code><API label="">when</API></code>, it removes the last recorded interaction (<a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/internal/stubbing/InvocationContainerImpl.java" rel="noreferrer">InvocationContainerImpl.java</a> line 45) and uses it as the template for your stubbing--reading the argument <API label="">values</API> from the Invocation object itself.
+
+That takes care of most of it, except for argument matchers like <code>eq</code> and <code>any</code>: Turns out that those are just <a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/internal/invocation/MatchersBinder.java#31" rel="noreferrer">kept <API label="">on</API> a fancy stack</a> called <a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/internal/progress/ArgumentMatcherStorageImpl.java" rel="noreferrer"><code>ArgumentMatcherStorage</code></a>. The <code><API label="">when</API></code> call <a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/internal/invocation/MatchersBinder.java#31" rel="noreferrer">checks how many matchers are <API label="">on</API> the stack</a>: For the <code><API label="">add</API></code> example, zero matchers tells Mockito to infer equality with every recorded argument, and two matchers tells Mockito to <API label="">pop</API> those off the stack and use those. Just one matcher means Mockito can't tell which integer you're trying to match and throws the often-confusing <a href="http://grepcode.com/file/repo1.maven.org/maven2/org.mockito/mockito-all/1.9.5/org/mockito/exceptions/misusing/InvalidUseOfMatchersException.java" rel="noreferrer"><code>InvalidUseOfMatchersException</code></a>, which is why <API label="">when</API> using matchers you need to match every argument if you match any at all.
+
+Hope that helps!
+
+EDIT: <a href="https://stackoverflow.com/questions/14440270/how-does-mockito-when-invocation-work">This answer</a> describes how the <code><API label="">when</API></code> <API label="">method</API> works in more technical detail.
+

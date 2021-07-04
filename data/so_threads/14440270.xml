@@ -1,0 +1,43 @@
+https://stackoverflow.com/questions/14440270
+Given the following Mockito statement:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">mock.method</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(someValue);
+
+</code></pre>
+
+How does Mockito go about creating a proxying something for a <API label="">mock</API>, given that the <API label="None">mock.method</API>() statement will pass the return value to <API label="org.mockito.Mockito.when">when</API>()? I imagine that this uses some CGLib stuff, but would be interested to know how this is technically done. 
+
+==========
+The short <API label="">answer</API> is that in your example, the result <API label="">of</API> <code><API label="None">mock.method</API>()</code> will be a type-appropriate empty value; mockito uses indirection via proxying, <API label="">method</API> interception, and a shared instance <API label="">of</API> the <code>MockingProgress</code> class in order to determine whether  an invocation <API label="">of</API> a <API label="">method</API> <API label="">on</API> a <API label="">mock</API> is for stubbing or replay <API label="">of</API> an existing stubbed behavior rather than passing information about stubbing via the return value <API label="">of</API> a mocked <API label="">method</API>.
+
+A mini-analysis in a couple <API label="">of</API> minutes looking at the mockito code is as follows.  Note, this is a very rough description - there are a lot <API label="">of</API> details in play here.  I suggest that you <API label="">check</API> out the <a href="https://github.com/mockito/mockito">source <API label="">on</API> github</a> yourself.
+
+First, <API label="">when</API> you <API label="org.mockito.Mockito.mock">mock</API> a class using the <code><API label="org.mockito.Mockito.mock">mock</API></code> <API label="">method</API> <API label="">of</API> the <code>Mockito</code> class, this is essentially what happens:
+
+
+<code><API label="org.mockito.Mockito.mock">Mockito.mock</API></code> delegates to <a href="https://github.com/mockito/mockito/blob/master/src/org/mockito/internal/MockitoCore.java"><code>org.mockito.internal.MockitoCore</code></a>.mock, passing the default <API label="">mock</API> settings as a parameter.
+<code><API label="org.mockito.internal.MockitoCore.mock">MockitoCore.mock</API></code> delegates to <a href="https://github.com/mockito/mockito/blob/master/src/org/mockito/internal/util/MockUtil.java"><code>org.mockito.internal.util.MockUtil</code></a>.createMock
+The <code>MockUtil</code> class uses the <code>ClassPathLoader</code> class to <API label="">get</API> an instance <API label="">of</API> <code>MockMaker</code> to use to <API label="">create</API> the <API label="">mock</API>.  By default, the <a href="https://github.com/mockito/mockito/blob/master/src/org/mockito/internal/creation/CglibMockMaker.java">CgLibMockMaker</a> class is used.
+<code>CgLibMockMaker</code> uses a class borrowed from JMock, <a href="https://github.com/mockito/mockito/blob/master/src/org/mockito/internal/creation/jmock/ClassImposterizer.java"><code>ClassImposterizer</code></a> that handles creating the <API label="">mock</API>.  The key pieces <API label="">of</API> the 'mockito magic' used are the <code>MethodInterceptor</code> used to <API label="">create</API> the <API label="">mock</API>: the mockito <code>MethodInterceptorFilter</code>, and a chain <API label="">of</API> MockHandler instances, including an instance <API label="">of</API> <a href="https://github.com/mockito/mockito/blob/master/src/org/mockito/internal/handler/MockHandlerImpl.java">MockHandlerImpl</a>.  The <API label="">method</API> interceptor passes invocations to MockHandlerImpl instance, which implements the business logic that should be applied <API label="">when</API> a <API label="">method</API> is invoked <API label="">on</API> a <API label="">mock</API> (ie, searching to see if an <API label="">answer</API> is recorded already, determining if the invocation represents a new <API label="">stub</API>, etc.  The default state is that if a <API label="">stub</API> is not already registered for the <API label="">method</API> being invoked, a type-appropriate empty value is returned.
+
+
+Now, let's look at the code in your example:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">mock.method</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(someValue)
+
+</code></pre>
+
+Here is the order that this code will <API label="">execute</API> in:
+
+
+<code><API label="None">mock.method</API>()</code>
+<code><API label="org.mockito.Mockito.when">when</API>()</code>
+<code>.<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API></code>
+
+
+The key to understanding what is going <API label="">on</API> is what happens <API label="">when</API> the <API label="">method</API> <API label="">on</API> the <API label="">mock</API> is invoked: the <API label="">method</API> interceptor is passed information about the <API label="">method</API> invocation, and delegates to its chain <API label="">of</API> <code>MockHandler</code> instances, which eventually delegate to <code>MockHandlerImpl#handle</code>.  During <code>MockHandlerImpl#handle</code>, the <API label="">mock</API> handler creates an instance <API label="">of</API> <code>OngoingStubbingImpl</code> and passes it to the shared <code>MockingProgress</code> instance.
+
+When the <code><API label="org.mockito.Mockito.when">when</API></code> <API label="">method</API> is invoked <API label="">after</API> the invocation <API label="">of</API> <code><API label="">method</API>()</code>, it delegates to <code><API label="">MockitoCore.when</API></code>, which <API label="">calls</API> the <a href="https://github.com/mockito/mockito/blob/master/src/org/mockito/internal/MockitoCore.java#L60"><code><API label="org.mockito.internal.MockitoCore.stub">stub</API>()</code></a> <API label="">method</API> <API label="">of</API> the same class.  This <API label="">method</API> unpacks the ongoing stubbing from the shared <code>MockingProgress</code> instance that the mocked <code><API label="">method</API>()</code> invocation wrote into, and returns it.  Then <code><API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API></code> <API label="">method</API> is <API label="">then</API> called <API label="">on</API> the <code>OngoingStubbing</code> instance.
+

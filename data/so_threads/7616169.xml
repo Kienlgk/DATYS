@@ -1,0 +1,20 @@
+https://stackoverflow.com/questions/7616169
+I'm a little confused by <a href="https://google.github.io/guava/releases/22.0/api/docs/com/google/common/cache/CacheBuilder.html" rel="nofollow noreferrer">CacheBuilder</a> and <a href="https://google.github.io/guava/releases/22.0/api/docs/com/google/common/cache/Cache.html" rel="nofollow noreferrer">Cache</a> introduced in Guava 10. The documentation hints that it's possible to <a href="https://google.github.io/guava/releases/22.0/api/docs/com/google/common/cache/CacheBuilder.html#expireAfterWrite-long-java.util.concurrent.TimeUnit-" rel="nofollow noreferrer">overwrite values</a> but as far as I can tell, <a href="https://google.github.io/guava/releases/22.0/api/docs/com/google/common/cache/Cache.html" rel="nofollow noreferrer">Cache</a> does not contain any methods for doing so. Any ideas?
+
+I'm trying to construct a Map that expires a key 10 seconds after it was last <API label="">read</API> or written-to. When a value is looked up, I expect the previously-set value to be returned, or a default value to be computed if none exists.
+
+NOTE: This question is outdated. Although the above Javadoc shows the existence of a <code><API label="com.google.common.cache.Cache.put">Cache.put</API>(K key, V value)</code> method, it not exist when the question was first posted.
+
+==========
+Since long, there's <code>Cache#asMap</code> <API label="">returning</API> a <code>ConcurrentMap</code> view.
+
+AFAIK, not yet. But there's a <a href="https://groups.google.com/forum/#!topic/guava-discuss/6uC0IySW0rM" rel="nofollow noreferrer">thread</a> mentioning that <code><API label="None">Cache.asMap.put</API></code> is planned for release 11.
+
+I'd say the current old state of the Javadoc is a remnant if the <code>CacheBuilder</code>'s evolution from the <code>MapMaker</code> (where the cache-setting method are currently deprecated).
+
+
+ I'm trying to construct a Map that expires a key 10 seconds after it was last <API label="">read</API> or written-to. When a value is looked up, I expect the previously-set value to be returned, or a default value to be computed if none exists.
+
+
+Using <code><API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(10, TimeUnit.SECONDS)</code> will keep an entry alive for 10 seconds after any access to it. And the only <API label="">values</API> you'll get are those computed by your <code>CacheLoader</code> (either earlier or during <code>get</code>).
+

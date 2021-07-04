@@ -1,0 +1,167 @@
+https://stackoverflow.com/questions/54774679
+I using MapStruct to map my entities, and I'm mocking my objects using Mockito.
+
+I want to <API label="">test</API> a method that contains a mapping with mapStruct.
+The problem is the nested mapper is always null in my unit tests (works well in the application)
+
+this is my mapper declaration :
+
+<pre><code>
+@Mapper(componentModel = "spring", uses = MappingUtils.class)
+public interface MappingDef {
+     UserDto userToUserDto(User user)
+}
+
+</code></pre>
+
+this is my nested mapper
+
+<pre><code>
+@Mapper(componentModel = "spring")
+public interface MappingUtils {
+    //.... other mapping methods used by userToUserDto
+
+</code></pre>
+
+this is the method that I want to <API label="">test</API> :
+
+<pre><code>
+@Service
+public class SomeClass{
+        @Autowired
+        private MappingDef mappingDef;
+
+       public UserDto myMethodToTest(){
+
+       // doing some business logic here returning a user
+        // User user = Some Business Logic
+
+       return mappingDef.userToUserDto(user)
+}
+
+</code></pre>
+
+and this is my unit <API label="">test</API> :
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class NoteServiceTest {
+
+   @InjectMocks
+    private SomeClass someClass;
+    @Spy
+    MappingDef mappingDef = Mappers.getMapper(MappingDef.class);
+    @Spy
+    MappingUtils mappingUtils = Mappers.getMapper(MappingUtils.class);
+
+   //initMocks is omitted for brevity
+
+   @<API label="">test</API>
+    public void someTest(){
+         UserDto userDto = someClass.myMethodToTest();
+
+        //and here some asserts
+    }
+
+</code></pre>
+
+<code>mappingDef</code> is injected correctly, but <code>mappingUtils</code> is always null
+
+Disclamer : this is not a duplicate of <a href="https://stackoverflow.com/questions/53155556/junit-how-to-mock-mapstruct-nested-mapper">this question</a>. He is using @Autowire so he is loading the spring context so he is doing integration tests. I'm doing unit tests, so I dont to use @Autowired
+
+I dont want to make <code>mappingDef</code> and <code>mappingUtils</code> <code>@Mock</code> so I don't need to do <code><API label="org.mockito.Mockito.when">when</API>(mappingDef.userToUserDto(user)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(userDto)</code> in each use case
+
+==========
+force MapStruct to generate implementations with constructor injection
+
+<pre><code>
+@Mapper(componentModel = "spring", uses = MappingUtils.class, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
+public interface MappingDef {
+     UserDto userToUserDto(User user)
+}
+
+</code></pre>
+
+<pre><code>
+@Mapper(componentModel = "spring", injectionStrategy = InjectionStrategy.CONSTRUCTOR)
+public interface MappingUtils {
+    //.... other mapping methods used by userToUserDto
+
+</code></pre>
+
+use constructor injection, so that you can construct the class under <API label="">test</API> with a mapper.
+
+<pre><code>
+@Service
+public class SomeClass{
+
+       private final MappingDef mappingDef;
+
+       @Autowired
+        public SomeClass(MappingDef mappingDef) {
+            this.mappingDef = mappingDef; 
+        }
+
+       public UserDto myMethodToTest(){
+
+       // doing some business logic here returning a user
+        // User user = Some Business Logic
+
+       return mappingDef.userToUserDto(user)
+}
+
+
+</code></pre>
+
+Test SomeClass. Note: its not the mapper that you <API label="">test</API> here, so the mapper can be mocked.
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class SomeClassTest {
+
+   private SomeClass classUnderTest;
+
+   @Mock
+    private MappingDef mappingDef;
+
+   @Before <API label="">init</API>() {
+        classUnderTest = new SomeClass(mappingDef);
+        // defaultMockBehaviour: 
+<API label="org.mockito.Mockito.when">when</API>(mappingDef.userToUserDto(<API label="org.mockito.Mockito.anyObject">anyObject</API>(User.class).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new UserDto());
+    } 
+
+   @<API label="">test</API>
+    public void someTest(){
+         UserDto userDto = someClass.myMethodToTest();
+
+        //and here some asserts
+    }
+
+</code></pre>
+
+And in a true unit <API label="">test</API>, <API label="">test</API> the mapper as well.
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class MappingDefTest {
+
+ MappingDef classUnderTest;
+
+ @Before
+  void before() {
+       // use some reflection to get an implementation
+      Class aClass = Class.forName( <API label="None">MappingDefImpl.class.getCanonicalName</API>() );
+      Constructor constructor =
+        <API label="None">aClass.getConstructor</API>(new Class[]{MappingUtils.class});
+      classUnderTest = (MappingDef)<API label="None">constructor.newInstance</API>( Mappers.getMapper( MappingUtils.class ));
+  }
+
+ @Test
+  void <API label="">test</API>() {
+     // <API label="">test</API> all your mappings (null's in source, etc).. 
+  }
+
+
+
+</code></pre>
+

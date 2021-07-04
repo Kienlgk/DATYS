@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/25850491
+I have defined a static <code><API label="None">assertThat</API></code> method to extend AssertJ. This method <API label="">accepts</API> a lambda expression of the type:
+
+<pre><code>
+@FunctionalInterface
+public interface Action {
+  void <API label="">execute</API>() throws Exception;
+}
+
+</code></pre>
+
+The signature looks like this:
+
+<pre><code>
+public static ExceptionAssert <API label="">assertThat</API>(Action action)
+
+</code></pre>
+
+I want to use this method with a static import. But it is ambiguous. The compiler doesn't know whether <a href="https://github.com/joel-costigliola/assertj-core/blob/master/src/main/java/org/assertj/core/api/Assertions.java#L194" rel="noreferrer"><API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(Iterable)</a> or my method should be used. I don't understand how a <code>void</code> method can conflict with a method that returns an <code>Iterator</code>.
+
+Any idea how to <API label="">resolve</API> this conflict (without writing the class name in front of <code><API label="None">assertThat</API></code>)?
+
+==========
+You should specify the type of lambda explicitly:
+
+<pre><code>
+<API label="None">assertThat</API>((Action)() -> {
+    ...
+});
+
+</code></pre>
+
+The other option is just using the other name, for example, <code>assertNoException</code>
+

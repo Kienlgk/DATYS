@@ -1,0 +1,157 @@
+https://stackoverflow.com/questions/49783615
+I'm currently trying to write a JUnit4 test for a package verification method.
+The method in question simply checks if the call originates from the correct packages, to make sure it isn't called from outside. The method and the <a href="https://regex101.com/r/Dpmehr/1" rel="nofollow noreferrer">RegEx</a> itself works, however to be safe I'd like to add a unit-test.
+
+Simplified, this is the package test:
+
+
+
+<pre><code>
+package foo.bar.lib.util.unsafe;
+
+import java.util.regex.Pattern;
+
+public abstract class UnsafeUtil {
+  private static final Pattern UNSAFE_PACKAGE_PATTERN =
+      <API label="None">Pattern.compile</API>("^foo\\.bar\\.lib(?:\\..*)?(?</pre>
+
+Now my test class looks like this:
+
+<pre><code>
+package foo.bar.lib.util.unsafe;
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(Thread.class)
+public class UnsafeUtilTest {
+  private static final String expectedError = "UnsafeUtil may not be used externally";
+
+ private static void setupStackTrace(String className) {
+    final Thread fakeThread = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Thread.class);
+    final StackTraceElement[] fakeStack =
+        new StackTraceElement[] {null, null, new StackTraceElement(className, "", "", 0)};
+
+   PowerMockito.mockStatic(Thread.class);
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(Thread.currentThread()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(fakeThread);
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="None">fakeThread.getStackTrace</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(fakeStack);
+  }
+
+ @Test
+  public void correctPackageTest() {
+    setupStackTrace("foo.bar.lib.Main");
+
+   try {
+      CommonUnsafeUtil.testInternalUse();
+    } catch (IllegalStateException e) {
+      if (<API label="None">expectedError.equals</API>(<API label="">e.getMessage</API>()))
+        throw new AssertionError("An IllegalStateException should not have been thrown:", e);
+    }
+  }
+
+ @Test
+  public void incorrectPackageTest() {
+    setupStackTrace(<API label="None">String.class.getName</API>());
+
+   try {
+      CommonUnsafeUtil.testInternalUse();
+    } catch (IllegalStateException e) {
+      assertEquals(expectedError, <API label="None">e.getMessage</API>());
+    }
+  }
+}
+
+</code></pre>
+
+<code>incorrectPackageTest</code> succeeds, however <code>correctPackageTest</code> fails with the following error:
+
+<pre><code>
+java.lang.AssertionError: An IllegalStateException should not have been thrown:
+    at foo.bar.lib.util.unsafe.UnsafeUtilTest.correctPackageTest(UnsafeUtilTest.java:36)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:68)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:326)
+    at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:89)
+    at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:97)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:310)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:131)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.access$100(PowerMockJUnit47RunnerDelegateImpl.java:59)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner$TestExecutorStatement.evaluate</API>(PowerMockJUnit47RunnerDelegateImpl.java:147)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.evaluateStatement(PowerMockJUnit47RunnerDelegateImpl.java:107)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:82)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:298)
+    at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:87)
+    at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:50)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:218)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:160)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:134)
+    at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+    at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:136)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:117)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:57)
+    at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:59)
+    at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:116)
+    at <API label="">org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute</API>(JUnitTestClassExecutor.java:59)
+    at <API label="">org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute</API>(JUnitTestClassExecutor.java:39)
+    at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:66)
+    at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:51)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:35)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:24)
+    at <API label="">org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch</API>(ContextClassLoaderDispatch.java:32)
+    at <API label="">org.gradle.internal.dispatch</API><API label="">.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke</API>(ProxyDispatchAdapter.java:93)
+    at com.sun.proxy.$Proxy1.processTestClass(Unknown Source)
+    at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:109)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:35)
+    at <API label="">org.gradle.internal.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:24)
+    at <API label="">org.gradle.internal.remote.internal.hub.MessageHubBackedObjectConnection$DispatchWrapper.dispatch</API>(MessageHubBackedObjectConnection.java:146)
+    at <API label="">org.gradle.internal.remote.internal.hub.MessageHubBackedObjectConnection$DispatchWrapper.dispatch</API>(MessageHubBackedObjectConnection.java:128)
+    at <API label="">org.gradle.internal.remote.internal.hub.MessageHub$Handler.run</API>(MessageHub.java:404)
+    at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:63)
+    at <API label="">org.gradle.internal.concurrent.ManagedExecutorImpl$1.run</API>(ManagedExecutorImpl.java:46)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+    at <API label="">java.util.concurrent.ThreadPoolExecutor$Worker.run</API>(ThreadPoolExecutor.java:624)
+    at <API label="">org.gradle.internal.concurrent.ThreadFactoryImpl$ManagedThreadRunnable.run</API>(ThreadFactoryImpl.java:55)
+    at <API label="">java.lang.Thread.run</API>(Thread.java:748)
+Caused by: java.lang.IllegalStateException: UnsafeUtil may not be used externally
+    at foo.bar.lib.util.unsafe.UnsafeUtil.testInternalUse(UnsafeUtil.java:17)
+    at foo.bar.lib.util.unsafe.UnsafeUtilTest.correctPackageTest(UnsafeUtilTest.java:33)
+    ... 56 more
+
+</code></pre>
+
+Upon further inspection I found out that <code>Thread.currentThread().<API label="None">getStackTrace</API>()</code> call returns the real stack trace for both calls instead of the the mocked one I created.
+
+What am I doing wrong?
+
+==========
+PowerMock will require that you prepare the class under test for this mocking. It can be pretty hit-and-miss at <API label="">times</API> depending on what you are trying to do unless you completely understand the bytecode manipulation that will take place.
+
+From the documentation of <code>PrepareForTest</code>
+
+
+ This includes final classes, classes with final, private, static or native methods that should be mocked and also classes that should be return a <API label="">mock</API> object upon instantiation. 
+
+
+<a href="https://static.javadoc.io/org.powermock/powermock-core/1.6.5/org/powermock/core/classloader/annotations/PrepareForTest.html" rel="nofollow noreferrer">https://static.javadoc.io/org.powermock/powermock-core/1.6.5/org/powermock/core/classloader/annotations/PrepareForTest.html</a>
+
+In this case preparing <code>UnsafeUtil</code> is needed.
+

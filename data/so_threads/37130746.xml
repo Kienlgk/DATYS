@@ -1,0 +1,96 @@
+https://stackoverflow.com/questions/37130746
+Google Guava <API label="">EventBus</API> swallows exceptions and just log them.
+
+I wrote a very simple application to explain my approach:
+
+<pre><code>
+public class SimplePrinterEvent {
+ @Subscribe
+ public void doPrint(String s) {
+    int a = 2/0; //This is to fire an exception
+    <API label="None">System.out.println</API>("printing : " + s );
+  }
+}
+
+</code></pre>
+
+Demo
+
+<pre><code>
+public class SimplePrinterEventDemo {
+  public static void <API label="">main</API>(String[] args) {
+
+   <API label="">EventBus</API> eventBus = new <API label="com.google.common.eventbus.EventBus.EventBus">EventBus</API>();
+    <API label="com.google.common.eventbus.EventBus.register">eventBus.register</API>(new SimplePrinterEvent());
+    try{
+        <API label="com.google.common.eventbus.EventBus.post">eventBus.post</API>("This is going to print");
+    }
+    catch(Exception e){
+        <API label="None">System.out.println</API>("Error Occured!");
+    }
+  }
+}
+
+</code></pre>
+
+This will never come to the catch block!
+
+So I added a SubscriberExceptionHandler and overrided <API label="com.google.common.eventbus.SubscriberExceptionHandler.handleException">handleException</API>().
+
+<pre><code>
+<API label="">EventBus</API> eventBus = new <API label="com.google.common.eventbus.EventBus.EventBus">EventBus</API>(new SubscriberExceptionHandler() {
+
+       @Override
+        public void <API label="com.google.common.eventbus.SubscriberExceptionHandler.handleException">handleException</API>(Throwable exception,
+                SubscriberExceptionContext context) {
+            <API label="None">System.out.println</API>("Handling Error..yes I can do something here..");
+            throw new RuntimeException(exception);
+        }
+    });
+
+</code></pre>
+
+It allows me to handle the exception inside the handler , but my requirement is to bring that exception to the top layer, where I handle them.
+
+EDIT: An Old Solution I found in some websites . (This is working with guava v18)
+
+<pre><code>
+public class CustomEventBus extends <API label="">EventBus</API> {
+@Override
+void <API label="com.google.common.eventbus.Dispatcher.dispatch">dispatch</API>(Object event, EventSubscriber wrapper) {
+    try {
+        wrapper.handleEvent(event);
+    } catch (InvocationTargetException cause) {
+        <API label="com.google.common.base.Throwables.propagate">Throwables.propagate</API>(<API label="com.google.common.base.Throwables.getRootCause">Throwables.getRootCause</API>(cause));
+    }
+ }
+}
+
+</code></pre>
+
+==========
+Following trick works to me:
+
+Latest <API label="">EventBus</API> class has a method called <code><API label="com.google.common.eventbus.EventBus.handleSubscriberException">handleSubscriberException</API>()</code> which you need to override in your extended <API label="">EventBus</API> class:
+(Here I have included both solutions, only one will work for your version)
+
+<pre><code>
+public class CustomEventBus extends <API label="">EventBus</API> {
+  //If version 18 or bellow
+  @Override
+  void <API label="com.google.common.eventbus.Dispatcher.dispatch">dispatch</API>(Object event, EventSubscriber wrapper) {
+    try {
+        wrapper.handleEvent(event);
+    } catch (InvocationTargetException cause) {
+        <API label="com.google.common.base.Throwables.propagate">Throwables.propagate</API>(<API label="com.google.common.base.Throwables.getRootCause">Throwables.getRootCause</API>(cause));
+    }
+  }
+  //If version 19
+  @Override
+  public void <API label="com.google.common.eventbus.EventBus.handleSubscriberException">handleSubscriberException</API>(Throwable e, SubscriberExceptionContext context) {
+    <API label="com.google.common.base.Throwables.propagate">Throwables.propagate</API>(<API label="com.google.common.base.Throwables.getRootCause">Throwables.getRootCause</API>(e));
+  }
+}
+
+</code></pre>
+

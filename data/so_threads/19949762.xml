@@ -1,0 +1,50 @@
+https://stackoverflow.com/questions/19949762
+I have this method declared like this
+
+<code>private Long doThings(MyEnum enum, Long otherParam);</code>
+and this enum
+
+<pre><code>
+public enum MyEnum{
+  VAL_A,
+  VAL_B,
+  VAL_C
+}
+
+</code></pre>
+
+Question: How do I <API label="org.mockito.Mockito.mock">mock</API> <code>doThings()</code> calls?
+I cannot match <API label="">any</API> <code>MyEnum</code>.
+
+The following doesn't work:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(object.doThings(<API label="org.mockito.Matchers.any">Matchers.any</API>(), <API label="org.mockito.Matchers.anyLong">Matchers.anyLong</API>()))
+        .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(123L);
+
+</code></pre>
+
+==========
+<code><API label="org.mockito.Matchers.any">Matchers.any</API>(Class)</code> will do the trick:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(object.doThings(<API label="org.mockito.Matchers.any">Matchers.any</API>(MyEnum.class), <API label="org.mockito.Matchers.anyLong">Matchers.anyLong</API>()))
+    .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(123L);
+
+</code></pre>
+
+As a side note: consider using <code>Mockito</code> static imports:
+
+<pre><code>
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
+
+</code></pre>
+
+Mocking gets a lot shorter:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(object.doThings(<API label="org.mockito.Matchers.any">any</API>(MyEnum.class), <API label="org.mockito.Matchers.anyLong">anyLong</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(123L);
+
+</code></pre>
+

@@ -1,0 +1,107 @@
+https://stackoverflow.com/questions/60090237
+I am using Spring Boot REST and Mockito. How can I write a test case?
+
+Error:
+
+<pre><code>
+java.lang.NullPointerException
+    at java.util.concurrent.ConcurrentHashMap.putVal(ConcurrentHashMap.java:1011)
+    at <API label="">java.util.concurrent.ConcurrentHashMap$KeySetView.add</API>(ConcurrentHashMap.java:4595)
+    at com.mastercard.customer.data.management.refdata.service.RegionService.lambda$2(RegionService.java:58)
+    at <API label=""><API label="">java.util.stream</API>.ReferencePipeline$2$1.accept</API>(ReferencePipeline.java:174)
+    at <API label=""><API label="">java.util.stream</API>.ReferencePipeline$3$1.accept</API>(ReferencePipeline.java:193)
+    at <API label="">java.util.stream</API>.Streams$StreamBuilderImpl.forEachRemaining(Streams.java:419)
+    at <API label=""><API label="">java.util.stream</API>.AbstractPipeline.copyInto</API>(AbstractPipeline.java:481)
+    at <API label="">java.util.stream</API>.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:471)
+    at <API label="">java.util.stream</API>.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:708)
+    at <API label=""><API label="">java.util.stream</API>.AbstractPipeline.evaluate</API>(AbstractPipeline.java:234)
+    at <API label="">java.util.stream</API>.ReferencePipeline.collect(ReferencePipeline.java:499)
+    at com.mastercard.customer.data.management.refdata.service.RegionService.findAllRegions(RegionService.java:49)
+    at com.mastercard.customer.data.management.refdata.service.RegionServiceTest.findAllRegions_SuccessTest(RegionServiceTest.java:68)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+    at <API label="">org.mockito.internal.runners.DefaultInternalRunner$1$1.evaluate</API>(DefaultInternalRunner.java:44)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.mockito.internal.runners.DefaultInternalRunner$1.run</API>(DefaultInternalRunner.java:74)
+    at <API label="">org.mockito.internal.runners.DefaultInternalRunner.run</API>(DefaultInternalRunner.java:80)
+    at <API label="">org.mockito.internal.runners.StrictRunner.run</API>(StrictRunner.java:39)
+    at <API label="">org.mockito.junit.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:163)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:538)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:760)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:460)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:206)
+
+</code></pre>
+
+Code
+
+<pre><code>
+public List findAllEmployees() {
+List obj = mongoTemplate.query(Department.class).distinct("employees").<API label="None">all</API>();
+List employees = null;
+if (!<API label="None">CollectionUtils.isEmpty</API>(obj)) {
+    employees = <API label="None">obj.stream</API>().<API label="None">map</API>(e -> (Employee) e).<API label="None">filter</API>(distinctByKey(Employee::getEmployeeCd)).collect(<API label="None">Collectors.toList</API>());
+}
+return employees;
+}
+
+public  Predicate distinctByKey(Function keyExtractor) {
+Set seen = ConcurrentHashMap.newKeySet();
+return t -> <API label="None">seen.add</API>(<API label="None">keyExtractor.apply</API>(t));
+}
+
+</code></pre>
+
+Test case
+
+<pre><code>
+@Test
+public void findEmp() {
+    <API label="org.mockito.Mockito.when">when</API>(mongoTemplate.query(Department.class)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(executableDepartment);
+    <API label="org.mockito.Mockito.when">when</API>(mongoTemplate.query(Department.class).distinct("employees")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(distinctDepartment);
+    <API label="org.mockito.Mockito.when">when</API>(mongoTemplate.query(Department.class).distinct("employees").<API label="None">all</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(obj);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">obj.stream</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(<API label="">Stream.of</API>(obj));
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">obj.stream</API>().<API label="None">map</API>(e -> (Region) e).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(<API label="None">Stream.of</API>(region));
+
+   <API label="None">assertNotNull</API>(empService.findAllRegions());
+}
+
+</code></pre>
+
+==========
+1) Try to set up you mocking one by one instead <API label="">of</API> cascading the calls:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(mongoTemplate.query(Department.class)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(executableDepartment);
+<API label="org.mockito.Mockito.when">when</API>(executableDepartment).distinct("employees")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(distinctDepartment);
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">distinctDepartment.all</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(obj);
+
+</code></pre>
+
+The <code>executableDepartment</code> and <code>distinctDepartment</code> need to be mocks as well <API label="">of</API> course.
+
+2) Do not mock the List interface. Feed it with pre-configured data and allow the SUT to work on it as it is. Sp mocking should only be used in this part:
+
+<pre><code>
+mongoTemplate.query(Department.class).distinct("employees").<API label="None">all</API>();
+
+</code></pre>
+
+So the part that provides data. But leave the actual logic to <API label="None">run</API> as it is. 
+

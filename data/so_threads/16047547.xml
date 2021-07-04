@@ -1,0 +1,52 @@
+https://stackoverflow.com/questions/16047547
+Why isn't there an <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Objects.html#<API label="None">equal</API>%28java.lang.Object,%20java.lang.Object%29" rel="nofollow noreferrer"><code><API label="None">Objects.equal</API></code></a> receiving as an argument each primitive type? 
+
+I know you can box the value via <code>#<API label="None">valueOf</API></code> or let each primitive be autoboxed, but don't you lose performance doing that? That's something that I've been wondering about for sometime.
+
+Imagine I have something like
+
+<pre><code>
+public class Foo {
+    private final int integerValue;
+    private final boolean booleanValue;
+    private final Bar bar;
+
+   public Foo(int integerValue, boolean booleanValue, Bar bar) {
+        this.integerValue = integerValue;
+        this.booleanValue = booleanValue;
+        this.bar = bar;
+    }
+
+   @SuppressWarnings("boxing")
+    @Override
+    public boolean <API label="None">equals</API>(Object object) {
+        if (object instanceof Foo) {
+            Foo that = (Foo) object;
+
+           return <API label="None">Objects.equal</API>(this.integerValue, that.integerValue)
+                     && <API label="None">Objects.equal</API>(this.booleanValue, that.booleanValue)
+                     && <API label="None">Objects.equal</API>(this.bar, that.bar);
+        }
+        return false;
+    }
+
+   // <API label="None">hashCode</API> implementation using guava also.
+}
+
+</code></pre>
+
+Is this the best way to implement <code><API label="None">equals</API></code>? The primitive values are going to be autoboxed, suffering (even if it's a little) a performance degradation. I could just use <code>==</code> for them, but for me it would break the "flow" of reading the <API label="None">equals</API> method, turning it a little ugly. So I wonder why guava lib don't have an <code><API label="None">Objects.equal</API></code> for each primitive type. Does someone know the answer?
+
+EDIT
+
+There's for the <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Objects.ToStringHelper.html" rel="nofollow noreferrer">MoreObjects.toStringHelper</a> overload for each primitive (but byte), that's one the reason I wondered about not having for <code>Objects#<API label="None">equal</API></code>. Also, using <a href="https://stackoverflow.com/users/571407/jb-nizet">JB Nizet</a> argument, it would turn the <code><API label="None">equals</API></code> method safer because you can change <code>int</code> for <code>Integer</code> without having to worry about <API label="None">equal</API> correctness.
+
+<a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Objects.html#<API label="None">equal</API>%28java.lang.Object,%20java.lang.Object%29" rel="nofollow noreferrer">Guava docs</a>
+
+==========
+
+ I could just use <code>==</code> for them, but for me it would break the "flow" of reading the <API label="None">equals</API> method, turning it a little ugly.
+
+
+This is not a convincing enough reason to add an overload of that method for each primitive type to the Guava API - every method that an API exposes has to be documented, tested, and maintained. It doesn't make sense when the only advantage is aesthetics.
+

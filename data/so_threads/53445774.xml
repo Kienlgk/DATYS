@@ -1,0 +1,102 @@
+https://stackoverflow.com/questions/53445774
+I am using mockito-core-2.7.21 in a maven project and it is working as expected.
+
+But to enable mocking of final class I created a file <code>mockito-extensions\org.mockito.plugins.MockMaker</code> under my source folder and added the text <code><API label="">mock</API>-maker-inline</code>.
+
+As per <a href="https://www.baeldung.com/mockito-final" rel="nofollow noreferrer">https://www.baeldung.com/mockito-final</a> and also <a href="https://stackoverflow.com/questions/40979402/<API label="">mock</API>-final-class-with-mockito-2">Mock final class with Mockito 2</a>, it should allow me to <API label="org.mockito.Mockito.mock">mock</API> final classes but when i running my junit test I am getting the below error:
+
+Java Version: 1.8
+
+OS: Windows 10
+
+Junit: 4 and 5(I tried both)
+
+<pre><code>
+java.lang.IllegalStateException: Could not <API label="">initialize</API> plugin: interface org.mockito.plugins.MockMaker
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader$1.invoke</API>(PluginLoader.java:66)
+    at <API label="">com.sun.proxy.$Proxy7.isTypeMockable</API>(Unknown Source)
+    at org.mockito.internal.util.MockUtil.typeMockabilityOf(MockUtil.java:29)
+    at <API label="">org.mockito.internal.util.MockCreationValidator.validateType</API>(MockCreationValidator.java:22)
+    at org.mockito.internal.creation.MockSettingsImpl.validatedSettings(MockSettingsImpl.java:186)
+    at <API label="">org.mockito.internal.creation.MockSettingsImpl.confirm</API>(MockSettingsImpl.java:180)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:62)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1729)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1642)
+    at siemens.esd.grpc.services.UTCreateModuleServiceTest.testCreateBlockInterface(UTCreateModuleServiceTest.java:29)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:89)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:41)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:541)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:763)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:463)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:209)
+Caused by: java.lang.IllegalStateException: Failed to load interface org.mockito.plugins.MockMaker implementation declared in sun.misc.CompoundEnumeration@6f75e721
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader.loadImpl</API>(PluginLoader.java:101)
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader.loadPlugin</API>(PluginLoader.java:45)
+    at org.mockito.internal.configuration.plugins.PluginRegistry.(PluginRegistry.java:18)
+    at org.mockito.internal.configuration.plugins.Plugins.(Plugins.java:17)
+    at org.mockito.internal.configuration.GlobalConfiguration.tryGetPluginAnnotationEngine(GlobalConfiguration.java:55)
+    at <API label="">org.mockito.MockitoAnnotations.initMocks</API>(MockitoAnnotations.java:68)
+    at siemens.esd.grpc.services.UTCreateModuleServiceTest.setUp(UTCreateModuleServiceTest.java:22)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:24)
+    ... 15 more
+Caused by: org.mockito.exceptions.base.MockitoInitializationException: 
+Could not <API label="">initialize</API> inline Byte Buddy <API label="">mock</API> maker. (This <API label="">mock</API> maker is not supported on Android.)
+
+Java               : 1.8
+JVM vendor <API label="">name</API>    : Oracle Corporation
+JVM vendor version : 25.181-b13
+JVM <API label="">name</API>           : Java HotSpot(TM) 64-Bit Server VM
+JVM version        : 1.8.0_181-b13
+JVM info           : mixed mode
+OS <API label="">name</API>            : Windows 10
+OS version         : 10.0
+
+   at org.mockito.internal.creation.bytebuddy.InlineByteBuddyMockMaker.(InlineByteBuddyMockMaker.java:172)
+    at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+    at <API label="">sun.reflect.NativeConstructorAccessorImpl.newInstance</API>(Unknown Source)
+    at <API label="">sun.reflect.DelegatingConstructorAccessorImpl.newInstance</API>(Unknown Source)
+    at <API label="">java.lang.reflect.Constructor.newInstance</API>(Unknown Source)
+    at <API label="">java.lang.Class.newInstance</API>(Unknown Source)
+    at <API label="">org.mockito.internal.configuration.plugins.PluginLoader.loadImpl</API>(PluginLoader.java:96)
+    ... 29 more
+Caused by: java.lang.IllegalStateException: No compatible attachment provider is not available
+    at net.bytebuddy.agent.ByteBuddyAgent.install(ByteBuddyAgent.java:347)
+    at net.bytebuddy.agent.ByteBuddyAgent.install(ByteBuddyAgent.java:332)
+    at net.bytebuddy.agent.ByteBuddyAgent.install(ByteBuddyAgent.java:300)
+    at net.bytebuddy.agent.ByteBuddyAgent.install(ByteBuddyAgent.java:286)
+    at org.mockito.internal.creation.bytebuddy.InlineByteBuddyMockMaker.(InlineByteBuddyMockMaker.java:102)
+    ... 35 more
+
+</code></pre>
+
+==========
+After struggling I found the problem is with the java library available in your java build path.
+If you have JRE library in you java build path instead of JDK library <API label="">then</API> <code>bytebuddy</code> utility is throwing this issue.
+
+Hence the solution to the problem is use JDK library instead of JRE library.
+

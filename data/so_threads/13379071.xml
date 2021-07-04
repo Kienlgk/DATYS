@@ -1,0 +1,85 @@
+https://stackoverflow.com/questions/13379071
+I am using Guava to cache hot data. When the data does not exist in the cache, I have to <API label="">get</API> it from database:
+
+<pre><code>
+public final static LoadingCache UID2UCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+        //.<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(2000)
+        .<API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>()
+        .<API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API>()
+        .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(10, TimeUnit.MINUTES)
+        .<API label="com.google.common.cache.CacheBuilder.build">build</API>(
+        new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+            @Override
+            public User <API label="com.google.common.cache.CacheLoader.load">load</API>(ObjectId k) throws Exception {
+                User u = <API label="None">DataLoader.datastore.find</API>(User.class).<API label="None">field</API>("_id").<API label="None">equal</API>(k).<API label=None"">get</API>();
+                return u;
+            }
+        });
+
+</code></pre>
+
+My problem is when the data does not exists in database, I want it to return <code>null</code> and to not do any caching. But Guava saves <code>null</code> with the key in the cache and throws an exception when I <API label="">get</API> it:
+
+
+ <API label="">com.google.common.cache.CacheLoader</API>$InvalidCacheLoadException:
+  <API label="">CacheLoader</API> returned null for key shisoft.
+
+
+How do we avoid caching <code>null</code> values?
+
+==========
+Just throw some Exception if user is not found and catch it in client code while using <a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/cache/LoadingCache.html#<API label="">get</API>%28K%29" rel="noreferrer"><code><API label="None">get</API>(key)</code></a> method. 
+
+<pre><code>
+new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+    @Override
+    public User <API label="com.google.common.cache.CacheLoader.load">load</API>(ObjectId k) throws Exception {
+        User u = <API label="None">DataLoader.datastore.find</API>(User.class).<API label="None">field</API>("_id").<API label="None">equal</API>(k).<API label="None">get</API>();
+        if (u != null) {
+             return u;
+        } else {
+             throw new UserNotFoundException();
+        }
+    }
+}
+
+</code></pre>
+
+From <a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/cache/<API label="">CacheLoader</API>.html#<API label="">load</API>%28K%29" rel="noreferrer"><code><API label="">CacheLoader</API>.<API label="com.google.common.cache.CacheLoader.load">load</API>(K)</code></a> Javadoc:
+
+
+<pre><code>
+Returns:  
+  the value associated with key; must not be null  
+Throws:  
+  Exception - if unable to <API label="">load</API> the result
+
+</code></pre>
+
+
+Answering your doubts about caching null values:
+
+
+ Returns the value associated with key in this cache, first loading
+  that value if necessary. No observable state associated with this
+  cache is modified until loading completes.
+
+
+(from <a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/cache/LoadingCache.html#<API label="">get</API>%28K%29" rel="noreferrer"><code><API label="com.google.common.cache.LoadingCache.get">LoadingCache.get</API>(K)</code></a> Javadoc)
+
+If you throw an exception, <API label="">load</API> is not considered as complete, so no new value is cached.
+
+EDIT:
+
+Note that in <a href="https://github.com/ben-manes/caffeine" rel="noreferrer">Caffeine</a>, which is sort of Guava cache 2.0 and "provides an in-memory cache using a Google Guava inspired API" you <a href="https://static.javadoc.io/com.github.ben-manes.caffeine/caffeine/2.6.2/com/github/benmanes/caffeine/cache/<API label="">CacheLoader</API>.html#<API label="">load</API>-K-" rel="noreferrer">can return <code>null</code> from <code><API label="com.google.common.cache.CacheLoader.load">load</API></code> method</a>:
+
+
+<pre><code>
+ Returns:
+   the value associated with key or null if not found
+
+</code></pre>
+
+
+If you may consider migrating, your data loader could freely return when user is not found.
+

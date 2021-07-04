@@ -1,0 +1,28 @@
+https://stackoverflow.com/questions/7765925
+i am looking for a simple method were i can pass in some bytes, as varargs, and <API label="">get</API> a byte[] returned, like:
+
+<pre><code>
+static byte[] byteArray(byte ...bytes){ return bytes;}
+
+</code></pre>
+
+What i found so far...
+
+<code>java.lang.Byte</code> doesn't have it
+<code>java.util.Arrays</code> doesn't have it 
+<code><API label="">com.google.common.primitives.Bytes.toArray</API>(..)</code> want a Collection
+
+sample use case: <code><API label="">assertThat</API>(actualArray,<API label="">is</API>(byteArray(1,2,3,4,5)));</code>
+
+==========
+If you're assigning the bytes to a variable or field <API label="">of</API> type <code>byte[]</code>, you can write this even more compactly than <code>new byte[]{1, 2, 3, 4}</code>:
+
+<pre><code>
+byte[] bytes = {1, 2, 3, 4};
+
+</code></pre>
+
+Also, the problem with <code>0xca, 0xfe, 0xba, 0xbe</code> <API label="">is</API> that all <API label="">of</API> those values are actually outside the legal range for a Java <code>byte</code>, since <code>byte</code> in Java <API label="">is</API> signed by default.
+
+Perhaps you want a method that takes an argument <API label="">of</API> type <code>long...</code> and returns a <code>byte[]</code>, using <a href="http://docs.guava-libraries.googlecode.com/git-history/v10.0.1/javadoc/com/google/common/primitives/UnsignedBytes.html#<API label="">checkedCast</API>%28long%29" rel="nofollow"><API label="com.google.common.primitives.UnsignedBytes.checkedCast">UnsignedBytes.checkedCast</API></a> or <a href="http://docs.guava-libraries.googlecode.com/git-history/v10.0.1/javadoc/com/google/common/primitives/UnsignedBytes.html#<API label="">saturatedCast</API>%28long%29" rel="nofollow"><API label="com.google.common.primitives.UnsignedBytes.saturatedCast">UnsignedBytes.saturatedCast</API></a> to convert each value.
+

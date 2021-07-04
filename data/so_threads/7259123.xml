@@ -1,0 +1,20 @@
+https://stackoverflow.com/questions/7259123
+Java has a <a href="http://download.oracle.com/javase/6/docs/api/java/util/Comparator.html" rel="noreferrer"><code>Comparator</code></a> for providing comparison of objects external to the class itself, to allow for multiple/alternate methods of doing ordered comparisons.
+
+But the only standard way of doing <API label="">unordered</API> comparisons is to override <code><API label="None">equals</API>()</code> within a class.
+
+What should I do when I want to provide multiple/alternate <API label="">unordered</API> comparisons external to a class? (Obvious use case is partitioning a collection into equivalence classes based on particular properties.)
+
+Assuming the end use is for <API label="">unordered</API> checking (e.g. not for sorting or indexing), is it ever OK to implement <code>Comparator</code> that just checks for equality, returning 0 if two objects are <API label="">equal</API>, and a value != 0 when two objects are unequal? (note: the only reason I don't jump on this solution, is that technically it can break the contract for <code>Comparator</code> by not providing a relation that satisfies transitivity and symmetry.)
+
+It seems like there should have been an <code>EqualsComparator</code> standard class or something.
+
+(Does Guava handle anything like this?)
+
+==========
+Yes, Guava has the <a href="https://google.github.io/guava/releases/snapshot-jre/api/docs/com/google/common/base/Equivalence.html" rel="nofollow noreferrer"><code>Equivalence</code></a> interface and the <a href="http://google.github.io/guava/releases/13.0/api/docs/com/google/common/base/Equivalences.html" rel="nofollow noreferrer"><code>Equivalences</code></a> class (Removed in Guava release 14.0).
+
+(And yes, it's something which is very useful and sadly lacking in Java. We really should have options around this for <code>HashMap</code>, <code>HashSet</code> etc...)
+
+While <code>Comparator</code> may be okay in some situations, it doesn't provide the <code><API label="None">hashCode</API></code> method which would be important for hash-based collections.
+

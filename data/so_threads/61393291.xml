@@ -1,0 +1,44 @@
+https://stackoverflow.com/questions/61393291
+My Java 8 code is being giving an instance of a Guava <code>Table</code> where the row and column keys are non-negative integers (0+) and the values in each cell is an instance of some <code>Fizzbuzz</code> POJO.
+
+Most of the time the <code>Table</code> will be the hashed implementation that comes from calling <code><API label="com.google.common.collect.HashBasedTable.create">HashBasedTable.create</API>()</code>, however this is not necessarily _always) going to be the case. So I (really) need a solution that works for any <code>Table</code> subclass.
+
+So I am trying to range over all the rows, and all the columns of the table, without knowing ahead of time how many rows or columns there are. My best attempt thus far:
+
+<pre><code>
+for (Integer rowKey : <API label="om.google.common.collect.Table.rowKeySet">myTable.rowKeySet</API>()) {
+    int colKey = 0;
+
+   Fizzbuzz val;
+    while ((val = <API label="com.google.common.collect.Table.get">myTable.get</API>(rowKey, colKey)) != null) {
+
+       // <API label="">increment</API> colKey
+        colKey++;
+
+       // do some processing with the 'val' Fizzbuzz...
+    }
+
+}
+
+</code></pre>
+
+Although inefficient and somewhat wonky, this would work, except for the fact that is valid for my table to be sparse, meaning, not every single cell value/address (row + col combo) needs to be populated. Its fine for <code>null</code>s to exist.
+
+I've poured over the Guava Table docs and countless online examples and for the life of me I can't figure out how to properly (and efficiently!) range over rows and columns when the table is sparse (allows nulls). Any ideas?
+
+==========
+You can use <a href="https://guava.dev/releases/23.0/api/docs/com/google/common/collect/Table.html#<API label="">rowMap</API>--" rel="nofollow noreferrer"><code><API label="com.google.common.collect.Table.rowMap">rowMap</API>()</code></a> to <API label="">get</API> a <code>Map</code>.
+
+You can iterate this:
+
+<pre><code>
+<API label="com.google.common.collect.Table.rowMap">table.rowMap</API>().<API label="None">forEach</API>((rowKey, row) -> {
+  <API label="None">row.forEach</API>((colKey, value) -> {
+    // Do something for each row key/col key/value.
+  });
+});
+
+</code></pre>
+
+(Ofc you can use enhanced for loops here. It's just more concise to write with <code><API label="None">forEach</API></code> on my phone). 
+

@@ -1,0 +1,281 @@
+https://stackoverflow.com/questions/59927146
+I am trying to test my database project with unit test case with Junit and Mockito. But <API label="">when</API> i do it i am getting an error.. posting my code and stack trace. I am entirely new to testing . Kindly help 
+
+Note * - I am not using any framework
+
+Testing code
+
+patientTest.java
+
+<pre><code>
+package com.test;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import java.io.*;
+import javax.servlet.http.*;
+import org.apache.commons.io.FileUtils;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import com.consentServlets.SaveServlet;
+
+public class patientTest extends Mockito{
+
+   @Test
+    public void testServlet() throws Exception {
+        HttpServletRequest request = <API label="org.mockito.Mockito.mock">mock</API>(HttpServletRequest.class);       
+        HttpServletResponse response = <API label="org.mockito.Mockito.mock">mock</API>(HttpServletResponse.class);    
+
+       <API label="org.mockito.Mockito.when">when</API>(request.getParameter("fname")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("Rahul");
+        <API label="org.mockito.Mockito.when">when</API>(request.getParameter("lname")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("Sen");
+
+       StringWriter stringWriter = new StringWriter();
+        PrintWriter writer = new PrintWriter(stringWriter);
+        <API label="org.mockito.Mockito.when">when</API>(<API label="None">response.getWriter</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(writer);
+
+       new SaveServlet().doPost(request, response);
+
+       <API label="org.mockito.Mockito.verify">verify</API>(request, <API label="org.mockito.Mockito.atLeast">atLeast</API>(1)).getParameter("fname"); 
+        <API label="None">writer.flush</API>(); // it may not have been flushed yet...
+        assertTrue(<API label="None">stringWriter.toString</API>().<API label="None">contains</API>("My expected string"));
+    }
+}
+
+</code></pre>
+
+SaveServlet.java
+
+<pre><code>
+package com.consentServlets;
+
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+@WebServlet("/SaveServlet")
+public class SaveServlet extends HttpServlet {
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out=<API label="None">response.getWriter</API>();
+        //Getting the attributes from the UI
+        String first_Name = request.getParameter("fname");
+        String last_Name = request.getParameter("lname");
+        String gender = request.getParameter("gender");
+        String age = request.getParameter("age");
+        String dob = request.getParameter("dob");
+
+       //Setting the objects to <API label="">insert</API> the achieved attributes to corresponding the columns of the table
+        patient addPatient = new patient();
+        addPatient.setLastName(last_Name);
+        addPatient.setFirstName(first_Name);
+        addPatient.setGender(gender);
+        addPatient.setAge(age);
+        addPatient.setDoB(dob);
+
+       <API label="None">out.print</API>(" ");
+        //calling the save function from the patientDao class to execute the query
+        int status=patientDao.save(addPatient);
+        if(status>0){
+            <API label="None">out.print</API>("Patient Record saved successfully!");
+            request.getRequestDispatcher("index.html").<API label="None">include</API>(request, response);
+        }else{
+            <API label="None">out.println</API>("Sorry! unable to save record");
+        }
+
+       <API label="None">out.close</API>();
+    }
+
+}
+
+</code></pre>
+
+PatientDao.java
+
+<pre><code>
+package com.consentServlets;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List; 
+
+public class patientDao {
+    //establishing the connection with the database
+    public static Connection getConnection(){  
+        Connection con=null;  
+        try{  
+            Class.forName("com.mysql.jdbc.Driver");
+            con=DriverManager.getConnection("jdbc:mysql://localhost:3306/consent_share","root","");
+        }catch(Exception e){<API label="">System.out.println</API>(e);}  
+        return con;  
+    }  
+    public static int save(patient addPatient){  
+        int status = 0;  
+        //Inserting patient details from UI to Database
+        try{                            
+            Connection con = patientDao.getConnection();  
+            PreparedStatement ps = con.prepareStatement(  
+                    "<API label="">insert</API> into patient(last_name,first_name,gender,age,dob) values (?,?,?,?,?)");  
+            ps.setString(1,addPatient.getLastName());  
+            ps.setString(2,addPatient.getFirstName());  
+            ps.setString(3,addPatient.getGender());  
+            ps.setString(4,addPatient.getAge());
+            ps.setString(5,addPatient.getDoB());
+
+           status = ps.executeUpdate();  
+
+           <API label="None">con.close</API>();  
+        }catch(Exception ex){ex.printStackTrace();}  
+
+       return status;  
+    }  
+
+   public static patient getPatientbyId(int id){  
+        patient getPatient = new patient();  
+        //selecting a patient record by matching the patient_ID 
+        try{ 
+            Connection con = patientDao.getConnection();  
+            PreparedStatement ps = con.prepareStatement("select * from patient where patient_id=?");  
+            ps.setInt(1,id);  
+            ResultSet rs = ps.executeQuery();  
+            if(<API label="None">rs.next</API>()){  
+                <API label="None">getPatient.setId</API>(rs.getInt(1));  
+                getPatient.setLastName(<API label="None">rs.getString</API>(2));  
+                getPatient.setFirstName(<API label="None">rs.getString</API>(3));  
+                getPatient.setGender(<API label="None">rs.getString</API>(4));  
+                getPatient.setAge(<API label="None">rs.getString</API>(5));
+                getPatient.setDoB(<API label="None">rs.getString</API>(6)); 
+            }  
+            <API label="None">con.close</API>();  
+        }catch(Exception ex){ex.printStackTrace();}  
+
+       return getPatient;
+    }  
+    // Fetching all the records from table
+    public static List getAllPatients(){  
+        List list = new ArrayList();  
+
+       try{  
+            Connection con = patientDao.getConnection();  
+            PreparedStatement ps = con.prepareStatement("select * from patient");  
+            ResultSet rs = ps.executeQuery();  
+            while(<API label="None">rs.next</API>()){  
+                patient getAllPatients=new patient();  
+                <API label="None">getAllPatients.setId</API>(rs.getInt(1));  
+                getAllPatients.setFirstName(<API label="None">rs.getString</API>(3));  
+                getAllPatients.setLastName(<API label="None">rs.getString</API>(2));  
+                getAllPatients.setGender(<API label="None">rs.getString</API>(4));  
+                getAllPatients.setAge(<API label="None">rs.getString</API>(5));
+                getAllPatients.setDoB(<API label="None">rs.getString</API>(6));   
+                <API label="None">list.add</API>(getAllPatients);  
+            }  
+            <API label="None">con.close</API>();  
+        }catch(Exception e){e.printStackTrace();}  
+
+       return list;  
+    }  
+}  
+
+</code></pre>
+
+Stacktrace
+
+<pre><code>
+    org.mockito.exceptions.base.MockitoException: 
+Mockito cannot <API label="">mock</API> this class: interface javax.servlet.http.HttpServletRequest.
+
+Mockito can only <API label="">mock</API> non-private & non-final classes.
+If you're not sure why you're getting this error, please report to the mailing list.
+
+
+Java               : 13
+JVM vendor name    : Oracle Corporation
+JVM vendor version : 13.0.1+9
+JVM name           : Java HotSpot(TM) 64-Bit Server VM
+JVM version        : 13.0.1+9
+JVM info           : mixed mode, sharing
+OS name            : Windows 10
+OS version         : 10.0
+
+
+Underlying exception : java.lang.UnsupportedOperationException: Cannot define class using reflection
+    at com.test.patientTest.testServlet(patientTest.java:17)
+    at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at java.base/<API label="">jdk.internal.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at java.base/<API label="">jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at java.base/<API label="">java.lang.reflect.Method.invoke</API>(Method.java:567)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:89)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:41)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:541)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:763)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:463)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:209)
+Caused by: java.lang.UnsupportedOperationException: Cannot define class using reflection
+    at <API label="">net.bytebuddy.dynamic.loading.ClassInjector$UsingReflection$Dispatcher$Unavailable.defineClass</API>(ClassInjector.java:821)
+    at <API label="">net.bytebuddy.dynamic.loading.ClassInjector$UsingReflection.inject</API>(ClassInjector.java:185)
+    at <API label="">net.bytebuddy.dynamic.loading.ClassLoadingStrategy$Default$InjectionDispatcher.load</API>(ClassLoadingStrategy.java:187)
+    at <API label="">net.bytebuddy.dynamic.TypeResolutionStrategy$Passive.initialize</API>(TypeResolutionStrategy.java:79)
+    at <API label="">net.bytebuddy.dynamic.DynamicType$Default$Unloaded.load</API>(DynamicType.java:4376)
+    at org.mockito.internal.creation.bytebuddy.SubclassBytecodeGenerator.mockClass(SubclassBytecodeGenerator.java:94)
+    at <API label="">org.mockito.internal.creation.bytebuddy.TypeCachingBytecodeGenerator$1.call</API>(TypeCachingBytecodeGenerator.java:37)
+    at <API label="">org.mockito.internal.creation.bytebuddy.TypeCachingBytecodeGenerator$1.call</API>(TypeCachingBytecodeGenerator.java:34)
+    at <API label="">net.bytebuddy.TypeCache.findOrInsert</API>(TypeCache.java:138)
+    at <API label="">net.bytebuddy.TypeCache$WithInlineExpunction.findOrInsert</API>(TypeCache.java:346)
+    at <API label="">net.bytebuddy.TypeCache.findOrInsert</API>(TypeCache.java:161)
+    at <API label="">net.bytebuddy.TypeCache$WithInlineExpunction.findOrInsert</API>(TypeCache.java:355)
+    at org.mockito.internal.creation.bytebuddy.TypeCachingBytecodeGenerator.mockClass(TypeCachingBytecodeGenerator.java:32)
+    at org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker.createMockType(SubclassByteBuddyMockMaker.java:71)
+    at <API label="">org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker.createMock</API>(SubclassByteBuddyMockMaker.java:42)
+    at <API label="">org.mockito.internal.creation.bytebuddy.ByteBuddyMockMaker.createMock</API>(ByteBuddyMockMaker.java:25)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:35)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:63)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1729)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1642)
+    ... 24 more
+Caused by: java.lang.IllegalArgumentException: Unknown Java version: 13
+    at <API label="">net.bytebuddy.ClassFileVersion.ofJavaVersion</API>(ClassFileVersion.java:135)
+    at <API label="">net.bytebuddy.ClassFileVersion$VersionLocator$ForJava9CapableVm.locate</API>(ClassFileVersion.java:337)
+    at <API label="">net.bytebuddy.ClassFileVersion.ofThisVm</API>(ClassFileVersion.java:147)
+    at <API label="">net.bytebuddy.dynamic.loading.ClassInjector$UsingReflection$Dispatcher$CreationAction.run</API>(ClassInjector.java:301)
+    at <API label="">net.bytebuddy.dynamic.loading.ClassInjector$UsingReflection$Dispatcher$CreationAction.run</API>(ClassInjector.java:290)
+    at java.base/java.security.AccessController.doPrivileged(AccessController.java:312)
+    at net.bytebuddy.dynamic.loading.ClassInjector$UsingReflection.(ClassInjector.java:70)
+    at <API label="">net.bytebuddy.dynamic.loading.ClassLoadingStrategy$Default$InjectionDispatcher.load</API>(ClassLoadingStrategy.java:184)
+    ... 41 more
+
+</code></pre>
+
+==========
+This is almost certainly due to you using a version of Mockito which does not yet support Java 13 because of this error 
+
+<pre><code>
+Caused by: java.lang.IllegalArgumentException: Unknown Java version: 13
+
+</code></pre>
+
+It is worth noting it is not Mockito itself that does not support Java 13 but an underlying library <a href="https://bytebuddy.net/" rel="nofollow noreferrer">byte-buddy</a> that is used for bytecode manipulation.
+
+Official bytebuddy/Mockito documentation doesn't appear to indicate exactly which version adds Java 13 support but it appears to have been added in <a href="https://javadoc.io/doc/net.bytebuddy/byte-buddy/1.9.7/net/bytebuddy/ClassFileVersion.html" rel="nofollow noreferrer">bytebuddy 1.9.7</a>
+
+Mockito <a href="https://github.com/mockito/mockito/releases/tag/v3.2.2" rel="nofollow noreferrer">3.2.2</a> updates the byte-buddy dependency to 1.10.5 so this should be sufficient.
+

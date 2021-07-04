@@ -1,0 +1,203 @@
+https://stackoverflow.com/questions/51206795
+I am trying to <API label="">mock</API> the following functionality 
+
+<pre><code>
+public class ServerConnection{
+        public ServerConnection(ClientConnection cn) {
+            super(cn);
+        }
+
+   public void setUrl(String url) {      
+                this.url = URLUtil.processURL(url);
+                try {
+                    URL dst = new URL(this.url);
+                    InputStream is = <API label="None">dst.openStream</API>();
+                    Scanner scanner = new Scanner(is);
+
+                   StringBuilder sb = new StringBuilder();
+
+                   while(scanner.hasNextLine())
+                        <API label="None">sb.append</API>(scanner.nextLine()).<API label="None">append</API>("\n");
+
+
+                   if (<API label="None">validate</API>(<API label="None">sb.toString</API>())) {
+                       --------
+                    } else {    }
+                    <API label="None">is.close</API>();
+                    <API label="None">scanner.close</API>();
+                } catch (Exception ex) {
+
+               }        
+        }
+
+   private boolean <API label="">validate</API>(String content) {
+            JSONParser parser = new JSONParser();
+            Boolean isJsonValid = false;
+            JSONObject json = null;
+            try {
+              --------
+              //json validation goes here
+            } catch (Exception e) {          
+            }
+            return isJsonValid;
+        }
+
+       public void <API label="">setId</API>(Integer id) {
+        if(id == null)
+        this.id = 0;
+        else
+        this.id = id;
+        }
+}
+
+</code></pre>
+
+PowerMockito Junit code
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({PathTest.class })
+public class URLTest {
+ ServerConnection sc ;
+ String URL = "http://test.com";
+
+ @Before
+     public void setUp() throws Throwable{              
+             ClientConnection con =PathTest.getCon();  // Here getCon() is a static method
+             sc = new ServerConnection(con);
+             <API label="None">sc.setId</API>(1000); 
+     }
+
+@Test
+    public void testName() throws Throwable {       
+
+       String expectedResponse = "test";
+        URL url = <API label="None">PowerMockito.mock</API>(URL.class);
+        HttpURLConnection connection = <API label="None">PowerMockito.mock</API>(HttpURLConnection.class);
+        InputStream inputStream = <API label="None">PowerMockito.mock</API>(InputStream.class);
+        Scanner scanner = <API label="None">PowerMockito.mock</API>(Scanner.class);
+
+       PowerMockito.whenNew(URL.class).withArguments(URL).<API label="None">thenReturn</API>(url);
+        PowerMockito.whenNew(Scanner.class).withArguments(inputStream).<API label="None">thenReturn</API>(scanner);
+        <API label="None">PowerMockito.when</API>(scanner.useDelimiter("\\A")).<API label="None">thenReturn</API>(scanner);
+
+       <API label="None">PowerMockito.when</API>(url.openConnection()).<API label="None">thenReturn</API>(connection);
+
+       // Response code mocked here
+        <API label="None">PowerMockito.when</API>(connection.getResponseCode()).<API label="None">thenReturn</API>(200);
+
+       <API label="None">PowerMockito.when</API>(connection.getInputStream()).<API label="None">thenReturn</API>(inputStream);
+        <API label="None">PowerMockito.when</API>(<API label="None">scanner.hasNext</API>()).<API label="None">thenReturn</API>(true);
+        <API label="None">PowerMockito.when</API>(<API label="None">scanner.next</API>()).<API label="None">thenReturn</API>(expectedResponse);
+
+       sc.setUrl(URL);
+    }
+}
+
+</code></pre>
+
+While Iam executing this I observed following error message
+
+<pre><code>
+URLTest
+com.objects.URLTest
+testName(com.objects.URLTest)
+java.lang.ExceptionInInitializerError
+
+   at java.lang.Class.forName0(Native Method)
+
+   at java.lang.Class.forName(Class.java:264)
+
+   at javassist.runtime.Desc.getClassObject(Desc.java:43)
+
+   at <API label="">javassist.runtime.Desc.getClassType</API>(Desc.java:152)
+
+   at <API label="">javassist.runtime.Desc.getType</API>(Desc.java:122)
+
+   at <API label="">javassist.runtime.Desc.getType</API>(Desc.java:78)
+
+   at com.objects.PathTest.getCon(TargetPathTest.java:24)
+
+   at com.objects.URLTest.setUp(URLTest.java:41)
+
+   at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+
+   at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+
+   at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+
+   at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+
+   at org.junit.internal.runners.MethodRoadie.runBefores(MethodRoadie.java:133)
+
+   at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:96)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:310)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:131)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.access$100(PowerMockJUnit47RunnerDelegateImpl.java:59)
+
+   at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner$TestExecutorStatement.evaluate</API>(PowerMockJUnit47RunnerDelegateImpl.java:147)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.evaluateStatement(PowerMockJUnit47RunnerDelegateImpl.java:107)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:82)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:298)
+
+   at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:87)
+
+   at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:50)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:218)
+
+   at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:160)
+
+   at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:134)
+
+   at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:34)
+
+   at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:44)
+
+   at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:136)
+
+   at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:121)
+
+   at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:57)
+
+   at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:59)
+
+   at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+
+   at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+
+   at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+
+   at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+
+   at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+
+   at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+
+Caused by: java.lang.NullPointerException   
+
+   ... 38 more
+
+</code></pre>
+
+==========
+So many things wrong with this code.
+
+The first technical answer is: you seem to not know what you are doing. You have <code>@PrepareForTest({PathTest.class })</code> which indicates that you intend to <API label="">mock</API> a static method of that class.
+
+But then you aren't doing what is necessary to <API label="">mock</API> a static method in that class. Simply follow their <a href="https://github.com/powermock/powermock/wiki/mockstatic" rel="nofollow noreferrer">documentation</a> step by step. I also think that the URL class is final, so you would have to prepare-annotate that class as well, in order for it be used with whenNew()! 
+
+But then: you should avoid mocking URL or URL connection objects. Simply use some sort of dependency injection, and make sure you can pass some mocked instance into your code under test, for example using the @InjectMocks annotation of Mockito. From there, you might also avoid using a static method. 
+
+Long story short: your production code is badly written, and your unit test is (honestly) plain horrible. You should seriously step back here, and throw that stuff away. Then re-think your production code to not use <code>new</code> directly, and to not rely on static methods. By doing so, you can get rid of PowerMockito, you go with ordinary Mockito (well, you need to enable mocking of final classes). But rest assured: there is no point in using PowerMock(ito) unless you absolutely have to. 
+
+And then: don't "invent" mocking code. Read tutorials, and follow them step by step. You are mocking like everything in your test case, but you should do the exact opposite: you only <API label="">mock</API> things <API label="">when</API> there is absolutely no other way to test your code. And you absolutely do not make a method static <API label="">when</API> that breaks your ability to reasonably unit test your code. 
+
+( static has its place, but <API label="">when</API> it gets in your way, you are doing the wrong thing ! )
+

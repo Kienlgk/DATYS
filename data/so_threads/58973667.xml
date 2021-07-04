@@ -1,0 +1,141 @@
+https://stackoverflow.com/questions/58973667
+I'm newbie in Mockito. I have a service layer which use some repository for query to DB. I need a test that layer. That service have several profiles (dev/prod/stage) so i need to do this tests an independent <API label="">of</API> profile.
+I decided to use Mockito. And i ran into a problem <API label="">when</API> i tried to mock my repository.
+
+Service
+
+<pre><code>
+@Autowired
+RestLogRepositoryCustomImpl restLogRepositoryCustom;
+
+public List readLogs(Integer page, Integer size, ZonedDateTime userFromDate, ZonedDateTime userToDate) {
+ZonedDateTime toDate = Optional
+    .ofNullable(userToDate)
+    .orElseGet(() -> Optional
+        .ofNullable(userFromDate)
+        .orElseGet(ZonedDateTime::<API label="None">now</API>)
+        .plusDays(1)
+        .truncatedTo(ChronoUnit.DAYS)
+        .minusNanos(1));
+
+ZonedDateTime fromDate = Optional
+    .ofNullable(userFromDate)
+    .<API label="None">filter</API>(date -> ChronoUnit.HOURS.between(date, toDate) < 24)
+    .orElseGet(() -> Optional
+        .ofNullable(userToDate)
+        .orElseGet(ZonedDateTime::<API label="None">now</API>)
+        .truncatedTo(ChronoUnit.DAYS)
+        .minusDays(1));
+
+return restLogRepositoryCustom.getAllJoinedRecords(
+    <API label="None">PageRequestUtils.of</API>(
+        page, size, PageRequestUtils.pageOf(), <API label="None">PageRequestUtils.sizeOf</API>(5, 200)),
+    <API label="None">Date.from</API>(fromDate.toInstant()),
+    <API label="None">Date.from</API>(toDate.toInstant()));
+}
+
+</code></pre>
+
+Test Service
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.Silent.class)
+
+public class DBLogReaderTest {
+
+private static final Long LOG_ID = 1L;
+private static final String JAVA_ID = "1ID";
+private static final String MESSAGE = "message";
+
+private static ModelMapper mapper;
+
+@InjectMocks
+private DBLogReader logReader;
+
+@Mock
+private RestLogRepository restLogRepository;
+
+@Mock
+private RestLogRepositoryCustomImpl restLogRepositoryCustom;
+
+@Before
+public void setup() {
+    mapper = new ModelMapper();
+    logReader = new DBLogReader(mapper);
+}
+
+@Test
+public void contextLoad() {
+    <API label="None">assertThat</API>(logReader).<API label="None">isNotNull</API>();
+}
+
+@Test
+public void readLogs() {
+    RestLogDto log = new RestLogDto();
+    <API label="None">log.setId</API>(LOG_ID);
+
+   List logList = new ArrayList<>();
+    <API label="None">logList.add</API>(log);
+
+   <API label="org.mockito.Mockito.when">when</API>(restLogRepositoryCustom.getAllJoinedRecords(
+        <API label="org.mockito.Matchers.any">any</API>(PageRequest.class), <API label="org.mockito.Matchers.any">any</API>(Date.class), <API label="org.mockito.Matchers.any">any</API>(Date.class))
+    ).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(logList);
+
+   assertEquals(logReader.readLogs(0, 10, <API label="">ZonedDateTime.now</API>().minusHours(23), <API label="None">ZonedDateTime.now</API>()), logList);
+}
+
+</code></pre>
+
+I thought that <code>logReader.readLogs()</code> which contains <code>restLogRepositoryCustom.getAllJoinedRecords()</code> inside <API label="">of</API> my service will return a logList, but that is not working that way, so i got a null pointer exception by <code>restLogRepositoryCustom.getAllJoinedRecords()</code> in service layer. 
+
+Stacktrace
+
+<pre><code>
+java.lang.NullPointerException
+at ru.logsmanager.service.DBLogReader.readById(DBLogReader.java:62)
+at ru.logsmanager.service.DBLogReaderTest.readById(DBLogReaderTest.java:78)
+at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at java.base/<API label="">jdk.internal.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at java.base/<API label="">jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at java.base/<API label="">java.lang.reflect.Method.invoke</API>(Method.java:566)
+at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+at <API label="">org.mockito.internal.runners.DefaultInternalRunner$1.run</API>(DefaultInternalRunner.java:79)
+at <API label="">org.mockito.internal.runners.DefaultInternalRunner.run</API>(DefaultInternalRunner.java:85)
+at <API label="">org.mockito.junit.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:163)
+at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:137)
+at com.intellij.junit4.JUnit4IdeaTestRunner.startRunnerWithArgs(JUnit4IdeaTestRunner.java:68)
+at com.intellij.rt.execution.junit.IdeaTestRunner$Repeater.startRunnerWithArgs(IdeaTestRunner.java:47)
+at com.intellij.rt.execution.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:242)
+at <API label="">com.intellij.rt.execution.junit.JUnitStarter.main</API>(JUnitStarter.java:70)
+
+</code></pre>
+
+Question: how i can mock method inside logReaderService?
+
+==========
+When you do
+
+<pre><code>
+ logReader = new DBLogReader(mapper);
+
+</code></pre>
+
+you are creating a new instance <API label="">of</API> logReader. But you are not injecting the mocks. 
+
+The @InjectMocks annotation already do this for you. You dont need to instantiate manually. 
+
+I need to see the full code to be sure, but I think that will work if you remove this line.
+

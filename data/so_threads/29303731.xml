@@ -1,0 +1,91 @@
+https://stackoverflow.com/questions/29303731
+I have the following class:
+
+<pre><code>
+public class SomeClass {
+
+   private int digit;
+
+   public SomeClass(int i){
+        digit = i;
+    }       
+    public int someMethod(int i){
+        /*
+         * Some work
+         */
+    }    
+    /**
+     * Other method
+     */
+}
+
+</code></pre>
+
+And <API label="">when</API> I want to <API label="">create</API> a <API label="">spy</API> of this class with <a href="http://mockito.org/" rel="nofollow">Mockito</a>, I get java.lang.NoClassDefFoundError
+
+But <API label="">when</API> I change method to 
+
+<pre><code>
+public int someMethod(){
+    // some work
+}
+
+</code></pre>
+
+all works without an error. What am I doing wrong?
+My test class:
+
+<pre><code>
+@PrepareForTest ({SomeClass.class})
+public class SomeClassTest extends AndroidTestCase {
+
+   private SomeClass someClass = null;
+
+   @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        // This is necessary on devices in order to avoid bugs with instantiation order
+        System.setProperty("dexmaker.dexcache", <API label="None">getContext</API>().getCacheDir().<API label="None">getPath</API>());
+
+       SomeClass localSomeClass = new SomeClass(10);
+        someClass = <API label="org.mockito.Mockito.spy">Mockito.spy</API>(localSomeClass);
+        <API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(5).<API label="org.mockito.stubbing.Stubber.when">when</API>(someClass).someMethod();
+    }
+
+   @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+    }
+
+   public void testCorrectExemption(){
+        /**
+         * Test code
+         */
+    }
+}
+
+</code></pre>
+
+Edit: stacktrace with exception
+
+<pre><code>
+java.lang.NoClassDefFoundError: org.mockito.internal.matchers.Equals
+    at <API label="">org.mockito.internal.invocation.ArgumentsProcessor.argumentsToMatchers</API>(ArgumentsProcessor.java:47)
+    at org.mockito.internal.invocation.InvocationMatcher.(InvocationMatcher.java:34)
+    at <API label="">org.mockito.internal.invocation.MatchersBinder.bindMatchers</API>(MatchersBinder.java:26)
+    at <API label="">org.mockito.internal.handler.MockHandlerImpl.handle</API>(MockHandlerImpl.java:50)
+    at <API label="">org.mockito.internal.handler.NullResultGuardian.handle</API>(NullResultGuardian.java:29)
+    at <API label="">org.mockito.internal.handler.InvocationNotifierHandler.handle</API>(InvocationNotifierHandler.java:38)
+    at <API label="">com.google.dexmaker.mockito.InvocationHandlerAdapter.invoke</API>(InvocationHandlerAdapter.java:49)
+    at SomeClass_Proxy.testMethod(SomeClass_Proxy.generated)
+    at ru.test.SomeClassTest.setUp(SomeClassTest.java:47)
+    at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:190)
+    at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:175)
+    at android.test.InstrumentationTestRunner.onStart(InstrumentationTestRunner.java:555)
+    at <API label="">android.app.Instrumentation$InstrumentationThread.run</API>(Instrumentation.java:1661)
+
+</code></pre>
+
+==========
+I solved the problem by replacing <code>mockito-core.jar</code> with <code>mockito-all.jar</code>
+

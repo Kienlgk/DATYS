@@ -1,0 +1,113 @@
+https://stackoverflow.com/questions/50622037
+I want use assertj for cheking a data in array contain a other array.
+
+<pre><code>
+accounts: [class AccountResource {
+        resourceId: 010001781LV
+        bicFi: null
+        accountId: null
+        name: Livret A Rosalie
+        details: LIVRET A
+        linkedAccount: null
+        usage: PRIV
+        cashAccountType: null
+        product: LVA
+        currency: EUR
+        balances: [class BalanceResource {
+            name: null
+            balanceAmount: class AmountType {
+                currency: EUR
+                amount: 10000
+            }
+            balanceType: CLBD
+            lastChangeDateTime: null
+            referenceDate: 2018-05-31
+            lastCommittedTransaction: null
+        }, class BalanceResource {
+            name: null
+            balanceAmount: class AmountType {
+                currency: EUR
+                amount: 10000
+            }
+            balanceType: XPCD
+            lastChangeDateTime: null
+            referenceDate: 2018-05-31
+            lastCommittedTransaction: null
+        }]
+        psuStatus: Account Holder
+        links: null
+    }
+
+</code></pre>
+
+My 2 first tests case are OK. I <API label="">filter</API> on 'resourceId=010001781LV' and I check  account.currency=EUR. I <API label="">filter</API> on 'resourceId=010001781LV' and I check  <API label="None">account.balances.size</API>()=2.
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(halAccounts.getAccounts())
+        .<API label="">filteredOn</API>(account -> account.getResourceId().<API label="">equals</API>("010001781LV"))
+        .<API label="">extracting</API>(account -> account.getCurrency())
+        .<API label="">containsExactly</API>("EUR");
+<API label="">assertThat</API>(halAccounts.getAccounts())
+        .<API label="">filteredOn</API>(account -> account.getResourceId().<API label="">equals</API>("010001781LV"))
+        .<API label="">extracting</API>(account -> account.getBalances().<API label="">size</API>())
+        .<API label="">containsExactly</API>(2);
+
+</code></pre>
+
+but I want <API label="">filter</API> on 'resourceId=010001781LV' and <API label="">filter</API> on 'balances(foreach).balanceType=CLBD' and check  balanceAmount=10000.
+
+I try lambda in other lambda but I need some help:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(halAccounts.getAccounts())
+    .<API label="">filteredOn</API>(account -> account.getResourceId().<API label="None">equals</API>("010001781LV"))
+    .<API label="org.assertj.core.api.AbstractIterableAssert.filteredOn">filteredOn</API>(account -> account.getBalances().<API label="None">forEach</API>(balance -> {
+        balance.getBalanceAmount().getAmount().<API label="None">equals</API>("10000");
+    }))
+    .<API label="org.assertj.core.api.AbstractIterableAssert.extracting">extracting</API>(balance -> balance.getBalanceAmount().getAmount())
+    .<API label="org.assertj.core.api.AbstractListAssert.contains">contains</API>("1000");
+
+</code></pre>
+
+I have this error on 2nd <code><API label="org.assertj.core.api.AbstractIterableAssert.filteredOn">filteredOn</API></code>:
+
+<pre><code>
+Multiple markers at this line
+    - The target type of this expression must be a functional interface
+    - The method <API label="org.assertj.core.api.AbstractIterableAssert.filteredOn">filteredOn</API>(Condition) in the type AbstractIterableAssert,List,AccountResource,ObjectAssert is not applicable for the arguments (( account) -> {})
+
+</code></pre>
+
+==========
+The point is that expression inside <code>filterOn</code> should return <code>boolean</code> whereas <code><API label="None">forEach</API></code> returns <code>void</code>.
+
+Account id should be "DEF" and all "A" balances should have "10" value.
+
+<pre><code>
+@Test
+void <API label="">test</API>() {
+    Account wrongAcc = new Account("ABC", <API label="None">Collections.emptyList</API>());
+    Account goodAcc = new Account("DEF", <API label="None">Arrays.asList</API>(
+            new Balance("A", "10"),
+            new Balance("A", "10"),
+            new Balance("B", "20")
+    ));
+    Account wrongBalanceAcc = new Account("DEF", <API label="None">Arrays.asList</API>(
+            new Balance("A", "10"),
+            new Balance("A", "20"),
+            new Balance("B", "20")
+    ));
+
+   List accountList = <API label="None">Arrays.asList</API>(wrongAcc, goodAcc, wrongBalanceAcc);
+
+   <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(accountList)
+            .<API label="org.assertj.core.api.AbstractIterableAssert.filteredOn">filteredOn</API>(acc -> <API label="None">acc.getId</API>().<API label="None">equals</API>("DEF"))
+            .<API label="org.assertj.core.api.AbstractIterableAssert.filteredOn">filteredOn</API>(acc ->
+                    acc.getBalances()
+                            .<API label="None">stream</API>()
+                            .<API label="None">noneMatch</API>(balance -> <API label="None">balance.getType</API>().<API label="None">equals</API>("A") && !balance.getAmount().<API label="None">equals</API>("10"))
+            ).<API label="org.assertj.core.api.AbstractIterableAssert.containsExactly">containsExactly</API>(goodAcc);
+}
+
+</code></pre>
+

@@ -1,0 +1,133 @@
+https://stackoverflow.com/questions/29970869
+My application on Appengine create a csv file with more 65535 rows 
+
+But, I have an <API label="">error</API> of type OutOfMemoryError when writing :
+
+<pre><code>
+java.lang.OutOfMemoryError: Java heap space
+    at <API label="None">java.util.Arrays.copyOf</API>(Arrays.java:2271)
+    at java.io.ByteArrayOutputStream.grow(ByteArrayOutputStream.java:118)
+    at <API label="None">java.io.ByteArrayOutputStream.ensureCapacity</API>(ByteArrayOutputStream.java:93)
+    at <API label="None">java.io.ByteArrayOutputStream.write</API>(ByteArrayOutputStream.java:153)
+
+</code></pre>
+
+White this code :
+
+<pre><code>
+public static byte[] joinLines(Collection lines) {
+    final ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+   boolean firstElement = true;
+
+   for (final String part : lines) {
+        String value = part + LINE_SEPARATOR;
+        if (firstElement) {
+            value = addExcelPrefix(value);
+            firstElement = false;
+        }
+
+       final int currentSize = <API label="">value.length</API>();
+        try {
+            <API label="None">stream.write</API>(<API label="None">value.getBytes</API>(ENCODING), 0, currentSize); // OutOfMemoryError HERE
+        } catch (UnsupportedEncodingException e) {
+            <API label="None">LOGGER.info</API>(<API label="">e.getMessage</API>());
+        }
+    }
+    return <API label="None">stream.toByteArray</API>();
+}
+
+</code></pre>
+
+So I used <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/io/<API label="com.google.common.io.FileBackedOutputStream">FileBackedOutputStream</API>.html" rel="nofollow"><API label="com.google.common.io.FileBackedOutputStream">FileBackedOutputStream</API></a> of Guava for solve the problem of OutOfMemoryError :
+
+<pre><code>
+public static byte[] joinLines(Collection lines) throws IOException {
+    final <API label="com.google.common.io.FileBackedOutputStream">FileBackedOutputStream</API> stream = new <API label="com.google.common.io.FileBackedOutputStream">FileBackedOutputStream</API>(THRESHOLD, true);
+
+   boolean firstElement = true;
+
+   for (final String part : lines) {
+        String value = part + LINE_SEPARATOR;
+        if (firstElement) {
+            value = addExcelPrefix(value);
+            firstElement = false;
+        }
+
+       final int currentSize = <API label="None">value.length</API>();
+        try {
+            <API label="com.google.common.io.FileBackedOutputStream.write">stream.write</API>(<API label="None">value.getBytes</API>(ENCODING), 0, currentSize);
+        } catch (IOException e) {
+            <API label="None">LOGGER.error</API>(<API label="None">e.getMessage</API>());
+        }
+    }
+
+   return <API label="com.google.common.io.FileBackedOutputStream.asByteSource">stream.asByteSource</API>().<API label="">read</API>();
+}
+
+</code></pre>
+
+But, on appengine, I now an <API label="">error</API> of type SecurityException when creating of temporary file :
+
+<pre><code>
+java.lang.SecurityException: Unable to create temporary file
+    at java.io.File.checkAndCreate(File.java:2083)
+    at java.io.File.createTempFile(File.java:2198)
+    at java.io.File.createTempFile(File.java:2244)
+    at <API label="com.google.common.io.FileBackedOutputStream">com.google.common.io.FileBackedOutputStream</API>.<API label="">update</API>(<API label="">FileBackedOutputStream</API>.java:196)
+    at <API label="com.google.common.io.FileBackedOutputStream.write"><API label="com.google.common.io.FileBackedOutputStream">com.google.common.io.FileBackedOutputStream</API>.write</API>(<API label="com.google.common.io.FileBackedOutputStream">FileBackedOutputStream</API>.java:178)
+
+</code></pre>
+
+How to allow create temporary file on Appengine with <API label="com.google.common.io.FileBackedOutputStream">FileBackedOutputStream</API> ?
+In a bucket, how ?
+
+Thanks
+
+==========
+I used GcsService that solves my problem : 
+
+<pre><code>
+protected String uploadBytesForCsv(Map rows) throws IOException {
+    <API label="">LOGGER.info</API>("Get Bytes For Csv");
+
+   final Collection lines = cellsToCsv(rows);
+    <API label="">LOGGER.info</API>("number line : " + <API label="">lines.size</API>());
+
+   boolean firstElement = true;
+
+   final String fileName = getFileName();
+
+   final GcsFilename gcsFilename = new GcsFilename(config.getBucketName(), fileName);
+    final GcsService gcsService = GcsServiceFactory.createGcsService();
+    final GcsOutputChannel outputChannel = gcsService.createOrReplace(gcsFilename, GcsFileOptions.getDefaultInstance());
+
+   for (final String part : lines) {
+        final ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        String value = part + LINE_SEPARATOR;
+        if (firstElement) {
+            value = addExcelPrefix(value);
+            firstElement = false;
+        }
+
+       final int currentSize = <API label="">value.length</API>();
+        try {
+            <API label="com.google.common.io.FileBackedOutputStream.write">stream.write</API>(<API label="None">value.getBytes</API>(ENCODING), 0, currentSize);
+            <API label="None">outputChannel.write</API>(<API label="None">ByteBuffer.wrap</API>(<API label="com.google.common.io.FileBackedOutputStream.toByteArray">stream.toByteArray</API>()));
+        } catch (UnsupportedEncodingException e) {
+            <API label="None">LOGGER.info</API>(<API label="None">e.getMessage</API>());
+        }
+
+       <API label="com.google.common.io.FileBackedOutputStream.flush">stream.flush</API>();
+        <API label="com.google.common.io.FileBackedOutputStream.flush">stream.close</API>();
+    }
+
+   <API label="None">outputChannel.close</API>();
+
+   return new UrlBuilder(config.getStorageUrlForExport())
+            .setBucketName(config.getBucketName())
+            .setFilename(fileName).<API label="">build</API>();
+}
+
+</code></pre>
+

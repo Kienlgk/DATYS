@@ -1,0 +1,62 @@
+https://stackoverflow.com/questions/59348128
+I have list <API label="">of</API> strings, where each string consists <API label="">of</API> letters separated by the character ',' (comma).
+I want to go through the list <API label="">of</API> strings, <API label="">split</API> on comma, and calculate how many times each letter occurs, and store the result in a Multiset. Blank strings should be ignored, and the <API label="">split</API> parts should be <API label="">trimmed</API>. The multiset should be sorted on key.
+
+The below code works, i.e., it produces the desired Multiset. However, I couldn't figure out how to use the proper collector method (<API label="com.google.common.collect.Multisets.toMultiset">Multisets.toMultiset</API>()), so resorted to a two-step solution, using a temporary list variable, which I would like to eliminate.
+
+I would appreciate if someone can show me how I should have constructed the call to <API label="com.google.common.collect.Multisets.toMultiset">Multisets.toMultiset</API>() in the collect-step. I got stuck on defining the element function and the supplier function, I couldn't even make code that compiled...
+
+<pre><code>
+@Test
+public void testIt() {
+    List temp = <API label="None">Stream.of</API>("b, c", "a", "  ", "a, c")
+            .<API label="None">filter</API>(StringUtils::isNotBlank)
+            .<API label="None">map</API>(val -> <API label="None">val.split</API>(","))
+            .<API label="None">flatMap</API>(Arrays::stream)
+            .<API label="None">map</API>(String::trim)
+            .collect(<API label="None">Collectors.toList</API>());
+
+   Multiset multiset = <API label="com.google.common.collect.ImmutableSortedMultiset.copyOf">ImmutableSortedMultiset.copyOf</API>(temp);
+
+   <API label="None">System.out.println</API>("As list: " + temp);
+    <API label="None">System.out.println</API>("As multiset: " + multiset);
+    // Output is:
+    // As list: [b, c, a, a, c]
+    // As multiset: [a x 2, b, c x 2]
+}
+
+</code></pre>
+
+I'm using Guava 28.1. Also used in the example above is the StringUtils class from commons-lang3, version 3.9
+
+This is a simplified example from the real scenario, but one that still captures the essence <API label="">of</API> my problem
+
+==========
+If you really want to ommit the second copy stage, there are several ways to achieve this:
+
+
+There is already an <code>ImmatbleSortedMultiset</code> Collector specified
+
+<pre><code>
+.collect(<API label="com.google.common.collect.ImmutableSortedMultiset.toImmutableSortedMultiset">ImmutableSortedMultiset.toImmutableSortedMultiset</API>(<API label="None">Comparator.naturalOrder</API>()));
+
+</code></pre>
+Since you were asking how to do it with <code>MultiSets::<API label="com.google.common.collect.Multisets.toMultiset">toMultiset</API></code>
+
+<pre><code>
+.collect(<API label="com.google.common.collect.Multisets.toMultiset">Multisets.toMultiset</API>(<API label="None">Function.identity</API>(), i -> 1, TreeMultiset::create));
+
+</code></pre>
+Or you can perfectly add your own Collector implementation using the <code>Builder</code>
+
+<pre><code>
+.collect(<API label="None">Collector.of</API>(
+    ImmutableSortedMultiset::<API label="com.google.common.collect.ImmutableSortedMultiset.naturalOrder">naturalOrder</API>,
+    ImmutableSortedMultiset.Builder::add,
+    (b1, b2) -> {<API label="None">b1.addAll</API>(<API label="None">b2.build</API>()); return b1;},
+    ImmutableSortedMultiset.Builder::<API label="None">build</API>)
+);
+
+</code></pre>
+
+

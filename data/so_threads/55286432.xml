@@ -1,0 +1,157 @@
+https://stackoverflow.com/questions/55286432
+Some Context
+
+When setting up mocks (<code><API label="org.mockito.Mockito.when">when</API></code>) or verifying calls (<code>verify</code>) on mocks, Mockito requires you to either provide all concrete values a mocked <API label="">method</API> needs, or provide a matcher for all of them. It is not possible to mix these styles.
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">mock.method</API>(1, 2, 3));
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">mock.method</API>(<API label="org.mockito.Mockito.eq">eq</API>(1), <API label="org.mockito.Mockito.eq">eq</API>(2), <API label="org.mockito.Mockito.eq">eq</API>(3)));
+
+</code></pre>
+
+I am talking about the second style.
+
+Because of the way Mockito works, the order in which matchers are called is important. Internally, Mockito will register the matchers on a stack, executing them in order <API label="">when</API> necessary.
+
+What I try to achieve
+
+I want to write some test utilities to be used with mockito. I would like these utility methods to delegate calls to the mock, interjecting some default matchers that would otherwise be boilerplate test code.
+
+For example:
+
+<pre><code>
+public String callOnMock(int argument2) {
+    return <API label="None">mock.call</API>(<API label="org.mockito.Mockito.eq">eq</API>(1), argument2, <API label="org.mockito.Mockito.argThat">argThat</API>(i -> i >= 3));
+}
+
+</code></pre>
+
+which would be used like this:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(callOnMock(<API label="org.mockito.Mockito.eq">eq</API>(2)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("result");
+
+</code></pre>
+
+The problem
+
+This does not work because Mockito registers these matchers in the wrong order:
+
+
+<code><API label="org.mockito.Mockito.eq">eq</API>(2)</code>
+<code><API label="org.mockito.Mockito.eq">eq</API>(1)</code>
+<code><API label="org.mockito.Mockito.argThat">argThat</API>(i -> i >= 3)</code>
+
+
+while it should be
+
+
+<code><API label="org.mockito.Mockito.eq">eq</API>(1)</code>
+<code><API label="org.mockito.Mockito.eq">eq</API>(2)</code>
+<code><API label="org.mockito.Mockito.argThat">argThat</API>(i -> i >= 3)</code>
+
+
+Is there a way for me to manipulate the order that those matchers are registered?
+
+I now that <code>org.mockito.AdditionalMatchers</code> has methods that manipulate the internal stack to allow matchers to be combined (<code><API label="org.mockito.AdditionalMatchers.and">and</API></code>, <code>or</code>, <code>not</code>) so at least internally inside the Mockito core it is possible.
+
+Is it also possible to <API label="">pop</API> <API label="">and</API> <API label="">push</API> matchers explicitly?
+
+==========
+I think there are a couple of ways to achieve the desired behaviour.
+
+1. Manipulate the order of matchers on the stack
+
+
+ This is not the way to go!
+
+
+The <code>matcherStack</code> seems to be internal to Mockito.
+They do have a <API label="">method</API> to <code><API label="org.mockito.internal.progress.ArgumentMatcherStorage.pullLocalizedMatchers">pullLocalizedMatchers</API></code> from the stack <API label="">and</API> a <code><API label="org.mockito.internal.progress.ArgumentMatcherStorage.reportMatcher">reportMatcher</API></code> <API label="">method</API> to <API label="">push</API> an <code>ArgumentMatcher</code> onto the stack. These could be accessed via
+
+<pre><code>
+org.mockito.internal.progress.ThreadSafeMockingProgress
+    .mockingProgress()
+    .<API label="org.mockito.internal.progress.ThreadSafeMockingProgress.getArgumentMatcherStorage">getArgumentMatcherStorage</API>()
+
+</code></pre>
+
+So in theory you could choose this path, but the solution would be brittle because you are messing with the internals of Mockito. They could change without notice in subsequent versions of Mockito.
+
+Luckily there are a couple of alternatives.
+
+2. Control the order in which matchers are registered in the first place
+
+Using the Java 8 <code>Supplier</code> functional interface (This corresponds to <a href="https://stackoverflow.com/a/55297901/426371">this answer</a> given by @ToYonos)
+
+Matchers are registered automatically by Mockito <API label="">when</API> you <API label="">call</API> the methods creating them (<code><API label="org.mockito.Mockito.eq">eq</API></code>, <code><API label="org.mockito.Mockito.argThat">argThat</API></code>, <code><API label="org.mockito.Mockito.any">any</API></code>, <code><API label="org.mockito.Mockito.isNotNull">isNotNull</API></code>, ...). But you can delay calling these methods by passing a <code>Supplier</code> for each of those matchers. The convenience <API label="">method</API> then controls the order in which it executes those suppliers.
+
+<pre><code>
+public String callOnMock(Supplier argument2) {
+    return <API label="None">mock.call</API>(<API label="org.mockito.Mockito.eq">eq</API>(1), <API label="None">argument2.get</API>(), <API label="org.mockito.Mockito.argThat">argThat</API>(i -> i >= 3));
+}
+
+<API label="org.mockito.Mockito.when">when</API>(callOnMock(() -> <API label="org.mockito.Mockito.eq">eq</API>(2))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("result");
+
+</code></pre>
+
+Using it looks a bit different than the normal Mockito style.
+
+
+ Special care needs to be taken if you offer convenience methods for those suppliers that use/aggregate other matchers, because of the same problem.
+  
+  <pre><code>callOnMock(() -> <API label="org.mockito.AdditionalMatchers.and">AdditionalMatchers.and</API>(<API label="org.mockito.Mockito.isNotNull">isNotNull</API>(), <API label="org.mockito.Mockito.eq">eq</API>(2)))
+
+</code></pre>
+  
+  will work,
+  but this will not:
+  
+  <pre><code>public Supplier <API label="">and</API>(int matcher1, int matcher2){
+   return () -> <API label="org.mockito.AdditionalMatchers.and">AdditionalMatchers.and</API>(matcher1, matcher2);
+}
+
+callOnMock(<API label="None">and</API>(<API label="org.mockito.Mockito.isNotNull">isNotNull</API>(), <API label="org.mockito.Mockito.eq">eq</API>(2)))
+
+</code></pre>
+
+
+This puts some responsibility with the user of your methods. They have to make sure that none of the matchers gets called accidentally.  
+
+3. Control the order in which mocks expect matchers
+
+Delegating mock calls to a different mock object can give you control over the order of the arguments.
+You will have to define an interface that expects matchers in the order your convenience <API label="">method</API> receives them, putting the ones added by the convenience <API label="">method</API> at the end.
+Expectations have to be made against that delegate interface.
+
+<pre><code>
+public interface MockDelegate {
+    String <API label="">call</API>(Integer i1, Integer i0, Integer i2);
+}
+
+@Mock
+private MockDelegate delegate;
+
+@Before
+public void setUp() {
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">mock.call</API>(<API label="org.mockito.Mockito.any">any</API>(), <API label="org.mockito.Mockito.any">any</API>(), <API label="org.mockito.Mockito.any">any</API>()))
+            .<API label="org.mockito.stubbing.OngoingStubbing.thenAnswer">thenAnswer</API>(invocation -> <API label="None">delegate.call</API>(
+                    invocation.getArgument(1), // this delegates the <API label="">call</API>
+                    invocation.getArgument(0), // but flips the first two arguments
+                    invocation.getArgument(2)
+            ));
+}
+
+public String callOnMock(int argument2) {
+    return <API label="None">delegate.call</API>(argument2, <API label="org.mockito.Mockito.eq">eq</API>(1), <API label="org.mockito.Mockito.argThat">argThat</API>(i -> i >= 3));
+}
+
+</code></pre>
+
+This can be used with normal Mockito style matchers:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(callOnMock(<API label="org.mockito.Mockito.eq">eq</API>(2))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("result");
+
+</code></pre>
+

@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/19482372
+The test method below appear in a <a href="https://github.com/spring-guides/tut-web/blob/master/5/complete/src/test/java/com/yummynoodlebar/web/controller/CheckoutIntegrationTest.java" rel="nofollow">spring-guide tutorial</a>.
+Is there a less convoluted syntax to write this test or how can I break it apart into smaller chunks?
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(orderService).createOrder(
+      <API label="">org.mockito.Matchers.argThat</API>(
+        <API label="None">allOf</API>( org.hamcrest.Matchers.
+            hasProperty("details",
+                hasProperty("dateTimeOfSubmission", <API label="None">notNullValue</API>())),
+
+       org.hamcrest.Matchers.hasProperty("details",
+                hasProperty("name", <API label="None">equalTo</API>(CUSTOMER_NAME))),
+
+       org.hamcrest.Matchers.hasProperty("details",
+                hasProperty("address1", <API label="None">equalTo</API>(ADDRESS1))),
+        org.hamcrest.Matchers.hasProperty("details",
+                hasProperty("postcode", <API label="None">equalTo</API>(POST_CODE)))
+    )));
+
+</code></pre>
+
+==========
+You could switch the hasProperty and the <API label="None">allOf</API> matchers.
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(orderService).createOrder(
+      <API label="">org.mockito.Matchers.argThat</API>(
+        org.hamcrest.Matchers.hasProperty("details",
+          <API label="None">allOf</API>(
+            hasProperty("dateTimeOfSubmission", <API label="None">notNullValue</API>()),
+            hasProperty("name", <API label="None">equalTo</API>(CUSTOMER_NAME)),
+            hasProperty("address1", <API label="None">equalTo</API>(ADDRESS1)),
+            hasProperty("postcode", <API label="None">equalTo</API>(POST_CODE)))
+    )));
+
+</code></pre>
+

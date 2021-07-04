@@ -1,0 +1,18 @@
+https://stackoverflow.com/questions/8764405
+I've got a Guava <code>Cache</code> (or rather, I am migrating from <code>MapMaker</code> to <code>Cache</code>) and the values represent long-running jobs.  I'd like to add <code><API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API></code> behavior to the cache, as it's the best way to clean it up; however, the job may still be running even though it hasn't been accessed via the cache in some time, and in that case I need to prevent it from being removed from the cache.  I have three questions:
+
+
+Is it safe to reinsert the cache entry that's being removed during the <code>RemovalListener</code> callback?
+If so, is it threadsafe, such that there's no possible way the <code>CacheLoader</code> could produce a second value for that key while the <code>RemovalListener</code> callback is still happening in another thread?
+Is there a better way to achieve what I want?  This isn't strictly/only a "cache" - it's critical that one and only one value is used for each key - but I also want to cache the entry for some time after the job it represents is complete.  I was using <code>MapMaker</code> before and the behaviors I need are now deprecated in that class.  Regularly pinging the map while the jobs are running is inelegant, and in my case, infeasible.  Perhaps the right solution is to have two maps, one without eviction, and one with, and migrate them across as they complete.
+
+
+I'll make a feature request too - this would solve the problem: allow individual entries to be locked to prevent eviction (and then subsequently unlocked).
+
+[Edit to add some details]: The keys in this map refer to data files.  The values are either a running write job, a completed write job, or - if no job is running - a read-only, produced-on-lookup object with information read from the file.  It's important that there is exactly zero or one entry for each file.  I could use separate maps for the two things, but there would have to be coordination on a per-key basis to make sure only one or the other is in existence at one time.  Using a single map makes it simpler, in terms of getting the concurrency correct.
+
+==========
+I am not completely <API label="">clear</API> on the exact problem but another solution would be to have a Cache with <code><API label="com.google.common.cache.CacheBuilder.softValues">softValues</API>()</code> instead of a maximum <API label="">size</API> or expiry time. Every time you access the cache value (in your example, start the computation), you should maintain state somewhere else with a strong reference to this value. This will prevent the value from being GCed. Whenever the use of this value drops to zero (in your example, the computation ends and its OK for the value to go away), you could <API label="">remove</API> all strong references. For example, you could use the <a href="http://docs.guava-libraries.googlecode.com/git-history/v11.0/javadoc/com/google/common/util/concurrent/AtomicLongMap.html" rel="nofollow" title="AtomicLongMap">AtomicLongMap</a> with the Cache value as the AtomicLongMap key and periodically call <code><API label="com.google.common.util.concurrent.AtomicLongMap.removeAllZeros">removeAllZeros</API>()</code> on the map.
+
+Note that, as the Javadoc states, the use of <code><API label="com.google.common.cache.CacheBuilder.softValues">softValues</API>()</code> does come with tradeoffs.
+

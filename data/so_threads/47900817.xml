@@ -1,0 +1,36 @@
+https://stackoverflow.com/questions/47900817
+On upgrading Guava to the latest <code>23.5-jre</code> from <code>18.0</code> I am getting an exception like below
+
+<pre><code>
+Exception in thread "<API label="None">main</API>" java.lang.NoSuchMethodError: <API label="com.google.common.base.Preconditions.checkArgument">com.google.common.base.Preconditions.checkArgument</API>(ZLjava/lang/String;Ljava/lang/Object;)V
+    at com.van.common.VanExecutors.getSpec(VanExecutors.java:91)
+    at com.van.common.VanExecutors.newFixedSizeExecutor(VanExecutors.java:114)
+    at com.van.storage.config.ConfigStoreFactory.getOrCreateUncachedStore(ConfigStoreFactory.java:56)
+    at com.van.storage.config.ConfigStoreFactory.getOrCreateStore(ConfigStoreFactory.java:74)
+    at com.van.storage.config.PolicyManager.loadFromSystemProperties(PolicyManager.java:79)
+    at <API label="">com.van.tools.metric.HbaseMetricStoreSetup.main</API>(HbaseMetricStoreSetup.java:25)
+
+</code></pre>
+
+The relevant code
+
+<pre><code>
+private ExecutorSpec getSpec(String executorName) {
+        <API label="com.google.common.base.Preconditions.checkArgument">Preconditions.checkArgument</API>(<API label="None">isValid</API>(), "Not initialized");
+        <API label="com.google.common.base.Preconditions.checkArgument">Preconditions.checkArgument</API>(<API label="None">NullOrEmpty.isFalse</API>(executorName), "No executor name given");
+        <API label="com.google.common.base.Preconditions.checkArgument">Preconditions.checkArgument</API>(<API label="None">POOL_NAME_PATTERN.matcher</API>(executorName).<API label="">matches</API>(), "Executor name %s must end with -exec", executorName);
+        for (ExecutorSpec spec : executorsSpec.getExecutorSpecList()) {
+            if (<API label="None">spec.getName</API>().<API label="None">equalsIgnoreCase</API>(executorName)) return spec;
+        }
+        return null;
+    }
+
+</code></pre>
+
+As per the stacktrace line 91 is the last Preconditions check.
+
+Can someone let me know what is going wrong? 
+
+==========
+To resolve this issue I prefixed by CLASSPATH ( <code>export CLASSPATH=;$CLASSPATH</code> ) with Guava 23.5 jre. 
+

@@ -1,0 +1,77 @@
+https://stackoverflow.com/questions/22212035
+I have a bunch of <code>Map</code> objects, and I am passing the <API label="">values</API> off to another method. I got a <code>NoSuchElementException</code> in that method, so started debugging, and saw that the call to <code>Map#<API label="">values</API>()</code> throws this exception. But, when I loop through the <API label="">values</API>, it prints all the <API label="">values</API> perfectly. Here's the code snippet that's causing this issue:
+
+<pre><code>
+Map kMap = <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>();
+for (int i = 0; i < 3; i++) {
+    TreeMultimap treeMultimap = <API label="com.google.common.collect.TreeMultimap.create">TreeMultimap.create</API>();
+    <API label="com.google.common.collect.TreeMultimap.putAll">treeMultimap.putAll</API>("a" + i, <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(0.0, 0.06, 0.17, 0.23));
+    <API label="com.google.common.collect.TreeMultimap.putAll">treeMultimap.putAll</API>("b" + i, <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(0.0, 0.16, 0.34, 0.49));
+    <API label="None">kMap.put</API>(i, treeMultimap);
+}
+
+Map rescaledKMap =
+    <API label="com.google.common.collect.Maps.transformEntries">Maps.transformEntries</API>(kMap, ToRescaledValueMap(1.2));
+
+Iterable treeSets = <API label="None">rescaledKMap.values</API>();
+
+// Prints out each element correctly. No exception is thrown.
+for (TreeSet set : treeSets)
+    <API label="None">System.out.println</API>(<API label="com.google.common.base.Joiner.on">Joiner.on</API>(',').<API label="com.google.common.base.Joiner.join">join</API>(set));
+
+// NoSuchElementException thrown in getMeanPlot() before anything happens there.
+TreeMap mean_rescaledKMap = 
+    getMeanPlot(<API label="None">rescaledKMap.values</API>());
+
+</code></pre>
+
+The signature is <code>getMeanPlot(Iterable)</code>.
+
+How is the iterable correct just before it gets passed to the second method, but throws an exception just as the second method start?
+
+Stack Trace
+
+The stack trace shows the <code>Maps.EntryTransformer</code> object <code>ToRescaledValueMap</code> as the culprit. Here's the trace:
+
+<pre><code>
+Exception in thread "main" java.util.NoSuchElementException
+    at java.util.TreeMap$PrivateEntryIterator.nextEntry(TreeMap.java:1113)
+    at <API label="">java.util.TreeMap$EntryIterator.next</API>(TreeMap.java:1151)
+    at <API label="">java.util.TreeMap$EntryIterator.next</API>(TreeMap.java:1146)
+    at <API label="">com.google.common.collect.AbstractMapBasedMultimap$Itr.next</API>(AbstractMapBasedMultimap.java:1145)
+    at <API label="">com.google.common.collect.Ordering.min</API>(Ordering.java:460)
+    at <API label="">com.google.common.collect.Ordering.min</API>(Ordering.java:479)
+    at <API label="">DistributionMetricExperiment$6.transformEntry</API>
+
+</code></pre>
+
+Does this have anything to with Guava's lazy initialization? I can write my own little method instead of using the <code>Maps#<API label="com.google.common.collect.Maps.transformEntries">transformEntries</API></code> method, but not knowing the reason behind this bug is ... well ... bugging me. The entry transformation is as follows:
+
+<pre><code>
+static Maps.EntryTransformer, TreeSet
+ToRescaledValueMap(final double interval_length) {
+    return new Maps.EntryTransformer, TreeSet()
+    {
+        public TreeSet <API label="com.google.common.collect.Maps.transformEntry">transformEntry</API>(Integer i, TreeMultimap mmap) {
+            double mmap_min = <API label="com.google.common.collect.Ordering.natural">Ordering.natural</API>().<API label="com.google.common.collect.Ordering.min">min</API>(<API label="com.google.common.collect.TreeMultimap.values">mmap.values</API>());
+            double mmap_max = <API label="com.google.common.collect.Ordering.natural">Ordering.natural</API>().<API label="com.google.common.collect.Ordering.max">max</API>(<API label="com.google.common.collect.TreeMultimap.values">mmap.values</API>());
+            TreeSet rescaledValues = <API label="com.google.common.collect.Sets.newTreeSet">Sets.newTreeSet</API>();
+            for (double val : <API label="com.google.common.collect.TreeMultimap.values">mmap.values</API>())
+                <API label="None">rescaledValues.add</API>(interval_length * (val - mmap_min)/(mmap_max - mmap_min));
+            return rescaledValues;
+        }
+    };
+}
+
+</code></pre>
+
+Edit:
+
+
+I don't know whether this matters or not, but wanted to <API label="">add</API> that I have also issued the same print statements (the for loop over <code>Iterable</code> in the above code) as the first statement of <code>getMeanPlot</code>. Even there, it prints alright, and then throws the exception.
+My apologies for the use of underscore in variable names. The variables are reflecting subscripts I have been using in the maths behind my code. I am aware of the naming convention, but in this code I was more focused <API label="">on</API> having the ability to recognize the mathematical meaning of a variable just by looking at it.
+
+
+==========
+Actually you print the <code>TreeSet set</code> and this misleads you into thinking that your collection is populated. Because your error is not <API label="">on</API> <code>set</code> but rather <API label="">on</API> <code>TreeMultimap mmap</code>: you execute <code><API label="com.google.common.collect.Ordering.natural">Ordering.natural</API>().<API label="com.google.common.collect.Ordering.min">min</API>(mmap)</code> and that's where the issue is coming from. Guava specifies that looking for the <API label="">min</API> (or <API label="">max</API>) element in an empty collection will result in throwing a <code>NoSuchElementException</code>, which is what you have here.
+

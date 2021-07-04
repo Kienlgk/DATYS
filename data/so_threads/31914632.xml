@@ -1,0 +1,113 @@
+https://stackoverflow.com/questions/31914632
+I'm tring to mock restOperation to throw exception but i get MockitoException instead of taking proper exception. It's weird for me because <API label="">when</API> i trying to test happy path almost the same mock <API label="">invoke</API> works fine. What is wrong with that:
+
+Working mock:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(restOperations.exchange(
+            <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>(), <API label="org.mockito.Mockito.any">Mockito.any</API>(), <API label="org.mockito.Mockito.any">Mockito.any</API>(),
+            <API label="org.mockito.Mockito.any">Mockito.any</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new ResponseEntity<>(userByRoleHolder, HttpStatus.OK));
+
+</code></pre>
+
+Mock throwing  MockitoException:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(restOperations.exchange(
+            <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>(), <API label="org.mockito.Mockito.any">Mockito.any</API>(), <API label="org.mockito.Mockito.any">Mockito.any</API>(),
+            <API label="org.mockito.Mockito.any">Mockito.any</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(new ConnectException("Test exception"));
+
+</code></pre>
+
+Here is my method implementation:
+
+<pre><code>
+ResponseEntity entity = null;
+try {
+    entity = restOperations.exchange(userProfileUrl, HttpMethod.GET,
+                authorizedHttpEntityFactory.getAuthorizedHttpEntity(null), UserByRoleHolder.class);
+    } catch (RestClientException e) {
+        throw new ConnectException(<API label="None">e.getMessage</API>());
+    }
+    return entity.getBody();
+
+</code></pre>
+
+Stack trace:
+
+<pre><code>
+Unexpected exception, expected but was
+java.lang.Exception: Unexpected exception, expected but was
+at <API label="">org.junit.internal.runners.statements.ExpectException.evaluate</API>(ExpectException.java:28)
+at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.runTestClass(JUnitTestClassExecuter.java:86)
+at <API label="">org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecuter.execute</API>(JUnitTestClassExecuter.java:49)
+at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassProcessor.processTestClass(JUnitTestClassProcessor.java:69)
+at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:48)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:497)
+at <API label="">org.gradle.messaging.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:35)
+at <API label="">org.gradle.messaging.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:24)
+at <API label="">org.gradle.messaging.dispatch.ContextClassLoaderDispatch.dispatch</API>(ContextClassLoaderDispatch.java:32)
+at <API label="">org.gradle.messaging.dispatch</API><API label="">.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke</API>(ProxyDispatchAdapter.java:93)
+at com.sun.proxy.$Proxy2.processTestClass(Unknown Source)
+at org.gradle.api.internal.tasks.testing.worker.TestWorker.processTestClass(TestWorker.java:105)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:497)
+at <API label="">org.gradle.messaging.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:35)
+at <API label="">org.gradle.messaging.dispatch.ReflectionDispatch.dispatch</API>(ReflectionDispatch.java:24)
+at <API label="">org.gradle.messaging.remote.internal.hub.MessageHub$Handler.run</API>(MessageHub.java:360)
+at <API label="">org.gradle.internal.concurrent.DefaultExecutorFactory$StoppableExecutorImpl$1.run</API>(DefaultExecutorFactory.java:64)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+at <API label="">java.util.concurrent.ThreadPoolExecutor$Worker.run</API>(ThreadPoolExecutor.java:617)
+at <API label="">java.lang.Thread.run</API>(Thread.java:745)
+Caused by: org.mockito.exceptions.base.MockitoException: 
+Checked exception is invalid for this method!
+Invalid: java.net.ConnectException: Test exception
+at com.stanleyblackanddecker.toolboxcore.gateway.AuthGatewayTest.testGetAllUsersNoAuthPresent(AuthGatewayTest.java:215)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:497)
+at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+at <API label="">org.junit.internal.runners.statements.ExpectException.evaluate</API>(ExpectException.java:19)
+... 37 more
+
+</code></pre>
+
+==========
+
+ Caused by: org.mockito.exceptions.base.MockitoException: 
+  Checked exception is invalid for this method!
+  Invalid: java.net.ConnectException: Test exception
+
+
+As stated by the exception message (and told in comments), you have to throw a <code>RestClientException</code>, not a <code>ConnectException</code>:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(restOperations.exchange(
+        <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>(), <API label="org.mockito.Mockito.any">Mockito.any</API>(), <API label="org.mockito.Mockito.any">Mockito.any</API>(),
+        <API label="org.mockito.Mockito.any">Mockito.any</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(new RestClientException("Test exception"));
+
+</code></pre>
+
+You get this error message, because the method <code>exchange</code> declares no thrown exception and <code>ConnectException</code> is a <a href="https://docs.oracle.com/javase/tutorial/essential/exceptions/catchOrDeclare.html" rel="noreferrer">checked exception</a> (i.e. must be declared <API label="">when</API> thrown).
+

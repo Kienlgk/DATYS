@@ -1,0 +1,36 @@
+https://stackoverflow.com/questions/51147242
+I'm working on Java code that generates checksum for a given file. I am using Gogole's Guava library for hashing. Here is the code - 
+
+<pre><code>
+import <API label="None">com.google.common.hash</API>.HashCode;
+import <API label="None">com.google.common.hash</API>.HashFunction;
+import <API label="None">com.google.common.hash</API>.Hashing;
+
+private HashCode <API label="None">doHash</API>(File file) throws IOException {
+    HashFunction hc = <API label="com.google.common.hash.Hashing.murmur3_128">Hashing.murmur3_128</API>();
+    HashCode hsCode = <API label="None">hc.newHasher</API>().<API label="">putBytes</API>(<API label="None">com.google.common.io.Files.asByteSource</API>(file).<API label="">read</API>()).<API label="None">hash</API>();
+    return hsCode;
+}
+
+</code></pre>
+
+I ran this code for a file that was 2.8GB in <API label="">size</API>. It threw the following error - 
+
+<pre><code>
+Exception in thread "main" java.lang.OutOfMemoryError: 2945332859 bytes is too large to fit in a byte array
+    at <API label="None">com.google.common.io.ByteStreams.toByteArray</API>(ByteStreams.java:232)
+    at <API label="None">com.google.common.io.Files$FileByteSource.read</API>(Files.java:154)
+    ...
+
+</code></pre>
+
+Is there another data structure that I can use here? Or should I look for another strategy to feed the file to the <API label="None">hash</API> function? 
+
+==========
+Guava's HashFunctions don't know how to deal with ByteSources. But ByteSources know how to deal with HashFunctions. Just do it that way.
+
+<pre><code>
+HashCode hsCode = <API label="com.google.common.io.Files.asByteSource">Files.asByteSource</API>(file).<API label="">hash</API>(hc);
+
+</code></pre>
+

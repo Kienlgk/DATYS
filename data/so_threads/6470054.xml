@@ -1,0 +1,24 @@
+https://stackoverflow.com/questions/6470054
+I have something like the following:
+
+<pre><code>
+final SortedMap m = new TreeMap();
+
+</code></pre>
+
+And I'd like to use google-guava to make this a multimap. However I don't see any implementation that provides a SortedMap holding an ArrayList. I only see HashMap+ArrayList implementation (ArrayListMultimap). Does the implementation that I want exist?
+
+==========
+Guava has a <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/collect/TreeMultimap.html" rel="nofollow noreferrer">TreeMultimap</a> that stores both <API label="">keys</API> and <API label="">values</API> in <API label="">sorted</API> order. However, this uses a <code>TreeSet</code> for the <API label="">values</API> rather than a <code>List</code> so it may not quite be what you want here. In that case, Guava allows you to create a <code>Multimap</code> that works any way you want using one of the <code>Multimaps.new*Multimap</code> methods, such as <a href="http://guava-libraries.googlecode.com/svn/tags/release09/javadoc/com/google/common/collect/Multimaps.html#<API label="com.google.common.collect.Multimaps.newListMultimap">newListMultimap</API>%28java.util.Map,%20com.google.common.base.Supplier%29" rel="nofollow noreferrer"><API label="com.google.common.collect.Multimaps.newListMultimap">Multimaps.newListMultimap</API></a>. To make one that works like you describe, you'd just write this:
+
+<pre><code>
+Map map = <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>();
+ListMultimap m = <API label="com.google.common.collect.Multimaps.newListMultimap">Multimaps.newListMultimap</API>(map,
+    new Supplier() {
+      public List <API label="">get</API>() {
+        return <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(); // assuming you want to use ArrayList
+      }
+    });
+
+</code></pre>
+

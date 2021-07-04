@@ -1,0 +1,56 @@
+https://stackoverflow.com/questions/10834577
+I'd like to know in Guava if there are any differences between the <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/collect/Iterables.html#<API label="">filter</API>-java.lang.Iterable-com.google.common.base.Predicate-" rel="nofollow noreferrer"><code><API label="com.google.common.collect.Iterables.filter">Iterables.filter</API>(Iterable, Predicate)</code></a> and <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/collect/Collections2.html#<API label="">filter</API>-java.util.Collection-com.google.common.base.Predicate-" rel="nofollow noreferrer"><code><API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(Collection, Predicate)</code></a> methods?
+
+They seem to both maintain the iteration order, and to provide a live view.
+Javadoc says calling <code><API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>().<API label="None">size</API>()</code> will iterate over all elements.
+
+Suppose I have a predicate to <API label="">filter</API> a list <API label="">of</API> items, and as a result I want the number <API label="">of</API> items left in the view (or the list, doesn't matter). What am I supposed to use?
+It seems simpler to use <code><API label="com.google.common.collect.Collections2.filter">Collections2.filter</API></code> as the <code><API label="None">size</API>()</code> method is provided by <code>Collection</code>s.
+
+But in the background, is there a difference between:
+
+<pre><code>
+<API label="com.google.common.collect.ImmutableList.copyOf">ImmutableList.copyOf</API>(
+    <API label="com.google.common.collect.Iterables.filter">Iterables.filter</API>(lead.getActions(), isRealActionDoneByUserPredicate)
+).<API label="com.google.common.collect.Iterables.size">size</API>();
+
+</code></pre>
+
+And:
+
+<pre><code>
+<API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(lead.getActions(),isRealActionDoneByUserPredicate).<API label="None">size</API>();
+
+</code></pre>
+
+
+
+By the way, is building an <code>ImmutableList</code> faster than building a normal <code>ArrayList</code>?
+
+==========
+Guava contributor here.
+
+<pre><code>
+<API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(elements, predicate).<API label="None">size</API>()
+
+</code></pre>
+
+is preferable, as it does no copying -- both <code><API label="">filter</API></code> methods return a view -- but 
+
+<pre><code>
+<API label="com.google.common.collect.Iterables.size">Iterables.size</API>(<API label="com.google.common.collect.Iterables.filter">Iterables.filter</API>(elements, predicate))
+
+</code></pre>
+
+is essentially equivalent, and will similarly find the answer without any copying.
+
+As for the relative speed <API label="">of</API> constructing an <code>ArrayList</code> versus an <code>ImmutableList</code>, it varies by which construction method you use:
+
+
+<code><API label="com.google.common.collect.ImmutableList.copyOf">ImmutableList.copyOf</API>(collection)</code> should take almost exactly the same amount <API label="">of</API> time.  (It has to check for nulls, but that's cheap.)
+<code><API label="com.google.common.collect.ImmutableList.builder">ImmutableList.builder</API>()....build()</code> takes a small <API label="">constant</API> factor longer, because it has to use an <code>ArrayList</code> inside the <code>Builder</code>, since we don't know in <API label="">advance</API> how many elements will be added.
+<code><API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(...)</code> will have about <API label="">equal</API> speed.
+
+
+That said, the conceptual benefits <API label="">of</API> using <code>ImmutableList</code> often outweigh the small performance costs, especially if you'll be passing the lists around frequently.
+

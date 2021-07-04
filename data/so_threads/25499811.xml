@@ -1,0 +1,47 @@
+https://stackoverflow.com/questions/25499811
+I'm trying to <API label="">execute</API> some task periodically using guava <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/AbstractScheduledService.html" rel="nofollow noreferrer">AbstractScheduledService</a> :
+<pre><code>
+public class MyService extends AbstractScheduledService {
+
+   public MyService() {
+
+   }
+
+   @Override
+    protected void <API label="com.google.common.util.concurrent.AbstractScheduledService.runOneIteration">runOneIteration</API>() {
+        doStuff();
+    }
+
+   private void doStuff() {
+    // Do stuff
+    }
+    
+    @Override
+    protected Scheduler <API label="com.google.common.util.concurrent.AbstractScheduledService.scheduler">scheduler</API>() {
+        return Scheduler.newFixedRateSchedule(0, 8, TimeUnit.HOURS);
+    }
+
+}
+
+</code></pre>
+So this service should <API label="">execute</API> some task periodically every 8 hours but it never actually does. The inherited <code><API label="com.google.common.util.concurrent.AbstractScheduledService.isRunning">isRunning</API>()</code> method returns false and the <code><API label="com.google.common.util.concurrent.AbstractScheduledService.runOneIteration">runOneIteration</API>()</code> method never gets invoked.
+I have managed to make it work by calling the <code><API label="com.google.common.util.concurrent.AbstractScheduledService.startAsync">startAsync</API>()</code> method (inherited from <API label="">parent</API> class) from my service constructor but I don't see any reference saying this is the way it should work.
+Have I missed something here? Is this the way the <code>AbstractScheduledService</code> works?
+
+==========
+<code>AbstractScheduledServiced</code> implements <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/Service.html" rel="nofollow noreferrer">Service</a>. The Service interface describes lifecycle methods including <code><API label="com.google.common.util.concurrent.AbstractScheduledService.startAsync">startAsync</API></code>. The <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/Service.State.html#RUNNING" rel="nofollow noreferrer">ServiceState</a> enum literals contain documentation on what they mean. A Service in <code>NEW</code> state (just created):
+
+
+ A service in this state is inactive. It does minimal work and consumes minimal resources.
+
+
+For the Service to do something useful you have to transition it to the state <code>RUNNING</code>
+
+
+ A service in this state is operational.
+
+
+That's why you have to start the Service before it does anything.
+
+I would also advise against calling <API label="com.google.common.util.concurrent.AbstractScheduledService.startAsync">startAsync</API> from the constructor and instead calling it from the Code that creates your <code>MyService</code> instance. It is rarely an expected thing to have such heavy side effects (creation of Threads) in the constructor.
+

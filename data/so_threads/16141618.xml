@@ -1,0 +1,36 @@
+https://stackoverflow.com/questions/16141618
+For example, is it possible to <API label="">create</API> a Range of even numbers in guava?
+Something like:  
+
+<pre><code>
+<API label="com.google.common.collect.Range.closed">Range.closed</API>(0,10) //0,2,4,6,8,10
+
+</code></pre>
+
+I understand that the line above will not produce the output needed, but something like this may be:
+
+<pre><code>
+<API label="com.google.common.collect.Range.closed">Range.closed</API>(0,10, SomeFunctionInterface);
+
+</code></pre>
+
+<API label="">where</API> 
+
+<pre><code>
+ interface SomeFunctionInterface{
+      T <API label="">computeNext</API>(T <API label="">first</API>);
+ }
+
+</code></pre>
+
+Is it possible in guava? This is still a contiguous <API label="">range</API>, just that a certain rule is applied on it.
+
+I am only interested in a guava solution. 
+
+==========
+Guava can support this if you <API label="">compose</API> two operations together. First, you <API label="">create</API> the <API label="">set</API> {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}. Then, you <API label="">filter</API> it.
+
+To turn the <code>Range</code> into the intermediate, <API label="">unfiltered</API> <API label="">set</API>, <API label="">create</API> a <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/ContiguousSet.html#<API label="">create</API>%28com.google.common.collect.Range,%20com.google.common.collect.DiscreteDomain%29"><code>ContiguousSet</code></a>. To do so, you'll need a <code>DiscreteDomain</code>, which is basically the <code>SomeFunctionInterface</code> you've described. Since you're dealing with <API label="">integers</API>, you can use the built-in <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/DiscreteDomain.html#<API label="">integers</API>%28%29"><code><API label="com.google.common.collect.DiscreteDomain.integers">DiscreteDomain.integers</API>()</code></a>.
+
+To <API label="">get</API> from there to the <API label="">set</API> of only even numbers, you can <API label="">write</API> a <code>Predicate</code> and then pass it and the intermediate <API label="">set</API> to <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Sets.html#<API label="">filter</API>%28java.util.NavigableSet,%20com.google.common.base.Predicate%29"><code><API label="com.google.common.collect.Sets.filter">Sets.filter</API></code></a>.
+

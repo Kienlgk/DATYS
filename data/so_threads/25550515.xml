@@ -1,0 +1,45 @@
+https://stackoverflow.com/questions/25550515
+I have a list with Order Entries. Each order entry has a base price. I want to sort this list on entry.basePrice descending (enty.basePrice == 0 entries should be at the bottom).
+
+In this list, either no entry will have 0 price or one entry will have. I am doing like this ..
+
+<pre><code>
+final Collection orderEntry = <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(source.getEntries(),
+            new Predicate()
+            {
+                @Override
+                public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(final AbstractOrderEntryModel arg)
+                {
+                    return arg.getBasePrice().<API label="None">doubleValue</API>() == 0 ? true : false;
+                }
+            });
+
+</code></pre>
+
+Here I m filtering my entry which having baseprice = 0.0
+Now How I will <API label="">remove</API> and <API label="">add</API> this item <code>(<API label="None">orderEntry.iterator</API>().<API label="None">next</API>())</code> at last in OrderEntry List?
+
+If its not a recommended solution, and it can be possible through Collections.sort also then please give me solution.
+
+==========
+As far as I understand, you want to put an item matching a predicate at the end of the list. This can be done straightforward:
+
+<pre><code>
+List list=source.getEntries()
+final Collection orderEntry = <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(list,
+  new Predicate()
+  {
+    public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(final AbstractOrderEntryModel arg)
+    {
+        return arg.getBasePrice().<API label="None">doubleValue</API>() == 0;
+    }
+  });
+if(!<API label="None">orderEntry.isEmpty</API>()) {
+  assert <API label="None">orderEntry.size</API>()==1; // so you said in your question
+  AbstractOrderEntryModel e=<API label="None">orderEntry.iterator</API>().<API label="None">next</API>();
+  <API label="None">list.remove</API>(e);
+  <API label="None">list.add</API>(e);
+}
+
+</code></pre>
+

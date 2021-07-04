@@ -1,0 +1,46 @@
+https://stackoverflow.com/questions/49459385
+<pre><code>java.lang.NullPointerException: null
+    at <API label="">com.google.common.base.Preconditions.checkNotNull</API>(Preconditions.java:770) ~[spigot-1.12.2.jar:git-Spigot-c3093ef-7e94e65]
+    at <API label="">com.google.common.base.Joiner.toString</API>(Joiner.java:454) ~[spigot-1.12.2.jar:git-Spigot-c3093ef-7e94e65]
+    at <API label="">com.google.common.base.Joiner.appendTo</API>(Joiner.java:106) ~[spigot-1.12.2.jar:git-Spigot-c3093ef-7e94e65]
+    at <API label="">com.google.common.base.Joiner.appendTo</API>(Joiner.java:154) ~[spigot-1.12.2.jar:git-Spigot-c3093ef-7e94e65]
+    at <API label="">com.google.common.base.Joiner.join</API>(Joiner.java:197) ~[spigot-1.12.2.jar:git-Spigot-c3093ef-7e94e65]
+    at <API label="">com.google.common.base.Joiner.join</API>(Joiner.java:187) ~[spigot-1.12.2.jar:git-Spigot-c3093ef-7e94e65]
+    at <API label="">com.google.common.base.Joiner.join</API>(Joiner.java:205) ~[spigot-1.12.2.jar:git-Spigot-c3093ef-7e94e65]
+
+</code></pre>
+
+The code:
+
+<pre><code>
+public static String <API label="">join</API>(String[] args, int ignored, String separator) {
+
+   if (ignored > -1)
+        args = (String[]) <API label="None">ArrayUtils.remove</API>(args, ignored);
+
+   String combined = <API label="com.google.common.base.Joiner.on">Joiner.on</API>(separator).<API label="com.google.common.base.Joiner.join">join</API>(args); // ERROR HERE
+
+   return combined.substring(0, <API label="None">combined.length</API>());
+}
+
+</code></pre>
+
+I'm trying to accomplish joining an array of strings with a separator, and the option to ignore an argument if desired. However I'm coming across this error that was not there about a week ago. This code was working perfectly.... now its not. I've tried inserting a null check for the "args" variable yet no avail. Has something changed with the package I'm pulling from?
+
+==========
+I don't think the args variable is null, rather it <API label="">contains</API> a null <API label="">value</API>.
+Guava's Joiner is null-hostile by default, but it can be configured to tolerate null in one of two ways:
+
+
+<code><API label="com.google.common.base.Joiner.on">Joiner.on</API>(separator).</code><a href="http://google.github.io/guava/releases/24.1-jre/api/docs/com/google/common/base/Joiner.html#<API label="">skipNulls</API>--" rel="nofollow noreferrer"><code><API label="com.google.common.base.Joiner.skipNulls">skipNulls</API>()</code></a>
+<code><API label="com.google.common.base.Joiner.on">Joiner.on</API>(separator).</code><a href="http://google.github.io/guava/releases/24.1-jre/api/docs/com/google/common/base/Joiner.html#<API label="">useForNull</API>-java.lang.String-" rel="nofollow noreferrer"><code><API label="com.google.common.base.Joiner.useForNull">useForNull</API>(placeHolder)</code></a>
+
+
+if you don't use either of them, a null <API label="">value</API> inside your array will throw a NullPointerException, which is explicitly mentioned in <a href="http://google.github.io/guava/releases/24.1-jre/api/docs/com/google/common/base/Joiner.html" rel="nofollow noreferrer">the <code>Joiner</code> docs</a>:
+
+
+ If neither <code><API label="com.google.common.base.Joiner.skipNulls">skipNulls</API>()</code> nor <code><API label="com.google.common.base.Joiner.useForNull">useForNull</API>(String)</code> is specified, the
+  joining methods will throw <code>NullPointerException</code> if any given element
+  is <code>null</code>.
+
+

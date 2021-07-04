@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/10246757
+I try to work with Guava's <code>ClassToInstanceMap</code>.
+
+I want to have my clients to use a method <code>addMyObject(MyObject)</code>, so I tried to write these methods:
+
+<pre><code>
+private final ClassToInstanceMap instances = <API label="com.google.common.collect.MutableClassToInstanceMap.create">MutableClassToInstanceMap.create</API>();
+
+public void addMyObject1(MyObject o) {
+    <API label="com.google.common.collect.MutableClassToInstanceMap.putInstance">instances.putInstance</API>(<API label="None">o.getClass</API>(), o);
+}
+
+public  void addMyObject2(O o) {
+    <API label="com.google.common.collect.MutableClassToInstanceMap.putInstance">instances.putInstance</API>(<API label="None">o.getClass</API>(), o);
+}
+
+</code></pre>
+
+But naturally, none of these two methods compile.
+
+So, how to use this properly?
+
+==========
+Since you know for sure that <code>o</code> is an instance of <code>MyObject</code>, you don't really need to use the type-safe <code><API label="com.google.common.collect.MutableClassToInstanceMap.putInstance">putInstance</API></code> method. You could just use the standard <code><API label="com.google.common.collect.MutableClassToInstanceMap.put">put</API>()</code>:
+
+<pre><code>
+private final ClassToInstanceMap instances = <API label="com.google.common.collect.MutableClassToInstanceMap.create">MutableClassToInstanceMap.create</API>();
+
+public void addMyObject(MyObject o) {
+    <API label="com.google.common.collect.MutableClassToInstanceMap.put">instances.put</API>(<API label="None">o.getClass</API>(), o);
+}
+
+</code></pre>
+
+The <code>ClassToInstanceMap</code> will do a runtime check on the instance's type anyway.
+
+That said, I'm interested in a way to do this using the type-safe method. Maybe some Java generics magic :)
+

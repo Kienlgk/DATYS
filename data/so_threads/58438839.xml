@@ -1,0 +1,114 @@
+https://stackoverflow.com/questions/58438839
+I am having issue with Mocking a JDBC call using the MockitoJUnitRunner. 
+Somehow Mockito is not mocking the actual call even though I have below subbing line into the test class.
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(readOnlyJdbcTemplate.query(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.any">any</API>(Object[].class), <API label="org.mockito.Mockito.any">any</API>(int[].class), <API label="">any</API>(FeatureCollectionResponseExtractor.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(actual);
+
+</code></pre>
+
+Very similar mocking is working in another class for very similar type of method. The only difference between them is my other class does have 3 parameters instead of 4 parameters. Below is the code which is actually mocking successfully for different class.
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(readOnlyJdbcTemplate.query(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.any">any</API>(Object[].class), <API label="org.mockito.Mockito.any">any</API>(FeaturesResultExtractor.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(actual);
+
+</code></pre>
+
+Below is my actual code.
+
+<pre><code>
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import java.net.HttpURLConnection;
+import java.sql.Types;
+
+import static com.accounts.features.utils.Constants.INTERNAL_SERVER_ERROR;
+
+@Profile
+@Log
+@Named("featureLibraryDao")
+public class FeatureLibraryDaoImpl implements FeatureLibraryDao {
+
+   private static final Logger LOGGER = <API label="None">LogManager.getLogger</API>(FeatureLibraryDaoImpl.class);
+
+   @Value("${feature.library.function.sql.query}")
+    private String sqlSelectQuery;
+
+   @Inject
+    @Named("readOnlyJdbcTemplate")
+    private JdbcTemplate readOnlyJdbcTemplate;
+
+   @Override
+    public FeatureCollectionDTO getFeaturesData(FeatureRequest request) {
+        try {
+            int[] argTypes = new int[] { Types.BIGINT, Types.VARCHAR, Types.SMALLINT};
+            return readOnlyJdbcTemplate.query(sqlSelectQuery, new Object[] {
+                        Long.parseLong(request.getAccountId()), request.getRequestedFeatures(), request.getApplicationSuffix()
+                    }, argTypes,
+                    new FeatureCollectionResponseExtractor(request));
+        } catch (CustomException cbe) {
+            throw cbe;
+        } catch (Exception ex) {
+            <API label="None">LOGGER.error</API>("getFeaturesData method failed with <API label="">error</API> message:{}", <API label="None">ex.getMessage</API>(), ex);
+
+           CustomErrorCode <API label="">error</API> = new CustomErrorCode(INTERNAL_SERVER_ERROR);
+            <API label="">error</API>.setDeveloperText(<API label="None">ex.getMessage</API>());
+            throw new CustomSystemException(<API label="">error</API>, HttpURLConnection.HTTP_INTERNAL_ERROR);
+        }
+    }
+
+}
+
+</code></pre>
+
+and below is my test class.
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class FeatureLibraryDaoImplTest {
+
+   @InjectMocks
+    private FeatureLibraryDaoImpl dao;
+
+   @Mock
+    private JdbcTemplate readOnlyJdbcTemplate;
+
+   private List features = <API label="None">Arrays.asList</API>("excl_clsd_ind_only", "excl_chrgoff_ind_only", "excl_dsput_ind_only");
+
+   @Test
+    public void getFeaturesDataWhenSuccess() {
+        //given
+        FeatureRequest request = getFeatureRequest();
+        FeatureCollectionDTO actual = new FeatureCollectionDTO(features);
+
+       <API label="org.mockito.Mockito.when">when</API>(readOnlyJdbcTemplate.query(<API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.any">any</API>(Object[].class), <API label="org.mockito.Mockito.any">any</API>(int[].class), <API label="org.mockito.Mockito.any">any</API>(FeatureCollectionResponseExtractor.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(actual);
+
+       //<API label="">when</API>
+        FeatureCollectionDTO dto = dao.getFeaturesData(request);
+
+       //then
+        <API label="None">assertThat</API>(dto, <API label="org.hamcrest.CoreMatchers.notNullValue">notNullValue</API>());
+    }
+}
+
+</code></pre>
+
+Any suggestion about what is wrong here? Is there <API label="">any</API> issue with <code><API label="org.mockito.Mockito.any">any</API>(int[].class)</code> ?
+
+==========
+I do see you are not passing the sql query <code>sqlSelectQuery</code> value during the test case, But during mock you specified <code><API label="org.mockito.Mockito.anyString">anyString</API>()</code> so it must be some value but not null. Since you are using <code>spring</code> project, you can use <code>ReflectionTestUtils</code> to set the field value for object
+
+<pre><code>
+@Before
+public void setUp() {
+    <API label="None">ReflectionTestUtils.setField</API>(dao, "sqlSelectQuery", "query");
+
+}
+
+</code></pre>
+

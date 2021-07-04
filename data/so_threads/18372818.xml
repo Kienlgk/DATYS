@@ -1,0 +1,28 @@
+https://stackoverflow.com/questions/18372818
+I'm looking for a <code>Set</code> implementation in Java that provides lookup based on elements properties. Thinking in Guava terms it could be constructed using a <code>Function</code> (expected to be unique across all set elements) and providing a method <code><API label="">find</API>(SearchKey key)</code> returning an <code>Element</code> for which the function would return <code>key</code>.
+
+Obvious assumptions that would need to be satisfied:
+
+
+Result of <code>function(element)</code> is constant for the whole lifetime of <code>element</code> in the set.
+function gives unique results for all set elements
+
+
+Reason: 
+Sometimes there is a need for <code>Set</code> and the field type cannot be changed into a <code>Map</code> (like in JPA Entities or in case of 4rd party code). Still, when constructing such an object one could safely use their own <code>Set</code> implementation with <code>Map</code>-like capabilities.
+
+Alternatives:
+
+There are some alternatives I've already found, none of which seems perfect
+
+
+not having <code>Map</code>-like capabilities - using linear search for <code><API label="">find</API>(SearchKey)</code> implementation (works with every <code>Set</code> implementation:)
+using <code>TreeSet</code> with <code>Comparator</code> comparing <code>SearchKeys</code> - a bit like a hack, especially that this no longer respects element equalitythe "<API label="">find</API>" method is called <code><API label="None">ceiling</API></code> and requires that you construct artificial <code>Element</code> for lookup purposes (uogh...)
+"equivalence set" (<a href="http://code.google.com/p/guava-libraries/issues/detail?id=576" rel="nofollow">http://code.google.com/p/guava-libraries/issues/detail?id=576</a>) - but that is not implemented and does not seem to be going to be
+
+
+(If you would like to answer that you don't know any more alternatives -- save your time and don't. This is something I already know, I will not be able to accept your answer.)
+
+==========
+I must be missing something, otherwise it's pretty easy via <code>ForwardingSet</code> to <code><API label="com.google.common.collect.HashBiMap.keySet">HashBiMap.keySet</API>()</code>. My <a href="https://dl.dropboxusercontent.com/u/4971686/published/maaartin/so/IndexedSet.java" rel="nofollow">trivial implementation</a> only cares about <code>add</code> and <code>addAll</code>, all the other stuff should work without any effort. There's no single test, I'd recommend to use Guava testlib for this.
+

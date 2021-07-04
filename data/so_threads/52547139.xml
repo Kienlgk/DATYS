@@ -1,0 +1,180 @@
+https://stackoverflow.com/questions/52547139
+The unit test below is not able to <API label="org.mockito.Mockito.mock">mock</API> DeleteResult for the Java code being tested. Getting a NullPointerException. I'm running the test on JUnit. Is it something to do with the Filters in the delete statement?
+
+<pre><code>
+    @InjectMocks
+    DBConnection mongoConnect;
+
+   @Mock
+    MongoClient mockClient;
+
+   @Mock
+    MongoCollection mockCollection;
+
+   @Mock
+    MongoDatabase mockDB;
+
+   @Mock
+    LinkedList mockArrList;
+
+   @Mock
+    MongoIterable mongoIter;
+
+   @Mock
+    DeleteResult mockDeleteResult;
+
+   @SuppressWarnings("unchecked")
+    @Test
+    public void deleteDocTest1() {
+
+       <API label="org.mockito.Mockito.when">Mockito.when</API>(mockClient.getDatabase(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockDB);       
+
+       MongoIterable mongoIter = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(MongoIterable.class);
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(mockDB.listCollectionNames()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mongoIter);       
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(mongoIter.into(new LinkedList())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockArrList);
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="">mockArrList.contains</API>(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);   
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(mockDB.getCollection(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockCollection);
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(mockCollection.deleteOne(<API label="None">Filters.and</API>(<API label="None">Filters.eq</API>("aid", "TS123"), 
+                <API label="None">Filters.eq</API>("year", "2018"),
+                <API label="None">Filters.eq</API>("position", "testCases"))))
+                .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockDeleteResult);
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(mockDeleteResult.getDeletedCount()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(1L);
+
+       String msg = mongoConnect.deleteDocument("TS123", "testCases", "2018");
+        assertEquals("Delete Successful", msg);     
+
+   }
+
+</code></pre>
+
+The code being tested just has to delete a record if the keys match, <API label="">and</API> return a warning if there is no such record. The method below, which is being tested, is part of DBCollection class:
+
+<pre><code>
+public String deleteDocument(String aId, String collection, String year) {
+
+       MongoDatabase database = mongoClient.getDatabase(databaseName);
+
+       //checking if collection is present in the DB
+        boolean collectionExists = database.listCollectionNames().into(new LinkedList())
+                .<API label="None">contains</API>(collection);
+
+       if(collectionExists) {
+            MongoCollection collectionDocs = database.getCollection(collection);
+            <API label="None">System.out.println</API>(assoId+" "+collection+" "+year);         
+            DeleteResult deleteResult = collectionDocs.deleteOne(<API label="None">Filters.and</API>(<API label="None">Filters.eq</API>("aid", aId), <API label="None">Filters.eq</API>("year",year), <API label="None">Filters.eq</API>("position",collection)));
+            if(deleteResult.getDeletedCount() == 0) //the ERROR is at this line
+                return "Delete: record does not exist";
+        }else {
+            return "Delete: record does not exist";
+        }
+        <API label="None">mongoClient.close</API>();
+        return "Successful Delete"; 
+
+   }   
+
+</code></pre>
+
+The stack trace for the error:
+
+<pre><code>
+java.lang.NullPointerException
+    at com.repo.repository.DBConnection.deleteDocument(DBConnection.java:103)
+    at com.repo.form_upload.test.DBTest.deleteDocTest1(DBTest.java:138)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+    at <API label="">org.mockito.internal.junit.JUnitRule$1.evaluate</API>(JUnitRule.java:16)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+    at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:538)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:760)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:460)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:206)
+
+</code></pre>
+
+Any ideas on what's the problem?
+
+==========
+The issue here is with this expectation:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(mockCollection.deleteOne(<API label="None">Filters.and</API>(<API label="None">Filters.eq</API>("aid", "TS123"),
+        <API label="None">Filters.eq</API>("year", "2018"),
+        <API label="None">Filters.eq</API>("position", "testCases"))))
+        .<API label="None">thenReturn</API>(mockDeleteResult);
+
+</code></pre>
+
+<code>Bson</code> does not implement <code><API label="None">equals</API></code> so <API label="">when</API> Mockito attempts to determine whether it should return something from the <code>collectionsDocs.deleteOne</code> call in your <code>deleteDocument</code> it cannot match the <API label="">filter</API> argument so it determines that <code>collectionsDocs.deleteOne</code> returns nothing. To verify this, just <API label="">run</API> the following code:
+
+<pre><code>
+Bson one = <API label="None">Filters.and</API>(<API label="None">Filters.eq</API>("aid", "TS123"),
+        <API label="None">Filters.eq</API>("year", "2018"),
+        <API label="None">Filters.eq</API>("position", "testCases"));
+Bson two = <API label="None">Filters.and</API>(<API label="">Filters.eq</API>("aid", "TS123"),
+        <API label="None">Filters.eq</API>("year", "2018"),
+        <API label="None">Filters.eq</API>("position", "testCases"));
+
+// one <API label="">and</API> two are not equal because Bson does not implement <API label="">equals</API> so 
+// we'll just fall back to the standard instance check in Object
+assertNotEquals(one, two);
+
+</code></pre>
+
+Your test will pass - albeit with less specificity about the filters - if you express the <code>deleteOne</code> expectation like this:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(mockCollection.deleteOne(<API label="org.mockito.Mockito.any">any</API>(Bson.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockDeleteResult);
+
+</code></pre>
+
+Alternatively you could use a custom matcher to apply your own <API label="">equals</API> check on the Bson. For example, you would change the <code>mockCollection.deleteOne</code> expectation to the following: 
+
+<pre><code>
+<API label="org.mockito.Mockito.when">Mockito.when</API>(mockCollection.deleteOne(<API label="org.mockito.Mockito.argThat">argThat</API>(new BsonMatcher(<API label="None">Filters.and</API>(<API label="None">Filters.eq</API>("aid", "TS123"),
+        <API label="None">Filters.eq</API>("year", "2018"),
+        <API label="None">Filters.eq</API>("position", "testCases"))))))
+        .<API label="None">thenReturn</API>(mockDeleteResult);
+
+</code></pre>
+
+And declare the <code>BsonMatcher</code> as follows:
+
+<pre><code>
+public class BsonMatcher implements ArgumentMatcher {
+
+   private BsonDocument left;
+
+   public BsonMatcher(Bson left) {
+        this.left = left.toBsonDocument(BsonDocument.class, MongoClient.getDefaultCodecRegistry());
+    }
+
+   @Override
+    public boolean <API label="">matches</API>(Bson right) {
+        // compare as BsonDocument, since this does provide an <API label="None">equals</API>()
+        return <API label="None">left.equals</API>(right.toBsonDocument(BsonDocument.class, MongoClient.getDefaultCodecRegistry()));
+    }
+}
+
+</code></pre>
+
+Note you'll also need to change your <code>assertEquals("Delete Successful", msg);</code> to <code>assertEquals("Successful Delete", msg);</code> because <code>deleteDocument</code> returns <code>"Successful Delete"</code> :)
+

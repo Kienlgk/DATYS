@@ -1,0 +1,99 @@
+https://stackoverflow.com/questions/28341954
+I have following test class:
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({BuildCcHeaderProcess.class, IOUtils.class})
+public class MyTest {
+...
+@Before
+    public void setUp() throws Exception {  
+          ...
+          whenNew(StringWriter.class).withNoArguments().<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(stringWriterMock);
+          PowerMockito.mockStatic(IOUtils.class); //exception throws here
+          ....
+     }
+     ....
+}
+
+</code></pre>
+
+When I <API label="">invoke</API> the test I see following result:
+
+<pre><code>
+java.lang.ExceptionInInitializerError
+    at <API label="">sun.reflect.GeneratedSerializationConstructorAccessor23.newInstance</API>(Unknown Source)
+    at <API label="">java.lang.reflect.Constructor.newInstance</API>(Constructor.java:513)
+    at <API label="">org.objenesis.instantiator.sun.SunReflectionFactoryInstantiator.newInstance</API>(SunReflectionFactoryInstantiator.java:40)
+    at <API label="">org.objenesis.ObjenesisBase.newInstance</API>(ObjenesisBase.java:59)
+    at org.mockito.internal.creation.jmock.ClassImposterizer.createProxy(ClassImposterizer.java:111)
+    at <API label="">org.mockito.internal.creation.jmock.ClassImposterizer.imposterise</API>(ClassImposterizer.java:51)
+    at org.powermock.api.mockito.internal.mockcreation.MockCreator.createMethodInvocationControl(MockCreator.java:100)
+    at <API label="">org.powermock.api.mockito.internal.mockcreation.MockCreator.mock</API>(MockCreator.java:58)
+    at org.powermock.api.mockito.PowerMockito.mockStatic(PowerMockito.java:70)
+    at com.MyTest.setUp(MyTest.java:98)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:39)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+    at org.junit.internal.runners.MethodRoadie.runBefores(MethodRoadie.java:132)
+    at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:95)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:294)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:282)
+    at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:86)
+    at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:207)
+    at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:146)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+    at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:33)
+    at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:45)
+    at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:118)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:102)
+    at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+    at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:160)
+    at com.intellij.junit4.JUnit4IdeaTestRunner.startRunnerWithArgs(JUnit4IdeaTestRunner.java:74)
+    at com.intellij.rt.execution.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:211)
+    at <API label="">com.intellij.rt.execution.junit.JUnitStarter.main</API>(JUnitStarter.java:67)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:39)
+    at <API label="">com.intellij.rt.execution.application.AppMain.main</API>(AppMain.java:134)
+Caused by: java.lang.NullPointerException
+    at java.io.Writer.(Writer.java:71)
+    at java.io.PrintWriter.(PrintWriter.java:75)
+    at java.io.PrintWriter.(PrintWriter.java:62)
+    at org.apache.commons.io.IOUtils.(IOUtils.java:113)
+    ... 37 more
+
+</code></pre>
+
+What do I wrong?
+
+If to <API label="">remove</API> following row:
+
+<pre><code>
+whenNew(StringWriter.class).withNoArguments().<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(stringWriterMock);
+
+</code></pre>
+
+code becomes working...
+
+What the magic?
+
+==========
+The exception is thrown when the static initializer of <code>IOUtils</code> is executed, which looks like this (version 2.4):
+
+<pre><code>
+static {
+    // avoid security issues
+    StringBuilderWriter buf = new StringBuilderWriter(4);
+    PrintWriter out = new PrintWriter(buf); //<-- kaboom here
+    <API label="None">out.println</API>();
+    LINE_SEPARATOR = <API label="None">buf.toString</API>();
+    <API label="None">out.close</API>();
+}
+
+</code></pre>
+
+The <code>NullPointerException</code> is thrown down the stack while invoking <code>new PrintWriter(buf)</code> because the parameter (<code>buf</code>) is null.
+
+I suspect your remaining test code modifies the code so that <code>buf</code> is assigned a value of <code>null</code>. Did you <API label="org.mockito.Mockito.mock">mock</API> the Constructor of <code>StringBuilderWriter</code> for some reason?
+

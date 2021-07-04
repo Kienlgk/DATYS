@@ -1,0 +1,39 @@
+https://stackoverflow.com/questions/12854344
+What is method equivalent for the following: 
+
+<pre><code>
+@Mock
+MyType1 myType1;
+
+@Autowired
+@InjectMocks
+MyType2 myType2;
+
+</code></pre>
+
+I can replace <code>@Mock</code> with <code><API label="org.mockito.Mockito.mock">mock</API>(MyType1.class)</code>.   
+
+But how can I replace <code>@InjectMocks</code> with a method call? Something like this:
+
+<pre><code>
+<API label="None">injectMocks</API>(MyType2.class)
+
+</code></pre>
+
+==========
+Why using <code>Autowired</code> in your junit test? Since you are mocking the dependencies for <code>MyType2</code> you must know its concreate implementation when you write your test.
+
+Then you don't need and shouldn't use Spring or any injection framework to create the instance of <code>MyType2</code> that you want to test. Create it directly in your test initialization! I know that after some years of using IoC frameworks, it's difficult to write <code>myType2 = new MyType2Impl(<API label="org.mockito.Mockito.mock">mock</API>(myType1.class))</code> but it will really makes your tests simpler, and faster (because no application context to build).
+E.g.: 
+
+<pre><code>
+@Before
+public void setup() {
+  myType1 = <API label="org.mockito.Mockito.mock">mock</API>(MyType1.class);
+  myType2 = new MyType2Impl(myType1);
+}
+
+</code></pre>
+
+But if you really want to use IoC in your junit tests, use <a href="http://www.springockito.org/" rel="nofollow noreferrer">springockito</a> has suggested by Brice, and build your <API label="">mock</API> <code>MyType1</code> in your application context.
+

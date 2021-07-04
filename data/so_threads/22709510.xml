@@ -1,0 +1,53 @@
+https://stackoverflow.com/questions/22709510
+Let's take a map :
+
+
+A -> {1, 2, 3}
+B -> {3, 4, 5}
+C -> {2, 3, 5}
+
+
+I need to <API label="">reverse</API> this map and obtain : 
+
+
+1 -> {A}
+2 -> {A, C}
+3 -> {A, B, C}
+4 -> {B}
+5 -> {B, C}
+
+
+I achieved to do it with this code : 
+
+<pre><code>
+public static  Map reverseMap(Map map) {
+  Map result = <API label="com.google.common.collect.Maps.newHashMap">Maps.newHashMap</API>();
+  for(Map.Entry entry : <API label="None">map.entrySet</API>()) {
+    for(V value : <API label="None">entry.getValue</API>()) {
+
+     Set set = <API label="None">result.get</API>(value);
+      if(set == null) {
+        set = <API label="com.google.common.collect.Sets.newHashSet">Sets.newHashSet</API>();
+        <API label="None">result.put</API>(value, set);
+      }
+      <API label="None">set.add</API>(<API label="None">entry.getKey</API>());
+      <API label="None">result.put</API>(value, set);
+    }
+
+ }
+  return result;
+}
+
+</code></pre>
+
+But this is only a <API label="">reverse</API> indexing so I think that there might exist a predefined method somewhere to do this.
+
+Do someone knows such a library? a method in Guava?
+
+==========
+If you replace your <code>HashMap</code> by a <code>HashMultimap</code> (they're equivalent, and the <code>Multimap</code> is easier to use), you can now use <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimaps.html#<API label="">invertFrom</API>%28com.google.common.collect.Multimap,%20M%29" rel="nofollow"><code><API label="com.google.common.collect.Multimaps.invertFrom">Multimaps.invertFrom</API>()</code></a> which will populate a <code>Multimap</code>.
+
+
+
+Note that as the Javadoc mentions, if you use an <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/index.html?com/google/common/collect/ImmutableMultimap.html" rel="nofollow"><code>ImmutableMultimap</code></a>, you can then directly call <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/ImmutableMultimap.html#<API label="">inverse</API>%28%29" rel="nofollow"><code><API label="com.google.common.collect.ImmutableMultimap.inverse">ImmutableMultimap.inverse</API>()</code></a>.
+

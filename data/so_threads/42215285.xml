@@ -1,0 +1,28 @@
+https://stackoverflow.com/questions/42215285
+Is there a way to assert that a List contains only/exactly long[] array?
+
+Code:
+
+<pre><code>
+ // arrange
+    long[] result = {1, 2, 3, 4, 5};
+
+   // act
+    List digitPowNumbers = SumDigPower.findDigitPowNumbers(1, 6);
+
+   // assert
+    <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(digitPowNumbers).<API label="org.assertj.core.api.ListAssert.containsExactly">containsExactly</API>(result);
+}
+
+</code></pre>
+
+I'm getting <code>Cannot <API label="">resolve</API> method <API label="org.assertj.core.api.ListAssert.containsExactly">containsExactly</API>(long[])</code>. How can I do this assertion? Is there a way without just typing <code>1, 2, 3, 4, 5</code> into <code><API label="org.assertj.core.api.ListAssert.containsExactly">containsExactly</API></code> ?
+
+==========
+<code><API label="org.assertj.core.api.ListAssert.containsExactly">containsExactly</API>()</code> expects an array of the same element type as your list, which is <code>Long</code>, not the primitive <code>long</code>. Change your array type and it should work:
+
+<pre><code>
+Long[] result = {1L, 2L, 3L, 4L, 5L};
+
+</code></pre>
+

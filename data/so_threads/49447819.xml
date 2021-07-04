@@ -1,0 +1,28 @@
+https://stackoverflow.com/questions/49447819
+How <API label="">to</API> achieve the below:
+
+<pre><code>
+List streams = new ArrayList<>();
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(streams).usingFieldByFieldElementComparatorIgnoringGivenFields("createdOn").<API label="org.assertj.core.api.ListAssert.containsOnly">containsOnly</API>(data1, data2);
+
+</code></pre>
+
+==========
+Use <a href="http://javadox.com/org.assertj/assertj-core/3.4.1/org/assertj/core/api/AbstractIterableAssert.html#<API label="">usingElementComparatorIgnoringFields</API>-java.lang.String...-" rel="noreferrer"><code><API label="org.assertj.core.api.AbstractIterableAssert.usingElementComparatorIgnoringFields">ListAssert.usingElementComparatorIgnoringFields</API>(String... fields)</code></a> that does the same thing <API label="">as</API> <a href="http://javadox.com/org.assertj/assertj-core/3.4.1/org/assertj/core/api/AbstractIterableAssert.html#<API label="">usingFieldByFieldElementComparator</API>--" rel="noreferrer"><code><API label="org.assertj.core.api.AbstractIterableAssert.usingFieldByFieldElementComparator">ListAssert.usingFieldByFieldElementComparator</API>()</code></a> but by allowing <API label="">to</API> <API label="">ignore</API> some fields/properties :
+
+
+ Use field/property by field/property <API label="">comparison</API> on all
+  fields/properties except the <API label="">given</API> ones
+
+
+So you could <API label="">write</API> :
+
+<pre><code>
+List streams = new ArrayList<>();
+//...
+<API label="org.assertj.core.api.Assertions.assertThat">Assertions.assertThat</API>(streams)
+          .<API label=".assertj.core.api.ListAssert.usingElementComparatorIgnoringFields">usingElementComparatorIgnoringFields</API>("createdOn")
+          .<API label="org.assertj.core.api.ListAssert.containsOnly">containsOnly</API>(data1, data2);
+
+</code></pre>
+

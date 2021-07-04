@@ -1,0 +1,83 @@
+https://stackoverflow.com/questions/10937763
+Suppose I have interface and implementation class that implements it and I want to write unit-test for this. What should I test interface or Impl? 
+
+Here is an example:
+
+<code>
+public interface HelloInterface {
+    public void sayHello();
+}
+
+
+public class HelloInterfaceImpl implements HelloInterface {
+    private PrintStream target = System.out;
+
+
+   @Override
+    public void sayHello() {
+        <API label="None">target.print</API>("Hello World");
+
+   }
+
+   public void <API label="">setTarget</API>(PrintStream target){
+        this.target = target;
+    }
+}
+</code>
+
+So, I have HelloInterface and  HelloInterfaceImpl that implements it. What is unit-under-test interface or Impl? 
+
+I think it should be HelloInterface. Consider following sketch of JUnit test:
+
+<code>
+public class HelloInterfaceTest {
+    private HelloInterface hi;
+
+   @Before
+    public void setUp() {
+        hi = new HelloInterfaceImpl();
+    }
+
+   @Test
+    public void testDefaultBehaviourEndsNormally() {
+        hi.sayHello();
+        // no NullPointerException here
+    }
+
+   @Test
+    public void testCheckHelloWorld() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream target = new PrintStream(out);
+        <API label="None">PrivilegedAccessor.setValue</API>(hi, "target", target);
+        //You can use ReflectionTestUtils in place of PrivilegedAccessor
+        //really it is DI 
+        //((HelloInterfaceImpl)hi).<API label="None">setTarget</API>(target);
+        hi.sayHello();
+        String result = <API label="None">out.toString</API>();
+        assertEquals("Hello World", result);
+
+   }
+ }
+</code>
+
+The main line is actually one that I commented out. 
+
+<code>
+((HelloInterfaceImpl)hi).<API label="None">setTarget</API>(target);</code>
+
+Method <code><API label="None">setTarget</API>()</code> is not part of my public interface, so I don't want to accidentally call it. If I really want to call it, I should take a moment and think about it. It helps me, for example, to discover that what I'm really trying to do is dependency injection. It opens for me the whole world of new opportunities. I can use some existing dependency injection mechanism (Spring's, for example), I can simulate it myself as I actually did in my code or to take totally different approach. Take a closer look, preparation of PrintSream wasn't that easy, maybe I should use mock object instead?
+
+EDIT:
+I think I should always focus on the interface. From my point of view <code><API label="None">setTarget</API>()</code> is not part of the "contract" of the impl class neither, it serves sally for dependency injection. I think any public method of Impl class should be considered as private from the testing perspective. It doesn't mean that I ignore the implementation details, though.
+
+See also Should Private/Protected methods be under unit test?
+
+EDIT-2 In the case of multiple implementations\multiple interfaces, I would test all of the implementations, but when I declare a variable in my <code>setUp()</code> method I would definitely use interface.
+
+==========
+The implementation is the unit that needs to be tested. That is of course what you are instantiating and what contains the program/business logic.
+
+If you had a critical interface and you wanted to make sure every implementation adhered to it properly, then you may write a test suite that focuses on the interface and requires an instance be passed in (agnostic of any implementation type).
+
+Yes, it would probably be easier to use Mockito for PrintStream, it may not always be possible to avoid using a mock object like you did in this specific example.
+

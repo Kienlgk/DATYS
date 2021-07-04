@@ -1,0 +1,64 @@
+https://stackoverflow.com/questions/9664421
+Is it possible in Guava,
+
+
+To conduct a <API label="">reverse</API> lookup in <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/BiMap.html" rel="nofollow noreferrer"><code>BiMap</code></a> for key and multiple <API label="">values</API>? Precisely, I have key and corresponding multiple <API label="">values</API>, I want to <API label="">get</API> key from a value.
+To store multiple <API label="">values</API> in <code>LinkedHashMap</code>? Precisely, I want to store, key - multiple <API label="">values</API> in some order thus I can <API label="">get</API> key position in the list.
+
+
+==========
+Ad. 1. Yes, it's possible to do a <API label="">reverse</API> lookup with a <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/BiMap.html" rel="nofollow noreferrer"><code>BiMap</code></a>, you just call <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/BiMap.html#<API label="">inverse</API>%28%29" rel="nofollow noreferrer"><code><API label="com.google.common.collect.BiMap.inverse">inverse</API></code></a> on your <code>BiMap</code> and you <API label="">get</API> inversed <code>BiMap</code> view <API label="">of</API> your <code>BiMap</code>. 
+
+Example (taken from Guava's test suite):
+
+<pre><code>
+public void testMapConstructor() {
+  /* Test with non-empty Map. */
+  Map <API label="None">map</API> = <API label="com.google.common.collect.ImmutableMap.of">ImmutableMap.of</API>(
+      "canada", "dollar",
+      "chile", "peso",
+      "switzerland", "franc");
+  HashBiMap bimap = <API label="com.google.common.collect.HashBiMap.create">HashBiMap.create</API>(<API label="">map</API>);
+  assertEquals("dollar", <API label="None">bimap.get</API>("canada"));
+  assertEquals("canada", <API label="com.google.common.collect.BiMap.inverse">bimap.inverse</API>().<API label="">get</API>("dollar"));
+}
+
+</code></pre>
+
+
+
+Ad. 2. Assuming you <API label="">mean</API> "I want to store, key -> multiple [collection] <API label="">values</API>" (<code>Map</code>), <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ListMultimap.html" rel="nofollow noreferrer"><code>ListMultimap</code></a> is probably what you want, more precisly <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ArrayListMultimap.html" rel="nofollow noreferrer"><code>ArrayListMultimap</code></a> (preserves <API label="">values</API> order) or <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/LinkedListMultimap.html" rel="nofollow noreferrer"><code>LinkedListMultimap</code></a> (preserves both <API label="">keys</API> and <API label="">values</API> order). If your object is going to be immutable, I strongly advice you use <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ImmutableListMultimap.html" rel="nofollow noreferrer"><code>ImmutableListMultimap</code></a>.
+
+You can also <API label="">create</API> your own implementation <API label="">of</API> <code>Multimap</code> by using <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Multimaps.html#<API label="">newListMultimap</API>-java.util.Map-com.google.common.base.Supplier-" rel="nofollow noreferrer">factory</a> (bit verbose), i.e. I use:
+
+<pre><code>
+private static  ListMultimap makeLinkedArrayListMultimap() {
+  return <API label="com.google.common.collect.Multimaps.newListMultimap">Multimaps.newListMultimap</API>(<API label="com.google.common.collect.Maps.newLinkedHashMap">Maps.newLinkedHashMap</API>(), 
+      new Supplier() {
+        @Override public List <API label="">get</API>() {
+          return <API label="">Lists.newArrayList</API>();
+        }
+      });
+}
+
+public static void <API label="Nome">main</API>(final String[] args) {
+  final ListMultimap multimap = makeLinkedArrayListMultimap();
+  <API label="com.google.common.collect.Multimap.putAll">multimap.putAll</API>("one", <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>("zero", "three"));
+  <API label="com.google.common.collect.Multimap.putAll">multimap.putAll</API>("two", <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>("three", "four", "three"));
+  <API label="com.google.common.collect.Multimap.putAll">multimap.putAll</API>("three", <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>()); // note that this doesn't <API label="">add</API> key to multimap
+  <API label="com.google.common.collect.Multimap.put">multimap.put</API>("four", "forty-two");
+
+ <API label="None">System.out.println</API>(multimap);
+  // prints {one=[one, three], two=[three, four, three], four=[forty-two]}
+
+ final List listForOnes = <API label="com.google.common.collect.Multimap.get">multimap.get</API>("one");
+  <API label="None">System.out.println</API>(<API label="">listForOnes.get</API>(0));
+  // prints zero
+}
+
+</code></pre>
+
+
+
+P.S. Take a look at <a href="http://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained" rel="nofollow noreferrer">Guava's wiki</a>, which is explaining both <code>BiMap</code> and <code>Multimap</code>.
+

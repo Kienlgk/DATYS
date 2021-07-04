@@ -1,0 +1,72 @@
+https://stackoverflow.com/questions/6912594
+I create a map using 
+
+<code>
+new MapMaker().<API label="None">softValues</API>().<API label="None">maximumSize</API>(cacheSize).<API label="None">makeMap</API>();
+</code>
+
+This seemed to work fine, however, I sometimes get the following exception after accessing right after deploying on the server and putting new elements into the map:
+
+<code>
+java.lang.IllegalStateException: Can't overwrite cause
+  at java.lang.Throwable.initCause(Throwable.java:320)
+  at <API label="">org.jboss.mx.loading.RepositoryClassLoader.findClass</API>(RepositoryClassLoader.java:624)
+  at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:307)
+  at org.jboss.mx.loading.RepositoryClassLoader.loadClassImpl(RepositoryClassLoader.java:474)
+  at <API label="">org.jboss.mx.loading.RepositoryClassLoader.loadClass</API>(RepositoryClassLoader.java:415)
+  at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:248)
+  at <API label="">com.google.common.collect.CustomConcurrentHashMap$2.iterator</API>(CustomConcurrentHashMap.java:828)
+  at <API label="">java.util.AbstractCollection.remove</API>(AbstractCollection.java:241)
+  at com.google.common.collect.CustomConcurrentHashMap$Segment.removeFromChain(CustomConcurrentHashMap.java:2599)
+  at com.google.common.collect.CustomConcurrentHashMap$Segment.processPendingCleanup(CustomConcurrentHashMap.java:2772)
+  at com.google.common.collect.CustomConcurrentHashMap$Segment.runLockedCleanup(CustomConcurrentHashMap.java:2860)
+  at com.google.common.collect.CustomConcurrentHashMap$Segment.preWriteCleanup(CustomConcurrentHashMap.java:2806)
+  at <API label="">com.google.common.collect.CustomConcurrentHashMap$Segment.put</API>(CustomConcurrentHashMap.java:2374)
+  at <API label="">com.google.common.collect.CustomConcurrentHashMap.put</API>(CustomConcurrentHashMap.java:3346)
+  at <API label="">my.app.cache.CacheImplGoogleGuava.put</API>(CacheImplGoogleGuava.java:36)
+...
+</code>
+
+What could be the reason?
+
+--- Updated:
+
+JBoss version is 5. 
+
+Setting a breakpoint in Throwable.initCause revealed <code>ClassNotFoundException</code> with message:
+<code>Invalid use of destroyed classloader for com.google.common.collect.Iterators, UCL destroyed at:</code>
+and with Stacktrace 
+
+<code>
+ClassNotFoundException(Throwable).initCause(Throwable):320
+UnifiedClassLoader3(RepositoryClassLoader).<API label="None">findClass</API>(String):628
+...
+UnifiedClassLoader3(ClassLoader).<API label="None">loadClass</API>(String):248
+<API label="None">CustomConcurrentHashMap$2.iterator</API>():828
+CustomConcurrentHashMap$2(AbstractCollection).<API label="None">remove</API>(Object):241
+CustomConcurrentHashMap$Segment.enqueueCleanup(...):2738
+CustomConcurrentHashMap$Segment.unsetValue(...):2662
+<API label="None">CustomConcurrentHashMap.reclaimValue</API>(...)
+CustomConcurrentHashMap$SoftValueReference.finalizeReferent():1637
+...
+Method.invoke:574
+Finalizer.claenUp:154
+Finalizer.run:127
+</code>
+
+From the stacktrace, it seems as if an object in the map was finalized where in <code>finalizeReferent</code> the class <code>com.google.common.collect.Iterators</code> cannot be loaded.
+
+==========
+Your problem seems to be unrelated to <code>MapMaker</code> or Guava in general.
+
+You only see an exception that happens while handling another exception (unfortunately).
+
+<code>
+Throwable.initCause()</code> throws an exception when it's called while there was already a cause specified for the current <code>Throwable</code> (either via the method or the constructor`.
+
+The <code><API label="None">RepositoryClassLoader.findClass</API>()</code> method seems to be handling some exception that it expects not to have a cause, but in fact it already has a cause set, which triggers this exception.
+
+Unfortunately the exception you see here hides the actual exception (which would probably be much more important for solving the problem).
+
+Try to <API label="">put</API> a breakpoit at <code>Throwable.initCause()</code> at line 320 or at <code><API label="None">RepositoryClassLoader.findClass</API>()</code> (at line 624) and reproduce the problem to (hopefully) see the "real" exception in the local variables view of your IDE.
+

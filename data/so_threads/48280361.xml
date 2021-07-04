@@ -1,0 +1,71 @@
+https://stackoverflow.com/questions/48280361
+I have <code>Multimap</code>, which contains two strings. Example:
+
+<pre><code>
+1 = [key,car],  
+2 = [key,blue],
+3 = [key,car]
+
+</code></pre>
+
+Multimap definition (I am using Guava library):
+
+<pre><code>
+ListMultimap map_multi = <API label="com.google.common.collect.ArrayListMultimap.create">ArrayListMultimap.create</API>(); 
+
+</code></pre>
+
+And this is how I <API label="">put</API> <API label="">values</API> in MultiMap:
+
+<pre><code>
+for (int i = 0; i < <API label="None">list.size</API>(); i++) {
+        if (i + 1 < <API label="None">list.size</API>()) {
+
+           <API label="com.google.common.collect.ArrayListMultimap.put">multimap.put</API>(i,(String) <API label="">list.get</API>(i));
+            <API label="com.google.common.collect.ArrayListMultimap.put">multimap.put</API>(i,(String) <API label="">list.get</API>(i+1));
+
+       } else if (i + 1 == <API label="">list.size</API>()) {
+        }
+    }      
+
+</code></pre>
+
+I want to count the occurrences of the same value inside the multimap. 
+
+So the result should be 2 if i count how many <API label="">values</API> <code>[key,car]</code> are (per example I have given above) in my multimap:
+
+
+occurrences of <code>[key,car]</code> = 2
+occurrences of <code>[key,blue]</code> = 1
+
+
+I have also tried to implement this with multi value <code>HashMap</code> and I was counting it with this, way (<code>Storage</code> is class where I store two string <API label="">values</API> inside object):
+
+<pre><code>
+B = <API label="None">Collections.frequency</API>(new ArrayList(<API label="com.google.common.collect.ArrayListMultimap.values">map.values</API>()), <API label="com.google.common.collect.ArrayListMultimap.get">map.get</API>(number));
+
+</code></pre>
+
+But I don't <API label="">get</API> the right results.
+
+==========
+You can achieve what you want by creating a map that has your multimap <API label="">values</API> as the keys and the count as the value:
+
+<pre><code>
+Map, Long> result = <API label="com.google.common.collect.ArrayListMultimap.asMap">map_multi.asMap</API>().<API label="None">values</API>().<API label="None">stream</API>()
+    .collect(Collectors.groupingBy(v -> v, Collectors.counting()));
+
+</code></pre>
+
+Here I've used Guava's <a href="https://google.github.io/guava/releases/23.6-jre/api/docs/com/google/common/collect/Multimap.html#<API label="">asMap</API>--" rel="nofollow noreferrer"><code><API label="com.google.common.collect.ArrayListMultimap.asMap">Multimap.asMap</API></code></a> method to <API label="">get</API> a view over the original multimap, then collected the <API label="">values</API> into a new map.
+
+Another way, without streams:
+
+<pre><code>
+Map, Integer> result = new HashMap<>();
+<API label="com.google.common.collect.ArrayListMultimap.asMap">map_multi.asMap</API>().<API label="None">values</API>().<API label="None">forEach</API>(v -> <API label="None">result.merge</API>(v, 1, Integer::<API label="">sum</API>));
+
+</code></pre>
+
+This uses the <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Map.html#<API label="">merge</API>-K-V-java.util.function.BiFunction-" rel="nofollow noreferrer"><code><API label="">Map.merge</API></code></a> method to accumulate equal <API label="">values</API> by counting its occurrences.
+

@@ -1,0 +1,10 @@
+https://stackoverflow.com/questions/54264349
+Guava CacheBuilder support both <API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>() and <API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API>().
+But if the values are collected, why do we want to still keep keys in Cache?
+So if we just use <API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>(), that should be enough?
+
+==========
+It is not the case that <code><API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API></code> means "collect the keys but keep the values," nor is it the case that <code><API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API></code> means "collect the values but keep the keys."
+
+What <code><API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API></code> does is say, "when there are no longer any strong references to the key, collect the entire entry."  What <code><API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API></code> does is say, "when there are no longer any strong references to the value, collect the entire entry."  So when you use both, the entire entry is collected when either the key or the value has no strong references pointing to it.
+

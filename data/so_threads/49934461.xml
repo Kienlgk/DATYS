@@ -1,0 +1,88 @@
+https://stackoverflow.com/questions/49934461
+Im trying to mock the send email functionality which sends out email <API label="">when</API> a particular job/task is completed. When i try to unit test it getting below error. Is this the right way to test it or something wrong or missing anything.
+
+<pre><code>
+@Mock
+private MailServiceImpl mailService;
+
+@Mock
+private JavaMailSenderImpl javaMailSender;
+
+
+@Before
+public  void setUp() {
+    <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    mailService=new MailServiceImpl(javaMailSender);
+
+}
+
+
+@Test
+public void testSendEmail() {
+
+   try {
+        <API label="org.mockito.Mockito.doNothing">doNothing</API>().<API label="org.mockito.stubbing.Stubber.when">when</API>(mailService).sendMail(getEmailProperties());
+        mailService.sendMail(getEmailProperties()); 
+        <API label="org.mockito.Mockito.verify">verify</API>(mailService,<API label="org.mockito.Mockito.times">times</API>(1)).sendMail(getEmailProperties());
+    } catch (Exception e) {
+        <API label="None">Assert.fail</API>(<API label="None">e.getMessage</API>());
+    }
+
+}
+
+public EmailProperties getEmailProperties() {
+
+   EmailProperties emailProperties = new EmailProperties();
+
+   emailProperties.setFromAddress("from@Test.com");
+    emailProperties.setToAddress("To@Test.com");
+    emailProperties.setEmailBody("Test");
+    emailProperties.setSubject("Test email");
+    emailProperties.setAttachment((File) null);
+    emailProperties.setMessageType(1);
+
+   return emailProperties;
+  }
+
+</code></pre>
+
+Below is the error message is thrown from testSendEmail method. Any suggestions or any other ways to test it. google search didn't help much.
+
+<pre><code>
+java.lang.AssertionError: 
+    Argument passed to <API label="org.mockito.stubbing.Stubber.when">when</API>() is not a mock!
+    Example of correct stubbing:
+    <API label="org.mockito.Mockito.doThrow">doThrow</API>(new RuntimeException()).<API label="org.mockito.stubbing.Stubber.when">when</API>(mock).someMethod();
+    at <API label="">org.junit.Assert.fail</API>(Assert.java:88)
+    at com.xx.xx.xx.mail.MailServiceTest.testSendEmail(MailServiceTest.java:52)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at 
+<API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:538)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:760)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:460)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:206)
+
+</code></pre>
+
+==========
+removal of <API label="org.mockito.Mockito.doNothing">doNothing</API>().<API label="org.mockito.stubbing.Stubber.when">when</API>(mailService).sendMail(getEmailProperties()); fixed the issue. Not sure what was causing this issue
+

@@ -1,0 +1,59 @@
+https://stackoverflow.com/questions/42082918
+To <API label="">mock</API> data for my unit testing, I am using Mockito. But I see the below exception. Am I missing any setup?
+
+JVM used here is Java HotSpot(TM) 64-Bit Server VM. 1.8
+
+<pre><code>
+public class TestCreateObj{
+
+ public void getMockData() {       
+    TestObj deal = <API label="org.mockito.Mockito.mock">mock</API>(TestObj.class);
+    <API label="org.mockito.Mockito.then">when</API>(<API label="None">deal.getDescription</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("HURRAH!!!");
+
+   <API label="None">System.out.println</API>(<API label="None">deal.getDescription</API>());      
+}
+
+public static void <API label="">main</API>(String args[]) {
+    new TestCreateObj().getMockData();
+}
+
+</code></pre>
+
+This exception is thrown at runtime:
+
+<pre><code>
+Caused by: java.lang.RuntimeException: Class file too large!
+    at <API label="">net.bytebuddy.jar.asm.ClassWriter.toByteArray</API>(Unknown Source)
+    at <API label="">net.bytebuddy.dynamic.scaffold.TypeWriter$Default$ForCreation.create</API>(TypeWriter.java:4108)
+    at <API label="">net.bytebuddy.dynamic.scaffold.TypeWriter$Default.make</API>(TypeWriter.java:1612)
+    at <API label="">net.bytebuddy.dynamic.scaffold.subclass.SubclassDynamicTypeBuilder.make</API>(SubclassDynamicTypeBuilder.java:174)
+    at <API label="">net.bytebuddy.dynamic.scaffold.subclass.SubclassDynamicTypeBuilder.make</API>(SubclassDynamicTypeBuilder.java:155)
+    at <API label="">net.bytebuddy.dynamic.DynamicType$Builder$AbstractBase.make</API>(DynamicType.java:2560)
+    at <API label="">net.bytebuddy.dynamic.DynamicType$Builder$AbstractBase$Delegator.make</API>(DynamicType.java:2662)
+    at org.mockito.internal.creation.bytebuddy.SubclassBytecodeGenerator.mockClass(SubclassBytecodeGenerator.java:94)
+    at <API label="">org.mockito.internal.creation.bytebuddy.TypeCachingBytecodeGenerator$1.call</API>(TypeCachingBytecodeGenerator.java:37)
+    at <API label="">org.mockito.internal.creation.bytebuddy.TypeCachingBytecodeGenerator$1.call</API>(TypeCachingBytecodeGenerator.java:34)
+    at <API label="">net.bytebuddy.TypeCache.findOrInsert</API>(TypeCache.java:138)
+    at <API label="">net.bytebuddy.TypeCache$WithInlineExpunction.findOrInsert</API>(TypeCache.java:346)
+    at <API label="">net.bytebuddy.TypeCache.findOrInsert</API>(TypeCache.java:161)
+    at <API label="">net.bytebuddy.TypeCache$WithInlineExpunction.findOrInsert</API>(TypeCache.java:355)
+    at org.mockito.internal.creation.bytebuddy.TypeCachingBytecodeGenerator.mockClass(TypeCachingBytecodeGenerator.java:32)
+    at org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker.createMockType(SubclassByteBuddyMockMaker.java:71)
+    at <API label="">org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker.createMock</API>(SubclassByteBuddyMockMaker.java:42)
+    at <API label="">org.mockito.internal.creation.bytebuddy.ByteBuddyMockMaker.createMock</API>(ByteBuddyMockMaker.java:26)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:35)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:65)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1691)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1604)
+
+</code></pre>
+
+==========
+The exception comes from ASM where it complains about an overly large constant pool as Holger pointed out in the comments. This is a result of applying both the instrumentation implied by Mockito and by PowerMock on an already large class.
+
+The Java class file format sets some limitations as for example the number of fields, methods or constants that are declared by a class. If you cross this limit in a non-generated Java class, this will yield a similar problem.
+
+In order to <API label="">mock</API> a class, Mockito asks Byte Buddy to add dispatcher methods and synthetic methods for invoking each super method. This effectively doubles the amount of methods by a class and also adds to the constant pool. PowerMock applies something similar.
+
+If you were already <API label="">close</API> to the constant limit, these additions finally <API label="">push</API> you over the edge of what a class file can represent. It typically only happens <API label="">when</API> you have an object containing nothing but a few thousand setters and getters where the result is that you simply cannot <API label="">mock</API> this object, especially with both Mockito and PowerMock active.
+

@@ -1,0 +1,2081 @@
+{
+  "30127057": [
+    "java",
+    "enums",
+    "mockito",
+    "powermock",
+    "powermockito"
+  ],
+  "29318433": [
+    "java",
+    "mockito",
+    "powermock"
+  ],
+  "24618035": [
+    "java",
+    "rest",
+    "mockito"
+  ],
+  "25372312": [
+    "java",
+    "unit-testing",
+    "mockito"
+  ],
+  "30186817": [
+    "java",
+    "junit",
+    "eclipse-plugin",
+    "mockito"
+  ],
+  "29785641": [
+    "java",
+    "unit-testing",
+    "mockito"
+  ],
+  "21430378": [
+    "mockito"
+  ],
+  "30057310": [
+    "android",
+    "android-studio",
+    "mockito",
+    "android-gradle-plugin",
+    "powermock"
+  ],
+  "24390146": [
+    "java",
+    "jdbc",
+    "prepared-statement",
+    "mockito"
+  ],
+  "25850491": [
+    "java",
+    "lambda",
+    "java-8",
+    "assertj"
+  ],
+  "30668168": [
+    "java",
+    "mockito",
+    "verify"
+  ],
+  "28341954": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito",
+    "powermock"
+  ],
+  "27629351": [
+    "android",
+    "junit",
+    "mockito"
+  ],
+  "29428583": [
+    "java",
+    "testing",
+    "junit",
+    "mocking",
+    "mockito"
+  ],
+  "27109768": [
+    "java",
+    "spring",
+    "unit-testing",
+    "mockito"
+  ],
+  "28994316": [
+    "java",
+    "unit-testing",
+    "junit",
+    "assertj"
+  ],
+  "32065666": [
+    "java",
+    "testng",
+    "mockito",
+    "powermock"
+  ],
+  "26026018": [
+    "java",
+    "mockito"
+  ],
+  "27303562": [
+    "java",
+    "unit-testing",
+    "mockito"
+  ],
+  "24781833": [
+    "eclipse",
+    "osgi",
+    "mockito",
+    "tycho",
+    "target-platform"
+  ],
+  "16141618": [
+    "java",
+    "guava"
+  ],
+  "16213103": [
+    "java",
+    "guava",
+    "comparator"
+  ],
+  "31598925": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "14412237": [
+    "java",
+    "mysql",
+    "hadoop",
+    "guava",
+    "hive"
+  ],
+  "17559629": [
+    "java",
+    "guava"
+  ],
+  "15978692": [
+    "java",
+    "concurrency",
+    "set",
+    "guava",
+    "weak-references"
+  ],
+  "16856554": [
+    "java",
+    "arraylist",
+    "filtering",
+    "guava"
+  ],
+  "13521523": [
+    "java",
+    "caching",
+    "guava",
+    "future"
+  ],
+  "30538454": [
+    "java",
+    "guava"
+  ],
+  "25442298": [
+    "java",
+    "caching",
+    "guava"
+  ],
+  "30648497": [
+    "java-8",
+    "guava"
+  ],
+  "34646554": [
+    "java",
+    "guava"
+  ],
+  "22212035": [
+    "java",
+    "lazy-loading",
+    "guava",
+    "iterable",
+    "nosuchelementexception"
+  ],
+  "21918641": [
+    "java",
+    "statistics",
+    "guava",
+    "mean",
+    "apache-commons-math"
+  ],
+  "26119232": [
+    "java",
+    "algorithm",
+    "data-structures",
+    "collections",
+    "guava"
+  ],
+  "22709510": [
+    "java",
+    "guava"
+  ],
+  "22355567": [
+    "java",
+    "caching",
+    "key",
+    "guava"
+  ],
+  "25499811": [
+    "java",
+    "guava"
+  ],
+  "52553569": [
+    "java",
+    "guava"
+  ],
+  "15522765": [
+    "java",
+    "gwt",
+    "collections",
+    "guava"
+  ],
+  "26510255": [
+    "java",
+    "guava"
+  ],
+  "41243018": [
+    "java",
+    "annotations",
+    "lombok"
+  ],
+  "56489355": [
+    "java",
+    "gradle",
+    "lombok",
+    "java-11"
+  ],
+  "28268682": [
+    "java",
+    "collections",
+    "hashmap",
+    "guava"
+  ],
+  "29277173": [
+    "java",
+    "list",
+    "guava"
+  ],
+  "26737853": [
+    "android",
+    "gradle",
+    "android-studio",
+    "guava"
+  ],
+  "27714306": [
+    "java",
+    "guava",
+    "multimap"
+  ],
+  "21921507": [
+    "java",
+    "guava",
+    "immutability"
+  ],
+  "40230987": [
+    "java",
+    "dictionary",
+    "guava",
+    "multimap",
+    "sortedmap"
+  ],
+  "34543874": [
+    "java",
+    "set",
+    "guava",
+    "is-empty"
+  ],
+  "18372818": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "35084333": [
+    "java",
+    "spring-mvc",
+    "collections",
+    "guava",
+    "el"
+  ],
+  "47430197": [
+    "java",
+    "guava"
+  ],
+  "43924890": [
+    "java",
+    "collections",
+    "clone",
+    "guava",
+    "immutability"
+  ],
+  "29269408": [
+    "java",
+    "processing",
+    "guava",
+    "multiset"
+  ],
+  "29137011": [
+    "java",
+    "guava"
+  ],
+  "60304853": [
+    "java",
+    "scala",
+    "guava"
+  ],
+  "24701679": [
+    "java",
+    "guava"
+  ],
+  "32194970": [
+    "java",
+    "syntax",
+    "guava"
+  ],
+  "42718161": [
+    "java",
+    "annotations",
+    "lombok"
+  ],
+  "48259912": [
+    "nullpointerexception",
+    "guava",
+    "multimap"
+  ],
+  "38344157": [
+    "guava"
+  ],
+  "28754875": [
+    "java",
+    "caching",
+    "dictionary",
+    "guava"
+  ],
+  "54256140": [
+    "java",
+    "file",
+    "hash",
+    "inputstream",
+    "guava"
+  ],
+  "25314202": [
+    "android",
+    "android-studio",
+    "proguard",
+    "lombok"
+  ],
+  "47993578": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "39658005": [
+    "java",
+    "exception-handling",
+    "lucene",
+    "guava"
+  ],
+  "22868967": [
+    "guava",
+    "apache-commons"
+  ],
+  "20005194": [
+    "java",
+    "serialization",
+    "guava"
+  ],
+  "29970869": [
+    "java",
+    "google-app-engine",
+    "out-of-memory",
+    "guava",
+    "securityexception"
+  ],
+  "43678302": [
+    "intellij-idea",
+    "gradle",
+    "guava",
+    "grpc"
+  ],
+  "61625556": [
+    "java",
+    "guava"
+  ],
+  "52090846": [
+    "java",
+    "eclipse",
+    "maven",
+    "getter-setter",
+    "lombok"
+  ],
+  "50251352": [
+    "java",
+    "deserialization",
+    "fastjson"
+  ],
+  "23812105": [
+    "java",
+    "lombok"
+  ],
+  "6946213": [
+    "java",
+    "guava",
+    "soft-references"
+  ],
+  "6354025": [
+    "java",
+    "gwt",
+    "guava"
+  ],
+  "8354200": [
+    "java",
+    "collections",
+    "guava",
+    "lambdaj"
+  ],
+  "7794014": [
+    "gwt",
+    "guava"
+  ],
+  "7259123": [
+    "java",
+    "guava",
+    "equivalence-classes"
+  ],
+  "4023968": [
+    "java",
+    "guava",
+    "multimap"
+  ],
+  "7585345": [
+    "java",
+    "guava"
+  ],
+  "7854909": [
+    "java",
+    "gwt",
+    "mime-types",
+    "content-type",
+    "guava"
+  ],
+  "7616169": [
+    "java",
+    "guava"
+  ],
+  "5716267": [
+    "java",
+    "guava"
+  ],
+  "2363408": [
+    "java",
+    "io",
+    "guava"
+  ],
+  "4896662": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "5719833": [
+    "java",
+    "collections",
+    "maps",
+    "guava"
+  ],
+  "7758283": [
+    "java",
+    "guava"
+  ],
+  "8346036": [
+    "java",
+    "serialization",
+    "collation",
+    "guava"
+  ],
+  "6942096": [
+    "java",
+    "equals",
+    "guava",
+    "comparisonchain"
+  ],
+  "8913379": [
+    "generics",
+    "scala",
+    "guava",
+    "parameterized"
+  ],
+  "2155788": [
+    "java",
+    "collections",
+    "iterator",
+    "guava"
+  ],
+  "4493643": [
+    "java",
+    "iterator",
+    "thread-safety",
+    "guava"
+  ],
+  "6158601": [
+    "java",
+    "guava",
+    "hashcode"
+  ],
+  "50550694": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "hamcrest"
+  ],
+  "51558046": [
+    "java",
+    "unit-testing",
+    "spring-boot",
+    "mockito"
+  ],
+  "49673221": [
+    "java",
+    "mockito",
+    "junit4",
+    "powermock",
+    "powermockito"
+  ],
+  "48774147": [
+    "unit-testing",
+    "junit",
+    "java-8",
+    "race-condition",
+    "assertj"
+  ],
+  "53445774": [
+    "mockito"
+  ],
+  "50622037": [
+    "java",
+    "unit-testing",
+    "lambda",
+    "junit",
+    "assertj"
+  ],
+  "46790838": [
+    "java",
+    "assertj"
+  ],
+  "46676726": [
+    "java",
+    "swing",
+    "ui-testing",
+    "assertj"
+  ],
+  "52671804": [
+    "java",
+    "mockito",
+    "junit4"
+  ],
+  "49447819": [
+    "java",
+    "assertions",
+    "assertj"
+  ],
+  "52547139": [
+    "java",
+    "mongodb",
+    "mockito",
+    "mongo-java-driver"
+  ],
+  "51720864": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "jax-rs"
+  ],
+  "47087419": [
+    "java",
+    "spring-mvc",
+    "junit",
+    "mockito"
+  ],
+  "47691364": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "48866139": [
+    "java",
+    "serenity-bdd",
+    "assertj"
+  ],
+  "49783615": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "stack-trace",
+    "powermock"
+  ],
+  "49726899": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "53526156": [
+    "java",
+    "unit-testing",
+    "assertj"
+  ],
+  "37555363": [
+    "guava",
+    "google-guava-cache"
+  ],
+  "42635283": [
+    "java",
+    "caching",
+    "memory",
+    "guava"
+  ],
+  "40462418": [
+    "java",
+    "elasticsearch",
+    "netty",
+    "guava",
+    "guice"
+  ],
+  "61393291": [
+    "java",
+    "iteration",
+    "guava"
+  ],
+  "53684321": [
+    "java",
+    "threadpool",
+    "guava",
+    "wait",
+    "countdownlatch"
+  ],
+  "46384217": [
+    "java",
+    "maven",
+    "heroku",
+    "guava",
+    "webapp-runner"
+  ],
+  "62579685": [
+    "java",
+    "hash",
+    "base64",
+    "guava",
+    "apache-commons"
+  ],
+  "63466731": [
+    "java",
+    "guava"
+  ],
+  "52333003": [
+    "java",
+    "null",
+    "return-value",
+    "guava"
+  ],
+  "40717638": [
+    "java",
+    "collections",
+    "guava",
+    "equality",
+    "apache-commons"
+  ],
+  "44387136": [
+    "hadoop",
+    "apache-spark",
+    "graph",
+    "guava",
+    "janusgraph"
+  ],
+  "42518713": [
+    "java",
+    "multithreading",
+    "collections",
+    "guava",
+    "atomic"
+  ],
+  "59348128": [
+    "java",
+    "java-8",
+    "guava"
+  ],
+  "41039844": [
+    "java",
+    "guava"
+  ],
+  "55171557": [
+    "java",
+    "spring",
+    "spring-boot",
+    "guava"
+  ],
+  "62523220": [
+    "java",
+    "algorithm",
+    "performance",
+    "guava"
+  ],
+  "41113560": [
+    "java",
+    "multithreading",
+    "caching",
+    "guava",
+    "google-guava-cache"
+  ],
+  "57751044": [
+    "guava",
+    "bloom-filter"
+  ],
+  "37244721": [
+    "java",
+    "multithreading",
+    "guava",
+    "atomic",
+    "google-guava-cache"
+  ],
+  "32955936": [
+    "java",
+    "junit",
+    "mockito",
+    "verify"
+  ],
+  "37205868": [
+    "java",
+    "unit-testing",
+    "assertj"
+  ],
+  "35066742": [
+    "java",
+    "gwt",
+    "mockito",
+    "noclassdeffounderror",
+    "presenter"
+  ],
+  "43814894": [
+    "assertj"
+  ],
+  "39031175": [
+    "java",
+    "mockito",
+    "powermock"
+  ],
+  "36312861": [
+    "spring",
+    "spring-mvc",
+    "mockito"
+  ],
+  "32128659": [
+    "java",
+    "unit-testing",
+    "reflection",
+    "mockito",
+    "powermockito"
+  ],
+  "44073360": [
+    "spring-mvc",
+    "spring-boot",
+    "swagger",
+    "springfox",
+    "assertj"
+  ],
+  "33285143": [
+    "eclipse",
+    "maven",
+    "unit-testing",
+    "mockito",
+    "hamcrest"
+  ],
+  "34843244": [
+    "java",
+    "android",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "43056202": [
+    "java",
+    "assertj"
+  ],
+  "34371355": [
+    "assertj"
+  ],
+  "32632338": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "44173069": [
+    "java",
+    "junit",
+    "mockito",
+    "powermock",
+    "jdk1.6"
+  ],
+  "38273418": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "39599874": [
+    "spring-boot",
+    "swagger",
+    "swagger-2.0",
+    "springfox",
+    "assertj"
+  ],
+  "43783516": [
+    "java",
+    "android",
+    "testing",
+    "junit",
+    "mockito"
+  ],
+  "42215285": [
+    "java",
+    "junit",
+    "assertj"
+  ],
+  "22527469": [
+    "mockito"
+  ],
+  "25010390": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "chaining",
+    "method-chaining"
+  ],
+  "17389563": [
+    "java",
+    "mockito"
+  ],
+  "18770943": [
+    "java",
+    "junit",
+    "dependencies",
+    "mockito",
+    "hamcrest"
+  ],
+  "24295197": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "19004541": [
+    "java",
+    "xml",
+    "object",
+    "guava"
+  ],
+  "29980906": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "30551184": [
+    "unit-testing",
+    "maven",
+    "mockito",
+    "aspectj"
+  ],
+  "30590470": [
+    "java",
+    "android",
+    "testing",
+    "gradle",
+    "mockito"
+  ],
+  "16788275": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "28448347": [
+    "java",
+    "unit-testing",
+    "mocking",
+    "mockito",
+    "easymock"
+  ],
+  "19916136": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito",
+    "powermock"
+  ],
+  "29593297": [
+    "java",
+    "android",
+    "guava"
+  ],
+  "17695356": [
+    "mockito",
+    "overloading",
+    "powermock"
+  ],
+  "25937487": [
+    "java",
+    "jsp",
+    "tomcat",
+    "guava"
+  ],
+  "29303731": [
+    "java",
+    "android",
+    "mockito",
+    "junit3"
+  ],
+  "28779999": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "23273230": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "24618956": [
+    "java",
+    "unit-testing",
+    "reflection",
+    "mockito"
+  ],
+  "19482372": [
+    "java",
+    "spring",
+    "unit-testing",
+    "mockito",
+    "hamcrest"
+  ],
+  "8604402": [
+    "java",
+    "mockito"
+  ],
+  "14440270": [
+    "unit-testing",
+    "mocking",
+    "mockito"
+  ],
+  "19155369": [
+    "java",
+    "testing",
+    "junit",
+    "mockito"
+  ],
+  "13048985": [
+    "android",
+    "junit",
+    "mockito",
+    "cglib",
+    "dexmaker"
+  ],
+  "17695056": [
+    "java",
+    "junit",
+    "junit4",
+    "mockito"
+  ],
+  "9035843": [
+    "java",
+    "mockito"
+  ],
+  "4381759": [
+    "java",
+    "eclipse",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "5462096": [
+    "java",
+    "class",
+    "generics",
+    "mocking",
+    "mockito"
+  ],
+  "13980281": [
+    "android",
+    "mockito",
+    "robolectric"
+  ],
+  "9110125": [
+    "java",
+    "mockito"
+  ],
+  "8806027": [
+    "java",
+    "mockito",
+    "powermock"
+  ],
+  "17732461": [
+    "java",
+    "mockito"
+  ],
+  "5953501": [
+    "java",
+    "maven",
+    "mockito"
+  ],
+  "19948014": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "powermock"
+  ],
+  "18572130": [
+    "java",
+    "android",
+    "camera",
+    "mocking",
+    "mockito"
+  ],
+  "15693283": [
+    "unit-testing",
+    "testing",
+    "mocking",
+    "mockito",
+    "internals"
+  ],
+  "19869247": [
+    "java",
+    "junit",
+    "mockito",
+    "junit4",
+    "powermock"
+  ],
+  "8197921": [
+    "java",
+    "spring",
+    "junit",
+    "mocking",
+    "mockito"
+  ],
+  "19949762": [
+    "java",
+    "enums",
+    "mockito"
+  ],
+  "9772701": [
+    "java",
+    "spring",
+    "junit",
+    "mockito"
+  ],
+  "35743767": [
+    "java",
+    "collections",
+    "guava",
+    "identity",
+    "multimap"
+  ],
+  "33138276": [
+    "java",
+    "guava",
+    "equality"
+  ],
+  "49002529": [
+    "java",
+    "time-complexity",
+    "guava",
+    "multimap"
+  ],
+  "46609234": [
+    "java",
+    "set",
+    "subset",
+    "guava"
+  ],
+  "30220820": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "24227149": [
+    "java",
+    "guava"
+  ],
+  "34078660": [
+    "java",
+    "dictionary",
+    "guava"
+  ],
+  "43354567": [
+    "java",
+    "time",
+    "guava",
+    "intersection"
+  ],
+  "43330764": [
+    "java",
+    "asynchronous",
+    "java-8",
+    "guava",
+    "completable-future"
+  ],
+  "32572919": [
+    "java",
+    "algorithm",
+    "list",
+    "data-structures",
+    "guava"
+  ],
+  "37907339": [
+    "java",
+    "data-structures",
+    "tree",
+    "guava",
+    "tree-traversal"
+  ],
+  "23298164": [
+    "java",
+    "bytearray",
+    "guava",
+    "hashcode"
+  ],
+  "61060973": [
+    "java",
+    "tree",
+    "guava",
+    "graph-theory"
+  ],
+  "35626712": [
+    "java",
+    "serialization",
+    "guava"
+  ],
+  "26938002": [
+    "ant",
+    "dns",
+    "guava"
+  ],
+  "47900817": [
+    "java",
+    "java-8",
+    "guava"
+  ],
+  "34227748": [
+    "java",
+    "restfb",
+    "lombok"
+  ],
+  "41246744": [
+    "java",
+    "guava"
+  ],
+  "51147242": [
+    "java",
+    "arrays",
+    "hash",
+    "guava",
+    "checksum"
+  ],
+  "42974151": [
+    "java",
+    "guava"
+  ],
+  "35453992": [
+    "java",
+    "dictionary",
+    "collections",
+    "guava"
+  ],
+  "37048855": [
+    "java",
+    "string",
+    "junit",
+    "mockito"
+  ],
+  "37861091": [
+    "java",
+    "unit-testing",
+    "mockito"
+  ],
+  "32730381": [
+    "java",
+    "android",
+    "mockito",
+    "android-instrumentation",
+    "dexmaker"
+  ],
+  "32139252": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "void",
+    "stubbing"
+  ],
+  "38362648": [
+    "mockito",
+    "java-5",
+    "spring2.x"
+  ],
+  "37776792": [
+    "hibernate",
+    "junit",
+    "mockito",
+    "powermock",
+    "dbunit"
+  ],
+  "31202190": [
+    "mockito",
+    "criteria",
+    "private-methods"
+  ],
+  "34978098": [
+    "spring-mvc",
+    "junit",
+    "mockito"
+  ],
+  "37054542": [
+    "mockito",
+    "void",
+    "stub"
+  ],
+  "37049218": [
+    "java",
+    "unit-testing",
+    "enums",
+    "mockito",
+    "final"
+  ],
+  "39276289": [
+    "mockito",
+    "kotlin"
+  ],
+  "37409232": [
+    "java",
+    "exception",
+    "junit",
+    "mockito"
+  ],
+  "34453219": [
+    "java",
+    "dictionary",
+    "guava",
+    "multimap"
+  ],
+  "37818904": [
+    "java",
+    "unit-testing",
+    "mockito"
+  ],
+  "33441494": [
+    "java",
+    "mockito",
+    "powermockito"
+  ],
+  "36488512": [
+    "unit-testing",
+    "mockito",
+    "jersey-2.0",
+    "dropwizard",
+    "jersey-test-framework"
+  ],
+  "31914632": [
+    "java",
+    "mockito"
+  ],
+  "40412688": [
+    "java",
+    "mockito"
+  ],
+  "39961768": [
+    "java",
+    "mockito"
+  ],
+  "6233745": [
+    "java",
+    "guava"
+  ],
+  "2543052": [
+    "java",
+    "guava"
+  ],
+  "1572178": [
+    "java",
+    "concurrency",
+    "guava",
+    "multimap",
+    "concurrentmodification"
+  ],
+  "2055700": [
+    "java",
+    "guava"
+  ],
+  "4345633": [
+    "java",
+    "guava",
+    "multiset"
+  ],
+  "8924871": [
+    "java",
+    "guava",
+    "apache-commons"
+  ],
+  "6470054": [
+    "java",
+    "guava"
+  ],
+  "2136915": [
+    "guava"
+  ],
+  "8860770": [
+    "java",
+    "guava"
+  ],
+  "10091654": [
+    "java",
+    "guava"
+  ],
+  "2955043": [
+    "java",
+    "guava",
+    "predicate"
+  ],
+  "9110677": [
+    "java",
+    "deserialization",
+    "guava",
+    "classcastexception"
+  ],
+  "7765925": [
+    "java",
+    "guava"
+  ],
+  "3838053": [
+    "java",
+    "design-patterns",
+    "guava"
+  ],
+  "1363198": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "11959260": [
+    "java",
+    "spring",
+    "guava"
+  ],
+  "4387820": [
+    "java",
+    "guava"
+  ],
+  "5089573": [
+    "java",
+    "guava"
+  ],
+  "3949942": [
+    "java",
+    "priority-queue",
+    "guava",
+    "multimap"
+  ],
+  "3629359": [
+    "java",
+    "collections",
+    "hashset",
+    "guava"
+  ],
+  "9444573": [
+    "java",
+    "guava",
+    "tostring"
+  ],
+  "9987720": [
+    "gwt",
+    "guava",
+    "playn"
+  ],
+  "25673984": [
+    "json",
+    "gson",
+    "guava",
+    "multimap"
+  ],
+  "16047547": [
+    "java",
+    "performance",
+    "guava"
+  ],
+  "16919751": [
+    "java",
+    "compiler-errors",
+    "guava"
+  ],
+  "14795561": [
+    "android",
+    "list",
+    "filtering",
+    "guava",
+    "predicates"
+  ],
+  "10201083": [
+    "java",
+    "equals",
+    "immutability",
+    "guava",
+    "hashcode"
+  ],
+  "9664421": [
+    "java",
+    "data-structures",
+    "guava",
+    "bimap"
+  ],
+  "17866628": [
+    "java",
+    "performance",
+    "sorting",
+    "map",
+    "guava"
+  ],
+  "15031903": [
+    "java",
+    "guava",
+    "multimap"
+  ],
+  "15453857": [
+    "java",
+    "guava",
+    "binary-search-tree",
+    "treemap"
+  ],
+  "18349900": [
+    "java",
+    "guava",
+    "mergesort",
+    "iterable"
+  ],
+  "17572679": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "10080421": [
+    "java",
+    "junit",
+    "guava"
+  ],
+  "13863153": [
+    "java",
+    "regex",
+    "string",
+    "guava",
+    "tokenize"
+  ],
+  "8991149": [
+    "java",
+    "javascript",
+    "collections",
+    "guava"
+  ],
+  "56200101": [
+    "java",
+    "range",
+    "guava",
+    "intervals"
+  ],
+  "16147505": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "10056135": [
+    "java",
+    "hashmap",
+    "guava",
+    "colt",
+    "trove4j"
+  ],
+  "52383915": [
+    "java",
+    "sorting",
+    "maps",
+    "guava",
+    "multimap"
+  ],
+  "61641396": [
+    "java",
+    "guava",
+    "assertj"
+  ],
+  "61519070": [
+    "java",
+    "spring-boot",
+    "junit",
+    "mockito",
+    "integration-testing"
+  ],
+  "56859893": [
+    "java",
+    "swing",
+    "windows-10",
+    "assertj"
+  ],
+  "57623503": [
+    "android",
+    "mockito"
+  ],
+  "58973667": [
+    "java",
+    "spring-boot",
+    "unit-testing",
+    "spring-mvc",
+    "mockito"
+  ],
+  "60899616": [
+    "java",
+    "unit-testing",
+    "assertj"
+  ],
+  "61930868": [
+    "java",
+    "junit",
+    "mockito",
+    "powermock"
+  ],
+  "60303439": [
+    "java",
+    "mockito",
+    "hamcrest"
+  ],
+  "56521214": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "55425483": [
+    "assertj"
+  ],
+  "59129497": [
+    "java",
+    "testing",
+    "dependency-injection",
+    "mockito"
+  ],
+  "60555861": [
+    "java",
+    "unit-testing",
+    "mockito"
+  ],
+  "54329295": [
+    "java",
+    "exception",
+    "mocking",
+    "mockito"
+  ],
+  "60090237": [
+    "java",
+    "spring-boot",
+    "unit-testing",
+    "mockito",
+    "powermockito"
+  ],
+  "53557039": [
+    "java",
+    "unit-testing",
+    "java-8",
+    "hamcrest",
+    "assertj"
+  ],
+  "55368558": [
+    "groovy",
+    "assertj"
+  ],
+  "59839076": [
+    "java",
+    "unit-testing",
+    "assertj"
+  ],
+  "58319462": [
+    "java",
+    "eclipse",
+    "mockito",
+    "byte-buddy"
+  ],
+  "42082918": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "byte-buddy"
+  ],
+  "51206795": [
+    "junit",
+    "mockito",
+    "powermock",
+    "powermockito"
+  ],
+  "50424048": [
+    "java",
+    "spring",
+    "unit-testing",
+    "dependency-injection",
+    "mockito"
+  ],
+  "44794403": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "50457616": [
+    "java",
+    "spring-boot",
+    "mocking",
+    "automated-tests",
+    "mockito"
+  ],
+  "47486324": [
+    "java",
+    "intellij-idea",
+    "junit",
+    "mockito",
+    "testcase"
+  ],
+  "40742572": [
+    "java",
+    "android",
+    "testing",
+    "mocking",
+    "mockito"
+  ],
+  "44338781": [
+    "java",
+    "hashmap",
+    "guava"
+  ],
+  "45510368": [
+    "java",
+    "mockito"
+  ],
+  "43407626": [
+    "guava",
+    "google-guava-cache"
+  ],
+  "47782296": [
+    "garbage-collection",
+    "guava"
+  ],
+  "43019566": [
+    "java",
+    "spring",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ],
+  "49930467": [
+    "java",
+    "mockito"
+  ],
+  "49934461": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "49459385": [
+    "java",
+    "nullpointerexception",
+    "guava",
+    "joiner"
+  ],
+  "48280361": [
+    "java",
+    "hashmap",
+    "guava",
+    "multimap"
+  ],
+  "25764803": [
+    "java",
+    "guava",
+    "apache-commons",
+    "apache-commons-collection"
+  ],
+  "37377110": [
+    "java",
+    "file",
+    "resources",
+    "guava"
+  ],
+  "30226505": [
+    "java",
+    "guava"
+  ],
+  "37130746": [
+    "java",
+    "guava",
+    "event-bus"
+  ],
+  "35505212": [
+    "java",
+    "guava",
+    "bloom-filter"
+  ],
+  "36266134": [
+    "scala",
+    "guava"
+  ],
+  "31870170": [
+    "java",
+    "performance",
+    "caching",
+    "guava"
+  ],
+  "34507206": [
+    "java",
+    "java-8",
+    "guava"
+  ],
+  "32046502": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "49912449": [
+    "java",
+    "collections",
+    "java-8",
+    "java-stream",
+    "guava"
+  ],
+  "61206024": [
+    "java",
+    "guava",
+    "multimap",
+    "apache-commons-collection"
+  ],
+  "34405222": [
+    "java",
+    "multithreading",
+    "guava",
+    "concurrenthashmap"
+  ],
+  "13379071": [
+    "caching",
+    "guava"
+  ],
+  "32218312": [
+    "java",
+    "mockito",
+    "guava"
+  ],
+  "36260084": [
+    "java",
+    "guava",
+    "treemaps"
+  ],
+  "35250020": [
+    "guava"
+  ],
+  "41890890": [
+    "java",
+    "guava"
+  ],
+  "27374200": [
+    "java",
+    "collections",
+    "guava",
+    "multiset"
+  ],
+  "25609232": [
+    "java",
+    "xml",
+    "guava",
+    "xstream",
+    "bimap"
+  ],
+  "16520699": [
+    "java",
+    "mockito",
+    "junit4",
+    "powermock",
+    "linkageerror"
+  ],
+  "15305490": [
+    "android",
+    "mocking",
+    "mockito",
+    "powermock"
+  ],
+  "10037337": [
+    "java",
+    "mockito",
+    "easymock"
+  ],
+  "14374584": [
+    "java",
+    "unit-testing",
+    "mocking",
+    "mockito"
+  ],
+  "6912594": [
+    "java",
+    "jboss",
+    "guava"
+  ],
+  "15727135": [
+    "java",
+    "google-app-engine",
+    "mockito"
+  ],
+  "15795286": [
+    "eclipse-plugin",
+    "guava",
+    "tycho"
+  ],
+  "12884232": [
+    "caching",
+    "concurrency",
+    "guava"
+  ],
+  "15834676": [
+    "java",
+    "mockito"
+  ],
+  "3557144": [
+    "java",
+    "reflection",
+    "guava"
+  ],
+  "2419144": [
+    "java",
+    "guava"
+  ],
+  "9842189": [
+    "java",
+    "guava"
+  ],
+  "15900557": [
+    "java",
+    "caching",
+    "guava"
+  ],
+  "12854344": [
+    "java",
+    "junit",
+    "mocking",
+    "mockito"
+  ],
+  "8490901": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "8522268": [
+    "java",
+    "map",
+    "hashmap",
+    "guava",
+    "multiset"
+  ],
+  "6457245": [
+    "java",
+    "mockito"
+  ],
+  "10937763": [
+    "java",
+    "unit-testing",
+    "dependency-injection",
+    "mockito"
+  ],
+  "9347354": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "11795456": [
+    "java",
+    "guava",
+    "jboss6.x"
+  ],
+  "54264349": [
+    "guava"
+  ],
+  "6778743": [
+    "java",
+    "caching",
+    "guava",
+    "canonicalization"
+  ],
+  "10834577": [
+    "java",
+    "jakarta-ee",
+    "guava"
+  ],
+  "41226532": [
+    "java",
+    "guava",
+    "google-guava-cache"
+  ],
+  "20280882": [
+    "java",
+    "guava",
+    "time-complexity",
+    "space-complexity"
+  ],
+  "10945487": [
+    "java",
+    "generics",
+    "guava",
+    "type-inference",
+    "scjp"
+  ],
+  "25550515": [
+    "java",
+    "sorting",
+    "collections",
+    "guava",
+    "predicate"
+  ],
+  "8764405": [
+    "java",
+    "caching",
+    "concurrency",
+    "guava"
+  ],
+  "10754492": [
+    "java",
+    "multithreading",
+    "performance",
+    "thread-safety",
+    "guava"
+  ],
+  "16560635": [
+    "guava"
+  ],
+  "7524423": [
+    "java",
+    "reference",
+    "lazy-loading",
+    "guava"
+  ],
+  "12378702": [
+    "java",
+    "regex",
+    "guava"
+  ],
+  "48367396": [
+    "apache-spark",
+    "guava",
+    "oozie"
+  ],
+  "59381882": [
+    "java",
+    "java-8",
+    "guava"
+  ],
+  "10246757": [
+    "java",
+    "guava"
+  ],
+  "31238977": [
+    "java",
+    "sorting",
+    "dictionary",
+    "guava"
+  ],
+  "14907667": [
+    "java",
+    "guava"
+  ],
+  "22699200": [
+    "java",
+    "guava"
+  ],
+  "5940977": [
+    "java",
+    "map",
+    "guice",
+    "guava"
+  ],
+  "10547631": [
+    "java",
+    "collections",
+    "guava"
+  ],
+  "60956275": [
+    "java",
+    "junit",
+    "mockito"
+  ],
+  "55286432": [
+    "mockito",
+    "matcher"
+  ],
+  "54774679": [
+    "java",
+    "unit-testing",
+    "mockito",
+    "mapstruct"
+  ],
+  "56135373": [
+    "mockito",
+    "spring-data-mongodb"
+  ],
+  "59110758": [
+    "intellij-idea",
+    "junit",
+    "mockito"
+  ],
+  "55034575": [
+    "java",
+    "unit-testing",
+    "mockito"
+  ],
+  "59535052": [
+    "java",
+    "spring-boot",
+    "unit-testing",
+    "mockito",
+    "junit5"
+  ],
+  "58438839": [
+    "java",
+    "unit-testing",
+    "mocking",
+    "mockito"
+  ],
+  "60563766": [
+    "java",
+    "spring",
+    "mockito",
+    "junit5"
+  ],
+  "57142466": [
+    "java",
+    "mockito"
+  ],
+  "59927146": [
+    "java",
+    "servlets",
+    "junit",
+    "mockito"
+  ],
+  "58243274": [
+    "guava",
+    "graph-theory"
+  ],
+  "54225021": [
+    "java",
+    "mocking",
+    "mockito"
+  ],
+  "59942695": [
+    "java",
+    "spring-boot",
+    "junit",
+    "mockito"
+  ],
+  "63506943": [
+    "java",
+    "spring-boot",
+    "queue",
+    "guava"
+  ],
+  "58990082": [
+    "java",
+    "mockito"
+  ],
+  "55379745": [
+    "java",
+    "unit-testing",
+    "junit",
+    "mockito"
+  ]
+}

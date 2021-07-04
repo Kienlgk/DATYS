@@ -1,0 +1,25 @@
+https://stackoverflow.com/questions/52090846
+I have imported an existing manven project into my eclipse new workspace which I downloaded from github. On maven install I get a <code>BUILD SUCCESS</code> but the red cross on the project never goes. This issue has been raised previously : <a href="https://stackoverflow.com/a/1399466/5658251">link1</a>, <a href="https://stackoverflow.com/questions/4012458/eclipse-shows-red-cross-on-project-icon">link2</a>
+Most of the solutions tell about update project and any number times I do update project, It doesn't solve the problem.
+The other solution is about having lombok plug-in because I noticed that many of the getter and setter methods are causing problems(absent). The lombok plug-in is to auto-generate them....I have it in my pom.xml but still the problem persists. In fact the problems tab shows a 100 errors like the samples below:
+
+__ cannot be resolved to a type
+The blank final field API_KEY may not have been initialized
+The constructor APNSService(ApnsService) is undefined
+
+How to solve this issue?
+Any help is appreciated.
+Note: I am running the maven project on jdk1.8.
+
+==========
+You also must have the lombok plugin installed in Eclipse. (Note that this is something different from lombok being present in the project dependencies; you need both.) Furthermore, the version installed in Eclipse should be the same version that you have in your pom.xml. Otherwise strange compilation issues may occur, like code compiling in Eclipse but not in maven, or vice versa.
+
+Installation instructions for Eclipse can be found <a href="https://projectlombok.org/setup/eclipse" rel="nofollow noreferrer">here</a>.
+
+UPDATE:
+Check the "About Eclipse" dialog after the installation and an Eclipse restart. It must contain some text like "Lombok v1.18.3 "Edgy Guinea Pig" is installed.". If that is not the case, the lombok plugin is not installed correctly.
+
+If the installation was not successful, you should try installing lombok to a clean Eclipse installation (even before adding any projects). You could also try Eclipse Oxygen instead of Photon (there are <a href="https://github.com/rzwitserloot/lombok/issues/1831" rel="nofollow noreferrer">sporadic</a> <a href="https://github.com/rzwitserloot/lombok/issues/1756" rel="nofollow noreferrer">reports</a> of problems with Photon; however, there seems to be no general issue in combination with Photon).
+
+Explanation: Eclipse uses its own compiler (different from javac, which maven uses). Therefore, lombok also has to hook into the Eclipse compilation <API label="">process</API>, and therefore, Eclipse needs that lombok plugin.
+

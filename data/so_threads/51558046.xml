@@ -1,0 +1,211 @@
+https://stackoverflow.com/questions/51558046
+Been trying to figure this out all day, wondered if someone could help and shed some light. Any help is much appreciated.
+
+I'm really unsure as to why this is happening, I thought that using <code>@AutoConfigureMockMvc</code> would solve the issue
+
+Error: 
+
+<pre><code>
+   java.lang.IllegalStateException: Failed to load ApplicationContext
+
+   at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:124)
+    at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:83)
+    at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:189)
+    at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:131)
+    at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:230)
+    at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:228)
+    at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:287)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:289)
+    at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:247)
+    at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:94)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate</API>(RunBeforeTestClassCallbacks.java:61)
+    at <API label="">org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate</API>(RunAfterTestClassCallbacks.java:70)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run</API>(SpringJUnit4ClassRunner.java:191)
+    at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:137)
+    at com.intellij.junit4.JUnit4IdeaTestRunner.startRunnerWithArgs(JUnit4IdeaTestRunner.java:68)
+    at com.intellij.rt.execution.junit.IdeaTestRunner$Repeater.startRunnerWithArgs(IdeaTestRunner.java:47)
+    at com.intellij.rt.execution.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:242)
+    at <API label="">com.intellij.rt.execution.junit.JUnitStarter.main</API>(JUnitStarter.java:70)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'mockMvc' defined in class path resource [org/springframework/boot/test/autoconfigure/web/servlet/MockMvcAutoConfiguration.class]: Bean instantiation via factory method failed; nested exception is org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.test.web.servlet.MockMvc]: Factory method 'mockMvc' threw exception; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'requestMappingHandlerAdapter' defined in class path resource [org/springframework/boot/autoconfigure/web/WebMvcAutoConfiguration$EnableWebMvcConfiguration.class]: Bean instantiation via factory method failed; nested exception is org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter]: Factory method 'requestMappingHandlerAdapter' threw exception; nested exception is java.lang.NoSuchFieldError: defaultReader
+    at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:599)
+    at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1173)
+    at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1067)
+    at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:513)
+    at <API label="">org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean</API>(AbstractAutowireCapableBeanFactory.java:483)
+    at <API label="">org.springframework.beans.factory.support.AbstractBeanFactory$1.getObject</API>(AbstractBeanFactory.java:306)
+    at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:230)
+    at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:302)
+    at <API label="">org.springframework.beans.factory.support.AbstractBeanFactory.getBean</API>(AbstractBeanFactory.java:197)
+    at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:761)
+    at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:866)
+    at <API label="">org.springframework.context.support.AbstractApplicationContext.refresh</API>(AbstractApplicationContext.java:542)
+    at <API label="">org.springframework.boot.SpringApplication.refresh</API>(SpringApplication.java:737)
+    at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:370)
+    at <API label="">org.springframework.boot.SpringApplication.run</API>(SpringApplication.java:314)
+    at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:120)
+    at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:98)
+    at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:116)
+    ... 24 more
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.test.web.servlet.MockMvc]: Factory method 'mockMvc' threw exception; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'requestMappingHandlerAdapter' defined in class path resource [org/springframework/boot/autoconfigure/web/WebMvcAutoConfiguration$EnableWebMvcConfiguration.class]: Bean instantiation via factory method failed; nested exception is org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter]: Factory method 'requestMappingHandlerAdapter' threw exception; nested exception is java.lang.NoSuchFieldError: defaultReader
+    at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:189)
+    at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:588)
+    ... 41 more
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'requestMappingHandlerAdapter' defined in class path resource [org/springframework/boot/autoconfigure/web/WebMvcAutoConfiguration$EnableWebMvcConfiguration.class]: Bean instantiation via factory method failed; nested exception is org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter]: Factory method 'requestMappingHandlerAdapter' threw exception; nested exception is java.lang.NoSuchFieldError: defaultReader
+    at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:599)
+    at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1173)
+    at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1067)
+    at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:513)
+    at <API label="">org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean</API>(AbstractAutowireCapableBeanFactory.java:483)
+    at <API label="">org.springframework.beans.factory.support.AbstractBeanFactory$1.getObject</API>(AbstractBeanFactory.java:306)
+    at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:230)
+    at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:302)
+    at <API label="">org.springframework.beans.factory.support.AbstractBeanFactory.getBean</API>(AbstractBeanFactory.java:202)
+    at org.springframework.beans.factory.support.DefaultListableBeanFactory.getBeansOfType(DefaultListableBeanFactory.java:519)
+    at org.springframework.context.support.AbstractApplicationContext.getBeansOfType(AbstractApplicationContext.java:1197)
+    at org.springframework.beans.factory.BeanFactoryUtils.beansOfTypeIncludingAncestors(BeanFactoryUtils.java:310)
+    at org.springframework.web.servlet.DispatcherServlet.initHandlerAdapters(DispatcherServlet.java:610)
+    at org.springframework.web.servlet.DispatcherServlet.initStrategies(DispatcherServlet.java:488)
+    at org.springframework.web.servlet.DispatcherServlet.onRefresh(DispatcherServlet.java:476)
+    at org.springframework.web.servlet.FrameworkServlet.initWebApplicationContext(FrameworkServlet.java:560)
+    at org.springframework.web.servlet.FrameworkServlet.initServletBean(FrameworkServlet.java:494)
+    at <API label="">org.springframework.web.servlet.HttpServletBean.init</API>(HttpServletBean.java:138)
+    at <API label="">javax.servlet.GenericServlet.init</API>(GenericServlet.java:158)
+    at org.springframework.test.web.servlet.MockMvcBuilderSupport.createMockMvc(MockMvcBuilderSupport.java:69)
+    at <API label="">org.springframework.test.web.servlet.setup.AbstractMockMvcBuilder.build</API>(AbstractMockMvcBuilder.java:158)
+    at org.springframework.boot.test.autoconfigure.web.servlet.MockMvcAutoConfiguration.mockMvc(MockMvcAutoConfiguration.java:85)
+    at org.springframework.boot.test.autoconfigure.web.servlet.MockMvcAutoConfiguration$$EnhancerBySpringCGLIB$$f3b3c23b.CGLIB$mockMvc$2()
+    at <API label="">org.springframework.boot.test.autoconfigure.web.servlet.MockMvcAutoConfiguration$$EnhancerBySpringCGLIB$$f3b3c23b$$FastClassBySpringCGLIB$$e4380fbd.invoke</API>()
+    at <API label="">org.springframework.cglib.proxy.MethodProxy.invokeSuper</API>(MethodProxy.java:228)
+    at <API label="">org.springframework.context.annotation.ConfigurationClassEnhancer$BeanMethodInterceptor.intercept</API>(ConfigurationClassEnhancer.java:358)
+    at org.springframework.boot.test.autoconfigure.web.servlet.MockMvcAutoConfiguration$$EnhancerBySpringCGLIB$$f3b3c23b.mockMvc()
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:162)
+    ... 42 more
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter]: Factory method 'requestMappingHandlerAdapter' threw exception; nested exception is java.lang.NoSuchFieldError: defaultReader
+    at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:189)
+    at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:588)
+    ... 73 more
+Caused by: java.lang.NoSuchFieldError: defaultReader
+    at com.jayway.jsonpath.spi.json.JsonSmartJsonProvider.(JsonSmartJsonProvider.java:39)
+    at com.jayway.jsonpath.internal.DefaultsImpl.jsonProvider(DefaultsImpl.java:21)
+    at <API label="">com.jayway.jsonpath.Configuration$ConfigurationBuilder.build</API>(Configuration.java:231)
+    at org.springframework.data.web.JsonProjectingMethodInterceptorFactory.(JsonProjectingMethodInterceptorFactory.java:71)
+    at org.springframework.data.web.ProjectingJackson2HttpMessageConverter.initProjectionFactory(ProjectingJackson2HttpMessageConverter.java:85)
+    at org.springframework.data.web.ProjectingJackson2HttpMessageConverter.(ProjectingJackson2HttpMessageConverter.java:70)
+    at org.springframework.data.web.config.SpringDataWebConfiguration.extendMessageConverters(SpringDataWebConfiguration.java:125)
+    at org.springframework.web.servlet.config.annotation.WebMvcConfigurerComposite.extendMessageConverters(WebMvcConfigurerComposite.java:143)
+    at org.springframework.web.servlet.config.annotation.DelegatingWebMvcConfiguration.extendMessageConverters(DelegatingWebMvcConfiguration.java:122)
+    at org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport.getMessageConverters(WebMvcConfigurationSupport.java:718)
+    at org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport.requestMappingHandlerAdapter(WebMvcConfigurationSupport.java:525)
+    at org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration$EnableWebMvcConfiguration.requestMappingHandlerAdapter(WebMvcAutoConfiguration.java:376)
+    at org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration$EnableWebMvcConfiguration$$EnhancerBySpringCGLIB$$8c7ea907.CGLIB$requestMappingHandlerAdapter$3()
+    at <API label="">org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration$EnableWebMvcConfiguration$$EnhancerBySpringCGLIB$$8c7ea907$$FastClassBySpringCGLIB$$e51d818d.invoke</API>()
+    at <API label="">org.springframework.cglib.proxy.MethodProxy.invokeSuper</API>(MethodProxy.java:228)
+    at <API label="">org.springframework.context.annotation.ConfigurationClassEnhancer$BeanMethodInterceptor.intercept</API>(ConfigurationClassEnhancer.java:358)
+    at org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration$EnableWebMvcConfiguration$$EnhancerBySpringCGLIB$$8c7ea907.requestMappingHandlerAdapter()
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:162)
+    ... 74 more
+
+</code></pre>
+
+Unit Test:
+
+<pre><code>
+@RunWith(SpringRunner.class)
+@AutoConfigureMockMvc
+@SpringBootTest
+public class ClaimDocumentControllerTest {
+
+   @Autowired
+    private MockMvc mockMvc;
+
+   @Autowired
+    private ObjectMapper objectMapper;
+
+   @MockBean
+    private DocumentProductionService service;
+
+   @Test
+    public void testGenerateClaimDocument() throws Exception {
+        final ClaimRequest request = constructRequest();
+        String input = objectMapper.writeValueAsString(request);
+
+       this.mockMvc.perform(<API label="None">post</API>("/redundency/generateClaimDocument")
+                        .contentType(MediaType.APPLICATION_JSON).content(input))
+                    .andDo(<API label="andDo">print</API>())
+                    .andExpect(status().isOk());
+
+       <API label="org.mockito.Mockito.verify">verify</API>(service, <API label="org.mockito.Mockito.times">times</API>(1)).generateClaimDocument(request);
+
+   }
+}
+
+</code></pre>
+
+Configuration: 
+
+<pre><code>
+@Configuration
+public class ApplicationConfiguration {
+
+   @Bean
+    public Clock clock() {
+        return Clock.systemDefaultZone();
+    }
+
+   @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+   @Bean
+    public ObjectMapper objectMapper() { return new ObjectMapper(); }
+
+}
+
+</code></pre>
+
+Gradle.Build Dependencies:
+
+<pre><code>
+repositories {
+    mavenCentral()
+}
+
+dependencies{
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: '1.5.2.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '1.5.2.RELEASE'
+    compile 'commons-lang:commons-lang:2.6'
+    compile 'io.springfox:springfox-swagger2:2.9.2'
+    compile 'io.springfox:springfox-swagger-ui:2.9.2'
+
+   // Database
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '1.5.2.RELEASE'
+    compile group: 'javax.transaction', name: 'jta', version: '1.1'
+    compile group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '6.1.0.jre8'
+    compile group: 'org.hibernate', name: 'hibernate-java8', version: '5.0.12.Final'
+    //compile "org.flywaydb:flyway-core:5.1.4"
+
+   // Dependencies for tests
+    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.5.2.RELEASE')
+}
+
+</code></pre>
+
+==========
+Seems to be a dependency clash on the json-path library. The error matches <a href="https://stackoverflow.com/questions/48177814/spring-boot-error-creating-bean-with-name-requestmappinghandleradapter-nosu">another SO question</a> and there <a href="https://stackoverflow.com/questions/48177814/spring-boot-error-creating-bean-with-name-requestmappinghandleradapter-nosu#comment83360433_48177814">@KellyMarchewa comments</a> that for them it worked after upgrading the mssql driver version
+

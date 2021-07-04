@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/31598925
+analyticsDatabases is of type - 
+
+<pre><code>
+private final Iterable analyticsDatabases;
+
+</code></pre>
+
+And I use below code snippet inside a method, and I have one element in analyticsDatabases List. When I do a for loop all works fine, but I am curious why my <API label="com.google.common.collect.Iterables.transform">Iterables.transform</API> doesn't work. 
+
+<pre><code>
+Iterable finalR = <API label="com.google.common.collect.Iterables.transform">Iterables.transform</API>(analyticsDatabases, new Function() { 
+    @Nullable 
+    @Override 
+    public Iterable <API label="com.google.common.base.Function.apply">apply</API>(@Nullable Database database) { 
+        if (database != null) { 
+            return database.deleteItemsById(filterIds, storableType, writeAckStrategy); 
+        } 
+
+       `<API label="">enter</API> code here`
+
+       return null; 
+    } 
+});
+
+</code></pre>
+
+==========
+The javadoc of <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Iterables.html"><code>Iterables</code></a> states
+
+
+ Performance notes: Unless otherwise noted, all of the iterables
+  produced in this class are lazy, which means that their iterators only
+  advance the backing iteration when absolutely necessary.
+
+
+In other words, <code><API label="com.google.common.collect.Iterables.transform">transform</API></code> doesn't <API label="">apply</API> the given <code>Function</code>. It returns an <code>Iterable</code> that will <API label="">apply</API> the <code>Function</code> as elements are requested.
+

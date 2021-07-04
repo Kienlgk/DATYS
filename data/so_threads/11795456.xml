@@ -1,0 +1,36 @@
+https://stackoverflow.com/questions/11795456
+I'm trying to use Guava for my project, and when starting JBoss there are many warnings:
+
+<pre><code>
+WARN  [ClassLoaderManager] Unexpected error during load of:com.google.common.base.Equivalences$Equals: java.lang.IncompatibleClassChangeError: class com.google.common.base.Equivalences$Equals has interface com.google.common.base.Equivalence as super class
+WARN  [ClassLoaderManager] Unexpected error during load of:com.google.common.base.FunctionalEquivalence: java.lang.IncompatibleClassChangeError: class com.google.common.base.FunctionalEquivalence has interface com.google.common.base.Equivalence as super class
+WARN  [ClassLoaderManager] Unexpected error during load of:com.google.common.collect.AbstractMapBasedMultiset$1$1: java.lang.IllegalAccessError: class com.google.common.collect.AbstractMapBasedMultiset$1$1 cannot access its superclass com.google.common.collect.Multisets$AbstractEntry
+[...]
+
+</code></pre>
+
+From my research, it seems there is an incompatibility with the old Google Collection.
+This thread <API label="">from</API> <a href="https://community.jboss.org/message/581507" rel="nofollow">community.jboss.org</a> propose to use jboss-scanning.xml. I have no change and JBoss documentation specifies that this file is used to <API label="">filter</API> the annotations...
+
+Do you have already encountered this problem?
+
+Can you suggest a solution?
+
+==========
+You are right, google collections and guava are incompatible, and it is stated quite clearly on the <a href="http://code.google.com/p/google-collections/" rel="noreferrer">google collections home page</a>:
+
+
+ Guava is a fully compatible superset <API label="">of</API> the old Google Collections
+  Library. It also includes years worth <API label="">of</API> bug fixes, doc fixes, and
+  performance fixes, so we strongly encourage you to use Guava instead
+  <API label="">of</API> Google Collections.
+  
+  If your application ever ends up with both google-collect-1.0.jar and
+  guava-r##.jar on the same classpath, simply <API label="">remove</API> the Google
+  Collections JAR and you should be fine. If you don't <API label="">remove</API> it, it
+  will either cause terrible problems (if it comes before guava in the
+  classpath) <API label="">or</API> will never even be seen anyway (if it comes after).
+
+
+So basically: either <API label="">remove</API> google collections <API label="">from</API> the classpath <API label="">or</API> see to it that guava is loaded <API label="">first</API>.
+

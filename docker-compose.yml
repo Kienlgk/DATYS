@@ -8,4 +8,5 @@ services:
             - "9111:9111"
         volumes:
             - ./src:/app/src
+            - ./data:/app/data
         tty: true

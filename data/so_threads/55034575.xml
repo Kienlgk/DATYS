@@ -1,0 +1,194 @@
+https://stackoverflow.com/questions/55034575
+I have a service class which calls Repository method and which returns a List. Now I want to mock it. My unit test scenario would be following:
+
+
+Add some mock objects to mock repository
+Query service class which returns the list of mocked objects
+Assert List size
+
+
+My repository class:
+
+<pre><code>
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+
+import java.util.List;
+
+public interface FoodRepository extends CrudRepository {
+
+   @Query(value = "SELECT * FROM FOOD WHERE FRESH = 1", nativeQuery = true)
+    public List getMostFreshestFoods();
+}
+
+</code></pre>
+
+My service class:
+
+<pre><code>
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class FoodService {
+
+   @Autowired
+    private FoodRepository foodRepository;
+
+   public List getMostFreshestFoods() {
+        return foodRepository.getMostFreshestFoods();
+    }
+}
+
+</code></pre>
+
+My object class:
+
+<pre><code>
+public class Food {
+
+   private Long id;
+
+   private String foodName;
+
+   private boolean fresh;
+
+   public Long <API label="">getId</API>() {
+        return id;
+    }
+
+   public void <API label="">setId</API>(Long id) {
+        this.id = id;
+    }
+
+   public String getFoodName() {
+        return foodName;
+    }
+
+   public void setFoodName(String foodName) {
+        this.foodName = foodName;
+    }
+
+   public boolean isFresh() {
+        return fresh;
+    }
+
+   public void setFresh(boolean fresh) {
+        this.fresh = fresh;
+    }
+}
+
+</code></pre>
+
+And my test class:
+
+<pre><code>
+import myapp.Food;
+import myapp.FoodRepository;
+import myapp.FoodService;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import static <API label="">org.hamcrest.core.Is.is</API>;
+import static <API label="">org.hamcrest.core.IsNull.notNullValue</API>;
+import static <API label="">org.junit.Assert.assertThat</API>;
+import static <API label="">org.mockito.Mockito.verify</API>;
+
+@RunWith(MockitoJUnitRunner.class)
+public class FoodTest {
+
+   @Mock
+    private FoodRepository foodRepository;
+
+   @InjectMocks
+    private FoodService foodService;
+
+   @Captor
+    private ArgumentCaptor foodArgumentCaptor;
+
+   @Test
+    public void testFreshestFoods() {
+
+       Food food = new Food();
+        food.setFoodName("Meat");
+        food.setFresh(true);
+        foodRepository.save(food);
+        <API label="org.mockito.Mockito.verify">verify</API>(foodRepository).save(<API label="org.mockito.ArgumentCaptor.capture">foodArgumentCaptor.capture</API>());
+        <API label="None">assertThat</API>(<API label="org.mockito.ArgumentCaptor.getValue">foodArgumentCaptor.getValue</API>().<API label="None">getId</API>(), <API label="org.hamcrest.core.Is.is">is</API>(<API label="org.hamcrest.core.IsNull.notNullValue">notNullValue</API>()));
+
+       // Above I added mock data to database to query list from Service class method,
+        // but I do not know how to do it. Using return always gives error
+
+       // I want to do the following: Query the list from FoodService class and it should
+        // return size 1 (the fake object (added above) )
+
+   }
+
+
+}
+
+</code></pre>
+
+But since I am new to Mockito, it <API label="">is</API> a bit difficult to me. I would like to know how can I <API label="">get</API> the list from FoodService class and it should return the fake object made in test class.
+
+==========
+I believe what you are looking for <API label="">is</API> below. You don't need to do a normal workflow to test with Mockito. Another way to say <API label="">is</API> you don't add things to your DB then expect to <API label="">get</API> them back. Mockito doesn't know databases. It takes over a class (the mocked one) and returns things you tell it to or throws exceptions or just does nothing. The idea <API label="">is</API> to isolate the class under test. So in your case, pretend the data <API label="">is</API> in the repository and just mock returning it. Hope that makes sense.
+
+<pre><code>
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.List;
+
+import static <API label="">java.util.Arrays.asList</API>;
+import static org.junit.Assert.assertEquals;
+import static <API label="">org.mockito.Mockito.verify</API>;
+import static <API label="">org.mockito.Mockito.when</API>;
+
+@RunWith(MockitoJUnitRunner.class)
+public class FoodTest {
+
+   @Mock
+    private FoodRepository foodRepository;
+
+   @InjectMocks
+    private FoodService foodService;
+
+   @Captor
+    private ArgumentCaptor foodArgumentCaptor;
+
+   @Test
+    public void testFreshestFoods() {
+
+       Food food = new Food();
+        food.setFoodName("Meat");
+        food.setFresh(true);
+
+       // not needed
+        //foodRepository.save(food);
+        //<API label="org.mockito.Mockito.verify">verify</API>(foodRepository).save(<API label="org.mockito.ArgumentCaptor.capture">foodArgumentCaptor.capture</API>());
+        //<API label="None">assertThat</API>(<API label="org.mockito.ArgumentCaptor.getValue">foodArgumentCaptor.getValue</API>().<API label="None">getId</API>(), <API label="org.hamcrest.core.Is.is">is</API>(<API label="org.hamcrest.core.IsNull.notNullValue">notNullValue</API>()));
+
+       <API label="org.mockito.Mockito.when">when</API>(foodRepository.getMostFreshestFoods()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(<API label="None">asList</API>(food));
+
+       List actual = foodService.getMostFreshestFoods();
+
+       assertEquals(food, <API label="None">actual.get</API>(0));
+        <API label="org.mockito.Mockito.verify">verify</API>(foodRepository).getMostFreshestFoods();
+    }
+}
+
+</code></pre>
+

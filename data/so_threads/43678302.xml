@@ -1,0 +1,126 @@
+https://stackoverflow.com/questions/43678302
+I've been using IntelliJ 2017.01 Ultimate and gradle to develop Java applications using GRPC for IPC for a while now. Recently, I found that when I start the application via IntelliJ <API label="">run</API> configuration I <API label="">get</API> the following error:
+
+<pre><code>
+io.grpc.netty.NettyServerHandler onHeadersRead
+WARNING: Exception in onHeadersRead()
+java.lang.NoSuchMethodError: <API label="">com.google.common.base.Stopwatch.createUnstarted</API>()Lcom/google/common/base/Stopwatch;
+    at <API label="None">io.grpc.internal.GrpcUtil$3.get</API>(GrpcUtil.java:490)
+    at <API label="None">io.grpc.internal.GrpcUtil$3.get</API>(GrpcUtil.java:487)
+    at io.grpc.internal.StatsTraceContext.(StatsTraceContext.java:92)
+    at io.grpc.internal.StatsTraceContext.newClientContext(StatsTraceContext.java:106)
+    at io.grpc.internal.StatsTraceContext.(StatsTraceContext.java:64)
+    at io.grpc.internal.ServerImpl$ServerTransportListenerImpl.methodDetermined(ServerImpl.java:387)
+    at io.grpc.netty.NettyServerHandler.onHeadersRead(NettyServerHandler.java:196)
+    at io.grpc.netty.NettyServerHandler.access$300(NettyServerHandler.java:90)
+    at io.grpc.netty.NettyServerHandler$FrameListener.onHeadersRead(NettyServerHandler.java:474)
+    at io.grpc.netty.FixedHttp2ConnectionDecoder$FrameReadListener.onHeadersRead(FixedHttp2ConnectionDecoder.java:320)
+    at io.netty.handler.codec.http2.Http2InboundFrameLogger$1.onHeadersRead(Http2InboundFrameLogger.java:65)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader$1.processFragment(DefaultHttp2FrameReader.java:461)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader.readHeadersFrame(DefaultHttp2FrameReader.java:468)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader.processPayloadState(DefaultHttp2FrameReader.java:253)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader.readFrame(DefaultHttp2FrameReader.java:160)
+    at io.netty.handler.codec.http2.Http2InboundFrameLogger.readFrame(Http2InboundFrameLogger.java:41)
+    at io.grpc.netty.FixedHttp2ConnectionDecoder.decodeFrame(FixedHttp2ConnectionDecoder.java:119)
+    at <API label="None">io.netty.handler.codec.http2.Http2ConnectionHandler$FrameDecoder.decode</API>(Http2ConnectionHandler.java:341)
+    at <API label="None">io.netty.handler.codec.http2.Http2ConnectionHandler.decode</API>(Http2ConnectionHandler.java:401)
+    at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:411)
+    at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:248)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:363)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:349)
+    at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:341)
+    at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1334)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:363)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:349)
+    at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:926)
+    at <API label=None"">io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read</API>(AbstractNioByteChannel.java:129)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:642)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:565)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:479)
+    at <API label="None">io.netty.channel.nio.NioEventLoop.run</API>(NioEventLoop.java:441)
+    at <API label="None">io.netty.util.concurrent.SingleThreadEventExecutor$5.run</API>(SingleThreadEventExecutor.java:858)
+    at <API label="None">io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run</API>(DefaultThreadFactory.java:144)
+    at <API label="None">java.lang.Thread.run</API>(Thread.java:745)
+
+</code></pre>
+
+followed by
+
+<pre><code>
+io.grpc.netty.NettyServerHandler onStreamError
+WARNING: Stream Error
+io.netty.handler.codec.http2.Http2Exception$StreamException: <API label="">com.google.common.base.Stopwatch.createUnstarted</API>()Lcom/google/common/base/Stopwatch;
+    at io.netty.handler.codec.http2.Http2Exception.streamError(Http2Exception.java:147)
+    at io.grpc.netty.NettyServerHandler.newStreamException(NettyServerHandler.java:452)
+    at io.grpc.netty.NettyServerHandler.onHeadersRead(NettyServerHandler.java:211)
+    at io.grpc.netty.NettyServerHandler.access$300(NettyServerHandler.java:90)
+    at io.grpc.netty.NettyServerHandler$FrameListener.onHeadersRead(NettyServerHandler.java:474)
+    at io.grpc.netty.FixedHttp2ConnectionDecoder$FrameReadListener.onHeadersRead(FixedHttp2ConnectionDecoder.java:320)
+    at io.netty.handler.codec.http2.Http2InboundFrameLogger$1.onHeadersRead(Http2InboundFrameLogger.java:65)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader$1.processFragment(DefaultHttp2FrameReader.java:461)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader.readHeadersFrame(DefaultHttp2FrameReader.java:468)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader.processPayloadState(DefaultHttp2FrameReader.java:253)
+    at io.netty.handler.codec.http2.DefaultHttp2FrameReader.readFrame(DefaultHttp2FrameReader.java:160)
+    at io.netty.handler.codec.http2.Http2InboundFrameLogger.readFrame(Http2InboundFrameLogger.java:41)
+    at io.grpc.netty.FixedHttp2ConnectionDecoder.decodeFrame(FixedHttp2ConnectionDecoder.java:119)
+    at <API label="None">io.netty.handler.codec.http2.Http2ConnectionHandler$FrameDecoder.decode</API>(Http2ConnectionHandler.java:341)
+    at <API label="None">io.netty.handler.codec.http2.Http2ConnectionHandler.decode</API>(Http2ConnectionHandler.java:401)
+    at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:411)
+    at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:248)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:363)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:349)
+    at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:341)
+    at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1334)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:363)
+    at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:349)
+    at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:926)
+    at <API label="None">io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read</API>(AbstractNioByteChannel.java:129)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:642)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:565)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:479)
+    at <API label="None">io.netty.channel.nio.NioEventLoop.run</API>(NioEventLoop.java:441)
+    at <API label="None">io.netty.util.concurrent.SingleThreadEventExecutor$5.run</API>(SingleThreadEventExecutor.java:858)
+    at <API label="None">io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run</API>(DefaultThreadFactory.java:144)
+    at <API label="None">java.lang.Thread.run</API>(Thread.java:745)
+Caused by: java.lang.NoSuchMethodError: <API label="">com.google.common.base.Stopwatch.createUnstarted</API>()Lcom/google/common/base/Stopwatch;
+    at <API label="None">io.grpc.internal.GrpcUtil$3.get</API>(GrpcUtil.java:490)
+    at <API label="None">io.grpc.internal.GrpcUtil$3.get</API>(GrpcUtil.java:487)
+    at io.grpc.internal.StatsTraceContext.(StatsTraceContext.java:92)
+    at io.grpc.internal.StatsTraceContext.newClientContext(StatsTraceContext.java:106)
+    at io.grpc.internal.StatsTraceContext.(StatsTraceContext.java:64)
+    at io.grpc.internal.ServerImpl$ServerTransportListenerImpl.methodDetermined(ServerImpl.java:387)
+    at io.grpc.netty.NettyServerHandler.onHeadersRead(NettyServerHandler.java:196)
+    ... 29 more
+
+</code></pre>
+
+As soon as I <API label="">run</API> the application from command line I don't <API label="">get</API> any of these errors. I guess it's a problem with guava and the classpath set by IntelliJ, but I have no idea on how to fix this. 
+
+My build.gradle contains:
+
+<pre><code>
+dependencies {
+    compile project(':synthesis')
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile group: 'org.json', name: 'json', version: '20160810'
+    compile group: 'net.java.dev.jna', name: 'jna', version: '4.3.0'
+    //compile group: 'com.google.guava', name: 'guava', version: '19.0'
+    compile 'io.grpc:grpc-netty:1.2.0'
+    compile 'io.grpc:grpc-protobuf:1.2.0'
+    compile 'io.grpc:grpc-stub:1.2.0'
+}
+
+</code></pre>
+
+==========
+<code><API label="com.google.common.base.Stopwatch.createUnstarted">com.google.common.base.Stopwatch.createUnstarted</API>()</code> has existed since Guava 15. It seems like you're using an older version. Try running <code>./gradlew dependencies</code> to see where the older version is coming from.
+
+I expect you are getting a dependency to <code>guava-jdk5</code> (instead of an old dependency on <code>guava</code>). You can <a href="https://docs.gradle.org/current/userguide/dependency_management.html#sub:exclude_transitive_dependencies" rel="nofollow noreferrer">exclude the dependency</a>:
+
+<pre><code>
+dependencies {
+    all*.exclude group: 'com.google.guava', module: 'guava-jdk5'
+}
+
+</code></pre>
+

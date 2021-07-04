@@ -1,0 +1,66 @@
+https://stackoverflow.com/questions/43924890
+I have an ImmutableSortedSet that is create on initialization <API label="">of</API> a class. For every object <API label="">of</API> this class i want the ImmutableSortedSet to have a deep <API label="">copy</API> (clone) <API label="">of</API> the elements stored in an Collection located in another file.
+
+This is the collection with the original values (could also be a set)
+
+<pre><code>
+public static final List QUESTS = new ArrayList<>();
+
+</code></pre>
+
+This is the class i want to create with the ImmutableSortedSet
+
+<pre><code>
+package com.vencillio.rs2.content.quest;
+
+import java.util.Optional;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSortedSet;
+
+public class QuestManager {
+
+   private int questPoints = 0;
+    private final Set QUESTS = <API label="com.google.common.collect.ImmutableSortedSet.copyOf">ImmutableSortedSet.copyOf</API>(Quest.QUESTS); //This is only a shallow <API label="">copy</API>
+
+   public int getQuestPoints() {
+        return questPoints;
+    }
+
+   public void addQuestPoints(int amount) {
+        questPoints += amount;
+    }
+
+   public void removeQuestPoints(int amount) {
+        questPoints -= amount;
+    }
+
+   public Optional getQuestState(String name) {
+        return getQuest(name).<API label="None">isPresent</API>() ? <API label="com.google.common.base.Optional.of">Optional.of</API>(getQuest(name).<API label="None">get</API>().getQuestState()) : <API label="None">Optional.empty</API>();
+    }
+
+   public void setQuestState(String name, QuestState state) {
+        if(getQuest(name).<API label="None">isPresent</API>())
+            getQuest(name).<API label="None">get</API>().setQuestState(state);
+    }
+
+   public Optional getQuest(String name) {
+        return <API label="None">QUESTS.stream</API>().<API label="None">filter</API>(quest -> <API label="None">quest.getName</API>().<API label="com.google.common.base.Ascii.equalsIgnoreCase">equalsIgnoreCase</API>(name)).findAny();
+    }
+}
+
+</code></pre>
+
+==========
+You haven't explained how to <API label="">get</API> a <API label="">copy</API> <API label="">of</API> a <code>Quest</code> in the first place, which is an aspect <API label="">of</API> your design.  In general, I'd write something like
+
+<pre><code>
+import static <API label="com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet">com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet</API>;
+import static <API label="None">java.util.Comparator.naturalOrder</API>;
+
+<API label="None">Quest.QUESTS.stream</API>()
+   .<API label="None">map</API>(quest -> <API label="None">copy</API>(quest))
+   .collect(<API label="com.google.common.collect.CollectCollectors.toImmutableSortedSet">toImmutableSortedSet</API>(<API label="com.google.common.collect.ContiguousSet.naturalOrder">naturalOrder</API>()));
+
+</code></pre>
+

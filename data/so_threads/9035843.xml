@@ -1,0 +1,19 @@
+https://stackoverflow.com/questions/9035843
+Is it possible to tell in code if a given object is a Mockito mock or not?
+
+The reason I'd like to do this is to return a different error message when a mock is being used. This would be used to suggest to other developers that they should use a pre-prepared mock that is already <API label="">set</API> to answer <API label="">calls</API> in a useful way rather than creating the mock themselves.
+
+At the moment the best I have is <code><API label="None">object.getClass</API>().<API label="None">getName</API>().<API label="None">contains</API>("EnhancerByMockitoWithCGLIB")</code> but this feels hacky.
+
+==========
+Looks like there is no such API (please raise an issue, it should be!) Fortunately (following your comment below) there is a method in the <code>org.mockito.internal.util</code> package:
+
+<pre><code>
+import org.mockito.internal.util.MockUtil;
+
+new <API label="org.mockito.internal.util.MockUtil.MockUtil">MockUtil</API>().<API label="org.mockito.internal.util.MockUtil.isMock">isMock</API>(obj)
+
+</code></pre>
+
+In the future <code><API label="None">Mockito.isMock</API>()</code> method might be added to public API, see: <a href="http://code.google.com/p/mockito/issues/detail?id=313">Issue 313: Provide <API label="org.mockito.internal.util.MockUtil.isMock">isMock</API> outside <API label="">of</API> org.mockito.internal)</a>.
+

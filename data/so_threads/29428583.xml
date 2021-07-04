@@ -1,0 +1,78 @@
+https://stackoverflow.com/questions/29428583
+My test shouldn't pass. I should receive an error at row #2, because I put a wrong value <code>new Long(0)</code> at row #1. 
+Please tell me where is my mistake.
+Thanks.
+
+<pre><code>
+    @Test
+    public void getPersonListByOtdelIdTest() {            
+        Long otdelId = new Long(454);
+        ArgumentCaptor argumentOtdelId = <API label="org.mockito.ArgumentCaptor.forClass">ArgumentCaptor.forClass</API>(Long.class);
+        SessionFactory mockedSessionFactory = <API label="org.mockito.Mockito.mock">mock</API>(SessionFactory.class);
+        Session session = <API label="org.mockito.Mockito.mock">mock</API>(Session.class);
+        Query query = <API label="org.mockito.Mockito.mock">mock</API>(Query.class);
+        PersonDAOImpl personDAO = new PersonDAOImpl(mockedSessionFactory);
+        <API label="org.mockito.Mockito.when">when</API>(mockedSessionFactory.getCurrentSession()). <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(session);
+        <API label="org.mockito.Mockito.when">when</API>(session.createQuery("FROM Person P where P.otdel.otdelId = :otdelId")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(query);
+ #1-->  <API label="org.mockito.Mockito.when">when</API>(query.setParameter("otdelId", new Long(0))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(query);
+        <API label="org.mockito.Mockito.when">when</API>(<API label="">query.list</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(persons);
+
+       List expectedPersons =  personDAO.getPersonListByOtdelId(otdelId);
+
+       <API label="org.mockito.Mockito.verify">verify</API>(mockedSessionFactory).getCurrentSession();
+        <API label="org.mockito.Mockito.verify">verify</API>(session).createQuery("FROM Person P where P.otdel.otdelId = :otdelId");
+        <API label="org.mockito.Mockito.verify">verify</API>(query).setParameter(<API label="">eq</API>("otdelId"), <API label="org.mockito.ArgumentCaptor.capture">argumentOtdelId.capture</API>());
+        <API label="org.mockito.Mockito.verify">verify</API>(query).<API label="">list</API>();
+ #2-->  assertEquals(otdelId, <API label="org.mockito.ArgumentCaptor.getValue">argumentOtdelId.getValue</API>());
+        assertTrue(<API label="None">expectedPersons.containsAll</API>(persons));
+    }
+
+public class PersonDAOImpl implements PersonDAO {
+    public List getPersonListByOtdelId(Long otdelId) {
+        Query query = sessionFactory.getCurrentSession().createQuery("FROM Person P where P.otdel.otdelId = :otdelId");
+        query.setParameter("otdelId", otdelId);
+        List listPersons = <API label="None">query.list</API>();
+        return listPersons;
+    } 
+ }
+
+</code></pre>
+
+==========
+I don't see why you would expect an assertion failure at #2. Your test passed in <code>454</code> (as a <code>Long</code>) into <code>getPersonListByOtdelId()</code>, so that will be passed to <code>query.setParameter()</code>. The <code><API label="org.mockito.Mockito.when">when</API>()</code> code in #1 is essentially a no-op, because there is no call to <code>query.setParameter()</code> with those values, but Mockito won't complain if the call specified in a <code><API label="org.mockito.Mockito.when">when</API>()</code> never happens, and the code under test doesn't check the return value, so there's no exception.
+
+In any case, you don't need an <code>ArgumentCaptor</code>; you just need to have Mockito <API label="org.mockito.Mockito.verify">verify</API> that the correct value was passed to <code>setParameter()</code>
+
+In fact, many of <API label="org.mockito.Mockito.verify">verify</API> calls aren't needed you could just do this:
+
+<pre><code>
+@Test
+public void getPersonListByOtdelIdTest() {
+  Long otdelId = 454L; // or = <API label="None">Long.valueOf</API>(454); don't use new Long
+  SessionFactory mockedSessionFactory = <API label="org.mockito.Mockito.mock">mock</API>(SessionFactory.class);
+  Session session = <API label="org.mockito.Mockito.mock">mock</API>(Session.class);
+  Query query = <API label=""org.mockito.Mockito.mock>mock</API>(Query.class);
+
+ <API label="org.mockito.Mockito.when">when</API>(mockedSessionFactory.getCurrentSession()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(session);
+  <API label="org.mockito.Mockito.when">when</API>(session.createQuery("FROM Person P where P.otdel.otdelId = :otdelId"))
+      .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(query);
+  <API label="org.mockito.Mockito.when">when</API>(query.setParameter("otdelId", otdelId)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(query);
+  <API label=""org.mockito.Mockito.when>when</API>(<API label="None">query.list</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(persons);
+
+ PersonDAOImpl personDAO = new PersonDAOImpl(mockedSessionFactory);
+  List result = personDAO.getPersonListByOtdelId(otdelId);
+
+ <API label="org.mockito.Mockito.verify">verify</API>(query).setParameter("otdelId", otdelId);
+  assertEquals(result, persons);
+}
+
+</code></pre>
+
+You don't need to <API label="org.mockito.Mockito.verify">verify</API> that <code>getCurrentSession()</code> is called, because if it wasn't the code under test wouldn't get a session. You don't need to <API label="org.mockito.Mockito.verify">verify</API> that the correct query was passed to <code>createQuery()</code>, because of the code under test used a different query, Mockito wouldn't return a <API label="">mock</API> query (unless, of course, you use <a href="http://docs.mockito.googlecode.com/hg/org/mockito/Mockito.html#RETURNS_MOCKS" rel="nofollow">RETURNS_MOCKS</a>).
+
+That all being said, I don't think the above test is a good test. The test is almost exactly mirroring the code, and it doesn't <API label="org.mockito.Mockito.verify">verify</API> that the code will work. In other words, it's a <a href="http://googletesting.blogspot.com/2015/01/testing-on-toilet-change-detector-tests.html" rel="nofollow">change detector test</a>.
+
+I wouldn't use a mocking framework to test <code>PersonDaoImpl</code>. Instead, I would write a test that started an in-memory database, using a schema file that is also used to create the actual table in production.
+
+I would use a <API label="">mock</API> for tests for a class that depends on <code>PersonDAO</code>.
+

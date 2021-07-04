@@ -1,0 +1,157 @@
+https://stackoverflow.com/questions/4896662
+Assume, I have a constant number of collections (e.g. 3 ArrayLists) as members of a class. Now, I want to expose all the elements to other classes so they can simply iterate over all elements (ideally, read only).
+I'm using guava collections and I wonder how I could use guava iterables/iterators to generate a logical view on the internal collections without making temporary copies.
+
+==========
+With Guava, you can use <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Iterables.html#concat%28java.lang.Iterable...%29"><code><API label="com.google.common.collect.Iterables.concat">Iterables.concat</API>(Iterable ...)</code></a>, it creates a live view of all the iterables, concatenated into one (if you change the iterables, the concatenated version also changes). Then wrap the concatenated iterable with <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Iterables.html#unmodifiableIterable%28java.lang.Iterable%29"><code><API label="com.google.common.collect.Iterables.unmodifiableIterable">Iterables.unmodifiableIterable</API>(Iterable)</code></a> (I hadn't seen the read-only requirement earlier).
+
+From the <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Iterables.html#concat%28java.lang.Iterable...%29"><code><API label="com.google.common.collect.Iterables.concat">Iterables.concat</API>( .. )</code></a> JavaDocs:
+
+
+ Combines multiple iterables into a
+  single iterable. The returned iterable
+  has an <API label="">iterator</API> that traverses the
+  elements of each iterable in inputs.
+  The input iterators are not polled
+  until necessary. The returned
+  iterable's <API label="">iterator</API> supports <code><API label="None">remove</API>()</code>
+  when the corresponding input <API label="">iterator</API>
+  supports it.
+
+
+While this doesn't explicitly say that this is a live view, the last sentence implies that it is (supporting the <a href="http://download.oracle.com/javase/6/docs/api/java/util/Iterator.html#remove%28%29"><code><API label="None">Iterator.remove</API>()</code></a> method only if the backing <API label="">iterator</API> supports it is not possible unless using a live view)
+
+Sample Code:
+
+<pre><code>
+final List first  = <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(1, 2, 3);
+final List second = <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(4, 5, 6);
+final List third  = <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(7, 8, 9);
+final Iterable all =
+    <API label="com.google.common.collect.Iterables.unmodifiableIterable">Iterables.unmodifiableIterable</API>(
+        <API label="com.google.common.collect.Iterables.concat">Iterables.concat</API>(first, second, third));
+<API label="None">System.out.println</API>(all);
+<API label="None">third.add</API>(9999999);
+<API label="None">System.out.println</API>(all);
+
+</code></pre>
+
+Output:
+
+
+ [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 9999999]
+
+
+
+
+Edit:
+
+By Request from Damian, here's a similar method that returns a live Collection View
+
+<pre><code>
+public final class CollectionsX {
+
+   static class JoinedCollectionView implements Collection {
+
+       private final Collection[] items;
+
+       public JoinedCollectionView(final Collection[] items) {
+            this.items = items;
+        }
+
+       @Override
+        public boolean <API label="">addAll</API>(final Collection c) {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public void <API label="">clear</API>() {
+            for (final Collection coll : items) {
+                <API label="">coll.clear</API>();
+            }
+        }
+
+       @Override
+        public boolean <API label="">contains</API>(final Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public boolean <API label="">containsAll</API>(final Collection c) {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public boolean <API label="">isEmpty</API>() {
+            return !iterator().<API label="">hasNext</API>();
+        }
+
+       @Override
+        public Iterator <API label="">iterator</API>() {
+            return <API label="">Iterables.concat</API>(items).<API label="">iterator</API>();
+        }
+
+       @Override
+        public boolean <API label="">remove</API>(final Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public boolean <API label="">removeAll</API>(final Collection c) {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public boolean <API label="">retainAll</API>(final Collection c) {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public int <API label="">size</API>() {
+            int ct = 0;
+            for (final Collection coll : items) {
+                ct += <API label="">coll.size</API>();
+            }
+            return ct;
+        }
+
+       @Override
+        public Object[] <API label="">toArray</API>() {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public  T[] <API label="">toArray</API>(T[] a) {
+            throw new UnsupportedOperationException();
+        }
+
+       @Override
+        public boolean <API label="">add</API>(E e) {
+            throw new UnsupportedOperationException();
+        }
+
+   }
+
+   /**
+     * Returns a live aggregated collection view of the collections passed in.
+     * 
+     * All methods except {@link Collection#size()}, {@link Collection#clear()},
+     * {@link Collection#isEmpty()} and {@link Iterable#iterator()}
+     *  throw {@link UnsupportedOperationException} in the returned Collection.
+     * 
+     * None of the above methods is thread safe (nor would there be an easy way
+     * of making them).
+     */
+    public static  Collection <API label="">combine</API>(
+        final Collection... items) {
+        return new JoinedCollectionView(items);
+    }
+
+   private CollectionsX() {
+    }
+
+}
+
+</code></pre>
+

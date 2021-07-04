@@ -1,0 +1,23 @@
+https://stackoverflow.com/questions/32632338
+Is there a way to tell if <API label="">any</API> mockito object was created in test?
+In our tests Mockito objects are saved <API label="">on</API> session, and <API label="">then</API> should be removed from session in loop:
+
+<pre><code>
+    <API label="">MockUtil</API> mockUtil = new <API label="org.mockito.internal.util.MockUtil.MockUtil">MockUtil</API>();
+    for (Object object : sessionObjects) {
+        if (<API label="org.mockito.internal.util.MockUtil.isMock">mockUtil.isMock</API>(<API label="">mock</API>) || <API label="org.mockito.MockingDetails.isSpy">mockUtil.isSpy</API>(<API label="">mock</API>)) {
+            <API label="None">toClean.add</API>(serviceClass);
+        }
+    }
+
+</code></pre>
+
+Is there a way to avoid this loop and <API label="">check</API> if <API label="">any</API> <API label="">mock</API> object was created?
+
+==========
+Mockito doesn't keep around a global list of all mocks, as mocks are intended to be short-lived objects that are replaced before every test—often by a @Before method, <a href="http://site.mockito.org/mockito/docs/current/org/mockito/runners/MockitoJUnitRunner.html" rel="nofollow">MockitoJUnitRunner</a>, <API label="">or</API> <a href="http://site.mockito.org/mockito/docs/current/org/mockito/junit/MockitoRule.html" rel="nofollow">MockitoRule</a>. (Keeping a global list may interfere with the mocks' garbage collection.) If a test doesn't replace and prepare its entire environment before starting, that's usually the fault of the test being started, not the test that didn't clean up.
+
+If you use Mockito as part of a long-lived server started once per test suite (<API label="">or</API> otherwise have a long-lived container-injected <API label="">mock</API>), that's a good use for <a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#<API label="">reset</API>(T...)" rel="nofollow"><code><API label="org.mockito.Mockito.reset">Mockito.reset</API></code></a> listed as <a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#17" rel="nofollow">item #17 in the Mockito docs</a>. <code><API label="org.mockito.Mockito.reset">reset</API></code> will <API label="">clear</API> all expectations and recorded invocations for a <API label="">mock</API>, which is good for clearing out a long-lived object at the beginning <API label="">or</API> <API label="">end</API> of a test. It is frequently and wrongly used to <API label="">clear</API> expectations in the middle of a test that should be split into two tests; be careful not to overuse it for that purpose.
+
+Aside: You probably shouldn't use <a href="http://site.mockito.org/mockito/docs/current/org/mockito/internal/util/<API label="">MockUtil</API>.html" rel="nofollow"><API label="">MockUtil</API></a>; it's in an internal package. Prefer <a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#<API label="">mockingDetails</API>(java.lang.Object)" rel="nofollow"><API label="org.mockito.Mockito.mockingDetails">Mockito.mockingDetails</API>(Object)</a> instead, as in <a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#mocking_details" rel="nofollow">the Mockito docs as item #26</a>.
+

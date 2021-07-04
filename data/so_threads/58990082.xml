@@ -1,0 +1,88 @@
+https://stackoverflow.com/questions/58990082
+I want to <API label="">mock</API> a class which has a varargs parameter method. Based on <a href="https://stackoverflow.com/questions/24295197/is-there-mockito-eq-matcher-for-varargs-array/24295695#24295695">is there Mockito eq matcher for varargs array?</a> I came up with the following but the ArgumentMatcher is not called at all.
+
+My class to <API label="">mock</API>:
+
+<pre><code>
+public class ProcessUtil {
+  public Result <API label="">execute</API>(String... commandParts) throws Exception { ... }
+}
+
+</code></pre>
+
+My class to <API label="">test</API> (<code>InstallService</code>) executes a couple of <code><API label="None">ProcessUtil.execute</API>()</code> and I want to return different Results based on the varargs of the call. Therefor I created this ArgumentMatcher:
+
+<pre><code>
+class StringVarArgsMatcher implements ArgumentMatcher,VarargMatcher {
+
+   private String[] expectedValues;
+
+   StringVarArgsMatcher(String... expectedValues) {
+        this.expectedValues = expectedValues;
+    }
+
+   @Override
+    public boolean <API label="">matches</API>(String[] arguments) {
+        boolean matched = false;
+        for(int i = 0; i < expectedValues.length; i++) {
+            matched = "".<API label="None">equals</API>(expectedValues[i]) || arguments[i].<API label="None">endsWith</API>(expectedValues[i]);
+        }
+
+       return matched;
+    }
+}
+
+</code></pre>
+
+My <API label="">test</API> is constructed this way:
+
+<pre><code>
+@Test
+public void <API label="">test</API>() throws Exception{
+    ProcessUtil processUtilMock = <API label="org.mockito.Mockito.mock">mock</API>(ProcessUtil.class);
+    ProcessUtil.Result installCommandResult = new ProcessUtil.Result(<API label="None">Collections.emptyList</API>(), <API label="None">Collections.emptyList</API>());
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">processUtilMock.execute</API>(<API label="org.mockito.Mockito.argThat">argThat</API>(new StringVarArgsMatcher(new String[]{"", "", "", "", "--install"})))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(installCommandResult);
+
+   InstallService installService = new InstallService(processUtilMock);
+    boolean databaseInstalled = installService.installDatabase();
+    Assert.assertFalse(databaseInstalled);
+}
+
+</code></pre>
+
+When I run my <API label="">test</API> it seems that the ArgumentMatcher is not called at all. If I set any breakpoint inside of the matcher execution will not stop. My <code>InstallService</code> will also get a NullPointer-Exception <API label="">when</API> it tries to evaluate the Result of <code><API label="None">ProcessUtil.execute</API>()</code>
+
+What is it that I am missing?
+
+==========
+Change your <code>StringVarArgsMatcher</code> to implement <code>ArgumentMatcher</code> instead of the string array.
+
+When mockito identifies the matcher as a varargs matcher (by relying on the <code>VarargMatcher</code> interface), it <API label="">matches</API> each argument individually against your matcher.
+
+You will have to adjust your matcher for this, for example:
+
+<pre><code>
+class StringVarArgsMatcher implements ArgumentMatcher,VarargMatcher {
+
+   private String[] expectedValues;
+    private int count = 0;
+
+   StringVarArgsMatcher(String... expectedValues) {
+        this.expectedValues = expectedValues;
+    }
+
+   @Override
+    public boolean <API label="">matches</API>(String argument) {
+
+       if (count >= expectedValues.length) {
+            return false;
+        }
+
+       boolean result = "".<API label="None">equals</API>(expectedValues[count]) || <API label="None">argument.endsWith</API>(expectedValues[count]);
+        count++;
+        return result; 
+    }
+}
+
+</code></pre>
+

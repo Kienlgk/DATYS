@@ -1,0 +1,16 @@
+https://stackoverflow.com/questions/49002529
+What is the <code>time complexity</code> of <code><API label="None">put</API>()</code> and <code><API label="None">get</API>()</code> in <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ListMultimap.html" rel="nofollow noreferrer">Guava ListMultimap</a> or <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ArrayListMultimap.html" rel="nofollow noreferrer">Guava ArrayListMultimap</a> ?
+
+I have <API label="">read</API> the below  Guava Documentation, However, the time complexity of these operations is not mentioned.
+
+<a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ListMultimap.html" rel="nofollow noreferrer">ListMultimap</a>
+
+<a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/ArrayListMultimap.html" rel="nofollow noreferrer">ArrayListMultimap</a>
+
+Is the time complexity same as that of Hashmap (<code>O(1)</code> for both <code><API label="None">put</API>()</code> and <code><API label="None">get</API>()</code>)?
+
+==========
+This is described, though a bit indirectly, on guava's general <a href="https://github.com/google/guava/wiki/NewCollectionTypesExplained#multimap" rel="nofollow noreferrer">documentation for multimap</a>. Specifically, in the "Implementations" section, it says that for ArrayListMultimap, the <API label="None">keys</API> behave as HashMap, and the <API label="None">values</API> behave as ArrayList.
+
+Thus, the <API label="None">get</API> and <API label="None">put</API> are both O(1) (with the <a href="https://stackoverflow.com/questions/4553624/hashmap-<API label="">get</API>-<API label="">put</API>-complexity">usual caveats</a> about that claim that accompany HashMap). For <API label="">get</API>, it's just an O(1) operation that gets the ArrayList; for <API label="">put</API>, it's that same O(1) <API label="">get</API>, and then another O(1) <API label="">put</API> (amortized, as ArrayList additions always are).
+

@@ -1,0 +1,33 @@
+https://stackoverflow.com/questions/25673984
+I want to print HashMultiMap as json.
+
+<pre><code>
+HashMultimap multimap = <API label="com.google.common.collect.HashMultimap.create">HashMultimap.create</API>();
+<API label="None">multimap.put</API>("a",Obj1);
+<API label="None">multimap.put</API>("a",Obj3);
+<API label="None">multimap.put</API>("b",Obj2);
+
+</code></pre>
+
+to
+
+<pre><code>
+{ 
+  "a":[Obj1,Obj3],
+  "b":[Obj2]
+}
+
+</code></pre>
+
+Obj1 and other objects should again be in json(to keep it clean, I have shown it as objects)
+I can iterate over the individual <API label="">keys</API> and convert set of Objects to json using libraries such as Gson.
+
+But to get the entire snapshot of the HashMultimap, I want to convert it to json and inspect it.
+
+Gson could not convert the entire map, but could do individual <API label="">values</API>(list of objects to json)
+
+==========
+Call <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/HashMultimap.html#<API label="None">asMap</API>()"><code><API label="None">asMap</API>()</code></a> on the MultiMap first. This converts the MultiMap to a standard Map where each value is a Collection.
+
+In your example, the type of the resulting Map is <code>Map</code>. Gson should be able to serialise this correctly.
+

@@ -1,0 +1,14 @@
+https://stackoverflow.com/questions/10091654
+I would like to have several Cache objects in my application and I'd like them to share a maximum weight.  So given some total weight X, I'd like the <API label="">sum</API> of the weights of the cached items across all my caches to not exceed X.  I don't know how many caches will be needed up front, nor do the caches need to be 'fair' -- if one is heavily used while others are not, it should be able to take the lion's share of the global maximum.  I don't want misses on a cache because its considered full while other caches are mostly un-used and that space could be allocated by the heavily used cache.  These will be keeping me from going back to disk to get data, so low miss rates are important.
+
+I thought about having a Weigher implementation that used a static variable that kept the total cached weight.  Then a Weigher would return the weight of the object, if that weight is less than the total remaining space, I'd return the weight as-is.  If it's more than the total weight left, I could return Long.MAX_VALUE so the item is not cached.  Each cache would have a high maximum weight, probably Long.MAX_VALUE-1 so that an element can always be inserted as long as we can calculate/allocate a weight for it.
+
+The problem is that I don't see any way to know the total weight of cached objects.  I could <API label="">decrement</API> the total weight w/ eviction listeners, but there's no way that I can see to be notified when something gets inserted into the cache, nor do the cache stats reflect this in their data.
+
+Is there any workaround for this or approach I could take to achieve this functionality?  I have a custom cache implementation that handles global weights, but lacks many of the features provided by the Guava cache, so I'd like to avoid re-implementing stuff if possible.  Though I don't mind trying to wire this into the Guava Cache if you can point me in a general direction. 
+
+==========
+The Guava caches do not interact with each other at all -- there's no "global" interaction -- but <code><API label="com.google.common.cache.CacheBuilder.softValues">softValues</API>()</code> is the traditional way to make "memory-sensitive" caches, since soft references are collected by the GC (typically in globally least-recently-used order), but only when memory is tight.
+
+I don't even believe Guava caches internally keep track of their total weight -- they track total weight on a per-segment basis, I believe, but keeping track of the total weight would require too much locking.
+

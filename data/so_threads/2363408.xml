@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/2363408
+There are a few factory methods in Google Guava to create InputSuppliers, e.g. from a <code>byte[]</code>:
+
+<pre><code>
+ByteStreams.newInputStreamSupplier(bytes);
+
+</code></pre>
+
+Or from a <code>File</code>:
+
+<pre><code>
+Files.newInputStreamSupplier(file);
+
+</code></pre>
+
+Is there a similar way to to create an <code>InputSupplier</code> for a given <code>InputStream</code>? 
+
+That is, a way that's more concise than an anonymous class:
+
+<pre><code>
+new InputSupplier() {
+    public InputStream <API label="">getInput</API>() throws IOException {
+        return inputStream;
+    }
+};
+
+</code></pre>
+
+Background: I'd like to use InputStreams with e.g. <code><API label="com.google.common.io.Files.copy">Files.copy</API>(...)</code> or <code><API label="">ByteStreams.equal</API>(...)</code>.
+
+==========
+No, I haven't seen anything.I think you have found the best way.The only alternative where to store the inputstream in a byte array or a file and create a Supplier with ByteStreams.newInputStreamSupplier() or Files.newInputStreamSupplier(), but I would discourage to do like that.
+You could also use<pre><code>public static long <API label="com.google.common.io.ByteStreams.copy">copy</API>(InputStream from, OutputStream to)
+</code></pre> from <pre><code>ByteStreams
+</code></pre>
+see:<a href="https://code.google.com/p/guava-libraries/source/browse/guava/src/com/google/common/io/ByteStreams.java" rel="nofollow noreferrer">src</a>
+

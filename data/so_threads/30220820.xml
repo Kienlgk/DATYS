@@ -1,0 +1,23 @@
+https://stackoverflow.com/questions/30220820
+In Java, you can create a new <code>HashMap</code> to hold a specific number of items like so:
+
+<pre><code>
+Map m = new HashMap(100);
+
+</code></pre>
+
+Guava provides a <code><API label="com.google.common.collect.Maps.newHashMapWithExpectedSize">Maps.newHashMapWithExpectedSize</API>(int)</code> method, which I would expect to simply call <code>HashMap(int)</code>. But it doesn't do this, instead it calculates its own capacity and uses that.
+
+Why does <code><API label="com.google.common.collect.Maps.newHashMapWithExpectedSize">newHashMapWithExpectedSize</API></code> do its own thing, and why would I want to use it over calling <code>new HashMap(int)</code> directly?
+
+==========
+Have you <API label="">read</API> the method's <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Maps.html#<API label="com.google.common.collect.Maps.newHashMapWithExpectedSize">newHashMapWithExpectedSize</API>(int)" rel="noreferrer">Javadoc</a>?
+
+
+ Creates a <code>HashMap</code> instance, with a high enough "initial capacity" that it should hold <code>expectedSize</code> elements without growth.
+
+
+Note that the <code>new HashMap(int)</code> constructor's "initial size" parameter specifies the initial size of the hash table that entries are stored in, which is basically an implementation detail that you shouldn't have to care about. The hash table will resize when it exceeds the map's load factor (which defaults to 0.75), which means that if you specify an initial capacity of 16 and then <API label="">add</API> 16 entries to the map, the hash table will almost certainly be resized.
+
+With Guava's method, if you specify an expected size of 16 and then <API label="">add</API> 16 entries, the hash table should not resize.
+

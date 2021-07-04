@@ -1,0 +1,103 @@
+https://stackoverflow.com/questions/47691364
+I have a problem with <code><API label="org.mockito.AdditionalAnswers.returnsFirstArg">returnsFirstArg</API></code> for overloaded methods, where the <code>firstArg</code> <API label="">is</API> not nessessarily the same type as the return type. 
+
+
+I want both methods to return the string value of the first argument. 
+Even better they always return the value of <code>key</code>
+
+
+Is there anyway to achieve this and get these Tests green?
+
+This <API label="">is</API> a minimum NOT working example, in real live Translator <API label="">is</API> more complex and can't be modified.
+
+<pre><code>
+package test;
+
+import static <API label="None">org.hamcrest.Matchers.is</API>;
+import static <API label="org.mockito.Mockito.mock">org.mockito.Mockito.mock</API>;
+import static <API label="None">org.hamcrest.MatcherAssert.assertThat</API>;
+import static <API label="org.mockito.AdditionalAnswers.returnsFirstArg">org.mockito.AdditionalAnswers.returnsFirstArg</API>;
+
+import java.util.Locale;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
+
+@RunWith(MockitoJUnitRunner.class)
+public class TranslatorTest {
+
+   private class Translator {
+
+       String <API label="">getText</API>(final String key) {
+            return "translated " + key;
+        }
+
+       String <API label="">getText</API>(final Locale locale, final String key) {
+            return "translated " + key + " for locale " + locale;
+        }
+    }
+
+   @Test
+    public void test_withoutToString() throws Exception {
+        final String key = "com.stackoverflow.translator.label";
+        Translator translator = <API label="org.mockito.Mockito.mock">mock</API>(Translator.class,  <API label="">returnsFirstArg</API>());
+
+       <API label="None">assertThat</API>(<API label="None">translator.getText</API>(key), <API label="None">is</API>(key));
+
+       final Locale locale = new Locale("en_GB"); // java.lang.ClassCastException: java.util.Locale cannot be cast to java.lang.String
+        <API label="None">assertThat</API>(<API label="None">translator.getText</API>(locale, key), <API label="None">is</API>(key));
+    }
+
+   @Test
+    public void test_withToString() throws Exception {
+        final String key = "com.stackoverflow.translator.label";
+        Translator translator = <API label="org.mockito.Mockito.mock">mock</API>(Translator.class,  <API label="org.mockito.AdditionalAnswers.returnsFirstArg">returnsFirstArg</API>().<API label="None">toString</API>());
+
+       <API label="None">assertThat</API>(<API label="None">translator.getText</API>(key), <API label="None">is</API>(key));
+        /*
+         * java.lang.AssertionError:
+         *  Expected: <API label="">is</API> "com.stackoverflow.translator.label"
+         *  but: was null
+         */
+
+       final Locale locale = new Locale("en_GB");
+        <API label="None">assertThat</API>(<API label="None">translator.getText</API>(locale, key), <API label="None">is</API>(key));
+    }
+}
+
+</code></pre>
+
+==========
+I wouldn't bend over backwards to try to define some generic default behavior <API label="">when</API> creating the <API label="">mock</API> object. You have two different methods, and could just specify two different behaviors explicitly:
+
+<pre><code>
+@Before
+public void setUp() {
+    translator = <API label="org.mockito.Mockito.mock">mock</API>(Translator.class);
+    <API label="org.mockito.Mockito.when">when</API>(<API label="None">translator.getText</API>(<API label="org.mockito.Matchers.any">any</API>(), <API label="org.mockito.Matchers.any">any</API>()))
+        .<API label="org.mockito.stubbing.OngoingStubbing.thenAnswer">thenAnswer</API>(<API label="org.mockito.AdditionalAnswers.returnsSecondArg">AdditionalAnswers.returnsSecondArg</API>());
+    <API label="org.mockito.Mockito.when">when</API>(<API label="">translator.getText</API>(<API label="org.mockito.Matchers.any">any</API>()))
+        .<API label="org.mockito.stubbing.OngoingStubbing.thenAnswer">thenAnswer</API>(<API label="org.mockito.AdditionalAnswers.returnsSecondArg">AdditionalAnswers.returnsFirstArg</API>());
+}
+
+</code></pre>
+
+EDIT:
+Addressing the added/clarified requirement in the comments could be problematic, unless you have a good way to recognize argument you want to return. 
+
+Assuming you can use some straight-forward logic, like returning the first string argument, you could implement your own <a href="https://static.javadoc.io/org.mockito/mockito-core/2.12.0/org/mockito/stubbing/Answer.html" rel="nofollow noreferrer"><code>Answer</code></a>:
+
+<pre><code>
+Answer returnsFirstString =
+        invocationOnMock -> <API label="None">Arrays.stream</API>(<API label="org.mockito.invocation.InvocationOnMock.getArguments">invocationOnMock.getArguments</API>())
+                .<API label="None">filter</API>(String.class::isInstance)
+                .findFirst()
+                .orElse(null);
+
+translator = <API label="org.mockito.Mockito.mock">mock</API>(Translator.class, returnsFirstString);
+
+</code></pre>
+
+This can, of course, be refined with some different logic like applying to <code><API label="None">getText</API></code> methods only, etc.
+

@@ -1,0 +1,138 @@
+https://stackoverflow.com/questions/13863153
+Trying to efficiently extract some numbers from a string and have tried 
+
+
+java.util.regex.Matcher 
+com.google.common.base.Splitter
+
+
+The results were :
+
+
+via Regular Expression: 24417 ms 
+via Google Splitter: 17730 ms
+
+
+Is there another faster way you can recommend ?
+
+I know similar questions asked before e.g. <a href="https://stackoverflow.com/questions/12721261/how-to-extract-multiple-integers-from-a-string-in-java">How to extract multiple integers from a String in Java?</a> but my emphasis is <API label="">on</API> making this fast (but maintainable/simple) as it happens a lot.
+
+
+
+EDIT : Here are my final results which tie in with those from Andrea Ligios below:
+
+
+Regular Expression (without brackets) : 18857
+Google Splitter (without the superflous <API label="com.google.common.base.Splitter.trimResults">trimResults</API>() method): 15329
+Martijn Courteaux answer below: 4073
+
+
+
+
+<pre><code>
+import org.junit.Test;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Splitter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class Sample {
+
+   final static int COUNT = 50000000;
+    public static final String INPUT = "FOO-1-9-BAR1"; // I want 1, 9, 1
+
+   @Test
+    public void extractNumbers() {
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < COUNT; i++) {
+            // Output is list of 1, 9, 1
+            Demo.extractNumbersViaGoogleSplitter(INPUT);
+        }
+        <API label="None">System.out.println</API>("Total execution time (ms) via Google Splitter: " + (System.currentTimeMillis() - startTime));
+
+
+       startTime = System.currentTimeMillis();
+        for (int i = 0; i < COUNT; i++) {
+            // Output is list of 1, 9, 1
+            Demo.extractNumbersViaRegEx(INPUT);
+        }
+        <API label="None">System.out.println</API>("Total execution time (ms) Regular Expression: " + (System.currentTimeMillis() - startTime));
+
+   }
+}
+
+class Demo {
+
+   static List extractNumbersViaGoogleSplitter(final String text) {
+
+       Iterator iter = <API label="com.google.common.base.Splitter.on">Splitter.on</API>(<API label="None">CharMatcher.JAVA_DIGIT.negate</API>()).<API label="trimResults">trimResults</API>().<API label="com.google.common.base.Splitter.omitEmptyStrings">omitEmptyStrings</API>().<API label="None">split</API>(text).<API label="None">iterator</API>();
+        final List result = new ArrayList();
+        while (<API label="None">iter.hasNext</API>()) {
+            <API label="None">result.add</API>(Integer.parseInt(<API label="None">iter.next</API>()));
+
+       }
+        return result;
+    }
+    /**
+     * Matches all the numbers in a string, as individual groups. e.g.
+     * FOO-1-BAR1-1-12 matches 1,1,1,12.
+     */
+    private static final Pattern NUMBERS = <API label="None">Pattern.compile</API>("(\\d+)");
+
+   static List extractNumbersViaRegEx(final String source) {
+        final Matcher <API label="None">matcher</API> = <API label="None">NUMBERS.matcher</API>(source);
+        final List result = new ArrayList();
+
+       if (<API label="None">matcher</API>.<API label="">find</API>()) {
+            do {
+                <API label="None">result.add</API>(Integer.parseInt(<API label="None">matcher</API>.group(0)));
+            } while (<API label="None">matcher</API>.<API label="">find</API>());
+            return result;
+        }
+        return result;
+    }
+}
+
+</code></pre>
+
+==========
+This is a very quick algorithm:
+
+<pre><code>
+public List extractIntegers(String input)
+{
+    List result = new ArrayList();
+    int index = 0;
+    int v = 0;
+    int l = 0;
+    while (index < <API label="None">input.length</API>())
+    {
+        char c = <API label="None">input.charAt</API>(index);
+        if (Character.isDigit(c))
+        {
+            v *= 10;
+            v += c - '0';
+            l++;
+        } else if (l > 0)
+        {
+            <API label="None">result.add</API>(v);
+            l = 0;
+            v = 0;
+        }
+        index++;
+    }
+    if (l > 0)
+    {
+        <API label="None">result.add</API>(v);
+    }
+    return result;
+}
+
+</code></pre>
+
+This code took <API label="">on</API> my machine 3672 milliseconds, for "FOO-1-9-BAR1" and 50000000 runs. I'm <API label="">on</API> a  2.3 GHz core.
+

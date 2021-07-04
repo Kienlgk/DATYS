@@ -1,0 +1,66 @@
+https://stackoverflow.com/questions/20005194
+I have run into an odd situation where, when I successfully serialize a certain object and then deserialize it in another program, I get the following error on deserialization:
+
+<pre><code>
+Exception in thread "main" java.lang.ClassCastException: cannot assign instance of com.google.common.collect.ImmutableList$SerializedForm to field MyClass.featureExtractors of type com.google.common.collect.ImmutableList in instance of MyClass
+        at java.io.ObjectStreamClass$FieldReflector.setObjFieldValues(ObjectStreamClass.java:2063)
+        at java.io.ObjectStreamClass.setObjFieldValues(ObjectStreamClass.java:1241)
+        at java.io.ObjectInputStream.defaultReadFields(ObjectInputStream.java:1970)
+        at java.io.ObjectInputStream.readSerialData(ObjectInputStream.java:1888)
+        at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:1771)
+        at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1347)
+        at java.io.ObjectInputStream.defaultReadFields(ObjectInputStream.java:1964)
+        at java.io.ObjectInputStream.readSerialData(ObjectInputStream.java:1888)
+        at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:1771)
+        at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1347)
+        at java.io.ObjectInputStream.defaultReadFields(ObjectInputStream.java:1964)
+        at java.io.ObjectInputStream.readSerialData(ObjectInputStream.java:1888)
+        at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:1771)
+        at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1347)
+        at <API label="">java.io.ObjectInputStream.readObject</API>(ObjectInputStream.java:369)
+        at my code which calls <API label="">readObject</API>
+
+</code></pre>
+
+The odd thing is that if I add test code to the program which serialized the data to immediately reopen the file and deserialize it, it succeeds with no problems.  
+
+Here is the serialization code (and deserialization test) from the writing program:
+
+<pre><code>
+final FileOutputStream fos = new FileOutputStream(outputModelFile);
+final ObjectOutputStream oos = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(fos)));
+<API label="None">oos.writeObject</API>(processedData);
+<API label="None">oos.close</API>();
+
+<API label="None">System.out.println</API>("Reloading");
+final FileInputStream fin = new FileInputStream(outputModelFile);
+final ObjectInputStream ois = new ObjectInputStream(new GZIPInputStream(new    BufferedInputStream(fin)));
+final MyClass ret = (MyClass) <API label="None">ois.readObject</API>();
+<API label="None">ois.close</API>();
+
+</code></pre>
+
+Here is the deserialization code in the reading program:
+
+<pre><code>
+final FileInputStream fin = new FileInputStream(f);
+final ObjectInputStream ois = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(fin)));
+
+final MyClass ret = (MyClass) <API label="None">ois.readObject</API>();
+<API label="None">ois.close</API>();
+
+</code></pre>
+
+The structure being serialized and deserialized is extremely complex, with several sub-objects involving custom <code><API label="None">writeObject</API></code>/<code><API label="None">readObject</API></code>s and <code>readResolve</code>s. It seems like if there were an error in a <code><API label="None">writeObject</API></code>/<code><API label="None">readObject</API></code> pair, it should fail on any attempt to deserialize.  A bad <code>readResolve</code> is more plausible, but the only <code>readResolve</code> involved is only doing a form of string interning, and it is not involved with the object throwing the exception. I'm slowly trying to take apart the pieces and test their serialization one-by-one, but I was wondering if anyone had any ideas what could cause this odd behavior? 
+
+P.S. A similar exception is discussed in <a href="https://stackoverflow.com/questions/9110677/readresolve-not-working-an-instance-of-guavas-serializedform-appears">this question</a>, but there it is due to the field in question being involved in a circular reference, which is not happening here.
+
+Update: Of course, ten minutes after I post this, the obvious occurs to me.  The two programs are in different Maven modules. The writing program is in the same module as object being written, but the reading program is in another module which depends on the other one.  This suggests there is the possibility of some sort of class mismatch.  
+
+==========
+The writing and reading program were using different versions of Guava and the serialized forms were not compatible between versions. The Guava documentation warns about this, but I had forgotten:
+
+
+ Serialized forms of ALL objects are subject to change. Do not persist these and assume they can be read by a future version of the library.
+
+

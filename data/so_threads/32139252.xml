@@ -1,0 +1,86 @@
+https://stackoverflow.com/questions/32139252
+I want to stub a repository class to test another class (Holder class) that has a repository. The repository interface supports CRUD operations, and has many methods, but my unit test <API label="">on</API> the Holder class only needs to call two of them. The repository interface:
+
+<pre><code>
+public interface IRepo {
+    public void <API label="">remove</API>(String... sarr);
+
+   public void <API label="">add</API>(String... sarr);
+
+   //Lots of other methods I don't need now
+}
+
+</code></pre>
+
+I want to create a repository <API label="">mock</API> that can store instances, define logic for <code><API label="">add</API></code> and <code><API label="">remove</API></code> only, and also provide a means of checking what is stored <API label="">on</API> it after calling <API label="">add</API> and <API label="">remove</API>.
+
+If I do:
+
+<pre><code>
+IRepo repoMock = <API label="org.mockito.Mockito.mock">mock</API>(IRepo.class);
+
+</code></pre>
+
+Then I have a dumb object that does nothing <API label="">on</API> each method. That's OK, now I just need to define behaviour for <API label="">add</API> and <API label="">remove</API>.
+
+I could create a <code>Set</code> and stub only those two methods to work <API label="">on</API> the set. Then I'd instantiate a Holder that has an IRepo, inject the partially stubbed <API label="">mock</API>, and after exercising the holder, check the set to verify it contains what it should.
+
+I've managed to partially stub a void method like <code><API label="">remove</API></code> using the deprecated method <code><API label="org.mockito.Mockito.stubVoid">stubVoid</API></code>:
+
+<pre><code>
+Set mySet = new HashSet<>();
+<API label="org.mockito.Mockito.stubVoid">stubVoid</API>(repoMock).<API label="org.mockito.stubbing.VoidMethodStubbable.toAnswer">toAnswer</API>(new Answer() {
+
+   @Override
+    public Void <API label="">answer</API>(InvocationOnMock invocation) throws Throwable {
+        Object[] args = <API label="org.mockito.invocation.InvocationOnMock.getArguments">invocation.getArguments</API>();
+        String[] stringsToDelete = (String[]) args[0];
+        <API label="None">mySet.removeAll</API>(<API label="None">Arrays.asList</API>(stringsToDelete));
+        return null;
+    }
+}).<API label="org.mockito.stubbing.VoidMethodStubbable.on">on</API>().<API label="None">remove</API>(<API label="org.mockito.Matchers.anyVararg">Matchers.anyVararg</API>());
+
+</code></pre>
+
+But is deprecated, and it is not much better than creating a partial implementation for IRepo. Is there a better way?
+
+NOTE: Java 7 answers only please, this should run in Android.
+
+==========
+You can use         
+
+<pre><code>
+  <API label="org.mockito.Mockito.doAnswer">Mockito.doAnswer</API>(new Answer() {
+        @Override
+        public Void <API label="">answer</API>(InvocationOnMock invocation) throws Throwable {
+            //DO SOMETHING
+            return null;
+        }
+    }).<API label="org.mockito.stubbing.OngoingStubbing.when">when</API>(...).<API label="None">remove</API>(<API label="org.mockito.Matchers.anyVararg">Matchers.anyVararg</API>());
+
+</code></pre>
+
+From the Javadoc:
+
+
+ Use <API label="org.mockito.Mockito.doAnswer">doAnswer</API>() <API label="">when</API> you want to stub a void method with generic
+  Answer. 
+  
+  Stubbing voids requires different approach from <API label="org.mockito.Mockito.when">Mockito.when</API>(Object)
+  because the compiler does not like void methods inside brackets... 
+  
+  Example: 
+
+
+<pre><code>
+    <API label="org.mockito.Mockito.doAnswer">doAnswer</API>(new Answer() {
+    public Object <API label="">answer</API>(InvocationOnMock invocation) {
+        Object[] args = <API label="org.mockito.invocation.InvocationOnMock.getArguments">invocation.getArguments</API>();
+        Mock <API label="">mock</API> = <API label="org.mockito.invocation.InvocationOnMock.getMock">invocation.getMock</API>();
+        return null;
+    }}).<API label="org.mockito.stubbing.OngoingStubbing.when">when</API>(<API label="">mock</API>).someMethod();
+
+</code></pre>
+
+See examples in javadoc for Mockito
+

@@ -1,0 +1,251 @@
+https://stackoverflow.com/questions/39031175
+i need to write testcase for connectTimeout and SocketTimeout exception. Am using powerMock to create <API label="">mock</API> objects. Below is my code. But am getting null pointer exception for my <API label="">mock</API> objects. Any help appreciated
+
+<pre><code>
+package com.util;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.URL;
+import javax.net.ssl.HttpsURLConnection;
+
+import <API label="None">org.json.JSONObject</API>;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
+import org.powermock.modules.testng.PowerMockObjectFactory;
+import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.Assert;
+import org.testng.IObjectFactory;
+import org.testng.annotations.ObjectFactory;
+import org.testng.annotations.Test;
+
+@PowerMockIgnore("javax.management.*")
+@SuppressStaticInitializationFor("com.Sender")
+@PrepareForTest(Sender.class) 
+public class SenderCatalogTest extends PowerMockTestCase{
+
+
+@ObjectFactory
+public IObjectFactory getObjectFactory() {
+  return new PowerMockObjectFactory();
+}
+@Test
+public void testSocketExceptionEvents() throws Exception{
+    String url="https://www.google.co.in/";
+    URL mockURL = <API label="None">PowerMockito.mock</API>(URL.class);
+    PowerMockito.whenNew(URL.class).withArguments(url).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockURL);
+   SocketTimeoutException expectedException = new SocketTimeoutException();
+   <API label="">PowerMockito.when</API>(mockURL.openConnection()).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(expectedException);
+    Sender sender = new Sender();
+    String input="{\"level\":3,\"event\":{\"name\":\"myevent\",\"Address\":\"xyz\"}}";
+    <API label="">JSONObject</API> vent = new <API label="None">JSONObject</API>(input);
+    <API label="None">Assert.assertNotNull</API>(sender.send(vent));
+
+</code></pre>
+
+Please find for the logs
+
+<pre><code>
+at com.Sender.send(Sender.java:81)
+at <API label="">com.SenderCatalogTest.timeout</API>(SenderCatalogTest.java:33)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:68)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:316)
+at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:88)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:96)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:300)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:131)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.access$100(PowerMockJUnit47RunnerDelegateImpl.java:59)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner$TestExecutorStatement.evaluate</API>(PowerMockJUnit47RunnerDelegateImpl.java:147)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.evaluateStatement(PowerMockJUnit47RunnerDelegateImpl.java:107)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:82)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:288)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:86)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:208)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:147)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:121)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:33)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:45)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:123)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:121)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:59)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+2016-08-19 12:49:34,107 <API label="">main</API> ERROR Could not reconfigure JMX java.lang.LinkageError: loader constraint violation: loader (instance of org/powermock/core/classloader/MockClassLoader) previously initiated loading for a different type with name "javax/management/MBeanServer"
+at java.lang.ClassLoader.defineClass1(Native Method)
+at <API label="">java.lang.ClassLoader.defineClass</API>(ClassLoader.java:763)
+at org.powermock.core.classloader.MockClassLoader.loadUnmockedClass(MockClassLoader.java:250)
+at org.powermock.core.classloader.MockClassLoader.loadModifiedClass(MockClassLoader.java:194)
+at <API label="">org.powermock.core.classloader.DeferSupportingClassLoader.loadClass</API>(DeferSupportingClassLoader.java:71)
+at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:357)
+at org.apache.logging.log4j.core.jmx.Server.unregisterAllMatching(Server.java:328)
+at org.apache.logging.log4j.core.jmx.Server.unregisterLoggerContext(Server.java:250)
+at org.apache.logging.log4j.core.jmx.Server.reregisterMBeansAfterReconfigure(Server.java:162)
+at org.apache.logging.log4j.core.jmx.Server.reregisterMBeansAfterReconfigure(Server.java:138)
+at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:502)
+at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:561)
+at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:577)
+at <API label="">org.apache.logging.log4j.core.LoggerContext.start</API>(LoggerContext.java:212)
+at <API label="">org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext</API>(Log4jContextFactory.java:152)
+at <API label="">org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext</API>(Log4jContextFactory.java:45)
+at <API label="">org.apache.logging.log4j.LogManager.getContext</API>(LogManager.java:194)
+at <API label="">org.apache.logging.log4j.spi.AbstractLoggerAdapter.getContext</API>(AbstractLoggerAdapter.java:103)
+at <API label="">org.apache.logging.slf4j.Log4jLoggerFactory.getContext</API>(Log4jLoggerFactory.java:43)
+at <API label="">org.apache.logging.log4j.spi.AbstractLoggerAdapter.getLogger</API>(AbstractLoggerAdapter.java:42)
+at <API label="">org.apache.logging.slf4j.Log4jLoggerFactory.getLogger</API>(Log4jLoggerFactory.java:29)
+at <API label="">org.slf4j.LoggerFactory.getLogger</API>(LoggerFactory.java:329)
+at <API label="">org.slf4j.LoggerFactory.getLogger</API>(LoggerFactory.java:349)
+at com.SenderUtil.(SenderUtil.java:17)
+at com.SAEventSender.(SASender.java:15)
+at com.Sender.send(Sender.java:148)
+at <API label="">com.SenderCatalogTest.timeout</API>(SenderCatalogTest.java:33)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:68)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:316)
+at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:88)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:96)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:300)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:131)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.access$100(PowerMockJUnit47RunnerDelegateImpl.java:59)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner$TestExecutorStatement.evaluate</API>(PowerMockJUnit47RunnerDelegateImpl.java:147)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.evaluateStatement(PowerMockJUnit47RunnerDelegateImpl.java:107)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:82)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:288)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:86)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:208)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:147)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:121)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:33)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:45)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:123)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:121)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:59)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+
+2016-08-19 12:49:34,182 <API label="">main</API> ERROR Could not reconfigure JMX java.lang.LinkageError: javax/management/MBeanServer
+at org.apache.logging.log4j.core.jmx.Server.unregisterAllMatching(Server.java:328)
+at org.apache.logging.log4j.core.jmx.Server.unregisterLoggerContext(Server.java:250)
+at org.apache.logging.log4j.core.jmx.Server.reregisterMBeansAfterReconfigure(Server.java:162)
+at org.apache.logging.log4j.core.jmx.Server.reregisterMBeansAfterReconfigure(Server.java:138)
+at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:502)
+at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:561)
+at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:577)
+at <API label="">org.apache.logging.log4j.core.LoggerContext.start</API>(LoggerContext.java:212)
+at <API label="">org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext</API>(Log4jContextFactory.java:152)
+at <API label="">org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext</API>(Log4jContextFactory.java:45)
+at <API label="">org.apache.logging.log4j.LogManager.getContext</API>(LogManager.java:155)
+at com.SenderUtil.initLogger(SenderUtil.java:64)
+at com.SenderUtil.(SenderUtil.java:18)
+at com.SAEventSender.(SASender.java:15)
+at com.Sender.send(Sender.java:148)
+at <API label="">com.SenderCatalogTest.timeout</API>(SenderCatalogTest.java:33)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+at <API label="">org.junit.internal.runners.TestMethod.invoke</API>(TestMethod.java:68)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:316)
+at <API label="">org.junit.internal.runners.MethodRoadie$2.run</API>(MethodRoadie.java:88)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:96)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:300)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTestInSuper(PowerMockJUnit47RunnerDelegateImpl.java:131)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.access$100(PowerMockJUnit47RunnerDelegateImpl.java:59)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner$TestExecutorStatement.evaluate</API>(PowerMockJUnit47RunnerDelegateImpl.java:147)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.evaluateStatement(PowerMockJUnit47RunnerDelegateImpl.java:107)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit47RunnerDelegateImpl$PowerMockJUnit47MethodRunner.executeTest(PowerMockJUnit47RunnerDelegateImpl.java:82)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:288)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:86)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:208)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:147)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:121)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:33)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:45)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:123)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:121)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:59)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+
+2016-08-19 12:49:34,616 pool-1-thread-1 ERROR Caught exception executing shutdown hook Shutdown callback for LoggerContext[name=6842775d] java.lang.LinkageError: javax/management/MBeanServer
+at org.apache.logging.log4j.core.jmx.Server.unregisterAllMatching(Server.java:328)
+at org.apache.logging.log4j.core.jmx.Server.unregisterLoggerContext(Server.java:250)
+at org.apache.logging.log4j.core.jmx.Server.unregisterLoggerContext(Server.java:237)
+at <API label="">org.apache.logging.log4j.core.LoggerContext.stop</API>(LoggerContext.java:295)
+at <API label="">org.apache.logging.log4j.core.LoggerContext$1.run</API>(LoggerContext.java:260)
+at <API label="">org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry$RegisteredCancellable.run</API>(DefaultShutdownCallbackRegistry.java:102)
+at <API label="">org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry.run</API>(DefaultShutdownCallbackRegistry.java:72)
+at <API label="">java.lang.Thread.run</API>(Thread.java:745)
+
+2016-08-19 12:49:34,620 pool-1-thread-1 ERROR Caught exception executing shutdown hook Shutdown callback for LoggerContext[name=Default] java.lang.LinkageError: javax/management/MBeanServer
+at org.apache.logging.log4j.core.jmx.Server.unregisterAllMatching(Server.java:328)
+at org.apache.logging.log4j.core.jmx.Server.unregisterLoggerContext(Server.java:250)
+at org.apache.logging.log4j.core.jmx.Server.unregisterLoggerContext(Server.java:237)
+at <API label="">org.apache.logging.log4j.core.LoggerContext.stop</API>(LoggerContext.java:295)
+at <API label="">org.apache.logging.log4j.core.LoggerContext$1.run</API>(LoggerContext.java:260)
+at <API label="">org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry$RegisteredCancellable.run</API>(DefaultShutdownCallbackRegistry.java:102)
+at <API label="">org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry.run</API>(DefaultShutdownCallbackRegistry.java:72)
+at <API label="">java.lang.Thread.run</API>(Thread.java:745)
+
+</code></pre>
+
+Below is my Sender class send method
+
+<pre><code>
+public String send(<API label="">JSONObject</API> vent) throws IOException{
+    String method;
+    int level;
+    HttpsURLConnection conn = null;
+
+   try {
+
+       URL obj = new URL(url);
+        conn = (HttpsURLConnection) obj.openConnection();// line number 81
+        conn.setRequestMethod(method);
+        initializeURL(conn);
+        ....
+        }
+        catch(SocketException e){
+        }
+        catch(ConnectException e){
+        }
+
+</code></pre>
+
+==========
+Finally i was able to solve it. Incase some gets the same issue again. In my code  issue was withArguments line. I was trying to pass
+
+String url="https://www.google.co.in/";
+
+as the Url parameter. But in the actual it was null.
+
+URL mockURL = <API label="None">PowerMockito.mock</API>(URL.class);
+PowerMockito.whenNew(URL.class).withArguments(url).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(mockURL);
+
+withArguments try to match if the parameters are same. On having same url paramter on my <API label="">mock</API> and actual object in code i was able to proceed with out null pointer exception
+

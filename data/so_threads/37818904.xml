@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/37818904
+I <API label="">read</API> the tutorials but did not understand - how much of the mocked object should be implemented. Are we passing an interface or the entire implemented class to <API label="org.mockito.Mockito.mock">mock</API>()? 
+
+What if you do not have the implementation? Do you need to create an interface - suppose you omit some methods out of ignorance of the actual implementation...
+
+from example at mockito.org <a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#verification" rel="nofollow">here</a> 
+
+<pre><code>
+//<API label="">mock</API> creation
+ List mockedList = <API label="org.mockito.Mockito.mock">mock</API>(List.class);
+
+</code></pre>
+
+Do I need to create a class 'List' with the methods of the android List class?
+
+==========
+Mockito's default implementation for every method is given by <a href="http://site.mockito.org/mockito/docs/current/org/mockito/Mockito.html#RETURNS_DEFAULTS" rel="nofollow">RETURNS_DEFAULTS</a>, which (unless otherwise configured) defers to <a href="http://site.mockito.org/mockito/docs/current/org/mockito/internal/stubbing/defaultanswers/ReturnsEmptyValues.html" rel="nofollow">ReturnsEmptyValues</a>:
+
+
+ Default <API label="">answer</API> of every Mockito <API label="">mock</API>.
+  
+  
+  Returns appropriate primitive for primitive-returning methods
+  Returns consistent <API label="">values</API> for primitive wrapper classes (e.g. int-returning method returns 0 and Integer-returning method returns 0,
+  too)
+  Returns <API label="">empty</API> collection for collection-returning methods (works for most commonly used collection types)
+  Returns description of <API label="">mock</API> for <API label="None">toString</API>() method
+  Returns zero if references are equals otherwise    non-zero for Comparable#<API label="None">compareTo</API>(T other) method (see issue 184)
+  Returns an java.util.Optional#<API label="">empty</API>() <API label="">empty</API> Optional for Optional    (see issue 191).
+  Returns null for everything else
+  
+
+
+For any mockable but unstubbed method on a class that you pass to <code><API label="org.mockito.Mockito.mock">Mockito.mock</API>()</code>, the <API label="org.mockito.Mockito.mock">mock</API> method will have this behavior by default, regardless of whether you passed in a concrete class or an interface. In fact, Mockito encourages you to only stub the methods that are valuable to your system under test, and to let the defaults work for everything else. This is also the case if you "forget" to stub a method, or if new methods are added <API label="">after</API> you've written your test.
+
+Note that for <code><API label="org.mockito.Mockito.spy">Mockito.spy</API></code>, the default behavior is to delegate to (a <API label="">copy</API> of) the instance you pass to <code><API label="org.mockito.Mockito.spy">spy</API></code>, and that by passing additional parameters to <code><API label="org.mockito.Mockito.mock">Mockito.mock</API></code> you can change this "default <API label="">answer</API>" if you'd like.
+

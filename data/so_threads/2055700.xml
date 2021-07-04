@@ -1,0 +1,34 @@
+https://stackoverflow.com/questions/2055700
+I am upgrading from Google Collections 0.9 to 1.0. It seems <code><API label="com.google.common.collect.Sets.newConcurrentHashSet">Sets.newConcurrentHashSet</API>()</code> is no longer available. I was using it in the following construct:
+
+<pre>
+public static  Multimap newConcurrentMultimap()
+{
+    return <API label="com.google.common.collect.Multimaps.newMultimap">Multimaps.newMultimap</API>( new ConcurrentHashMap>(), new Supplier>()
+    {
+        @Override
+        public Collection <API label="">get</API>()
+        {
+             return <API label="com.google.common.collect.Sets.newConcurrentHashSet">Sets.newConcurrentHashSet</API>();
+         }
+    } );
+}
+</pre>
+
+What would be the best replacement for <API label="com.google.common.collect.Sets.newConcurrentHashSet">Sets.newConcurrentHashSet</API>() ?
+
+Edit:
+The reason for this construct is to have a multimap that is safe to read and write from multiple threads. It is used in a mostly-read scenario (and will be read a lot).
+
+regards,
+
+Wim
+
+==========
+<code><API label="com.google.common.collect.Sets.newConcurrentHashSet">Sets.newConcurrentHashSet</API></code> was withdrawn in 1.0rc1 (<a href="http://code.google.com/p/google-collections/source/detail?spec=svn80&r=80" rel="noreferrer">commit log</a>).  I don't know the reason for the withdrawal, but you could use <a href="http://code.google.com/p/google-collections/source/diff?spec=svn80&r=80&format=side&path=/trunk/src/com/google/common/collect/Sets.java&old_path=/trunk/src/com/google/common/collect/Sets.java&old=78" rel="noreferrer">the implementation</a> yourself:
+
+<pre><code>
+<API label="com.google.common.collect.Sets.newSetFromMap">Sets.newSetFromMap</API>(new ConcurrentHashMap());
+
+</code></pre>
+

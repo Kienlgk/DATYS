@@ -1,0 +1,307 @@
+https://stackoverflow.com/questions/37776792
+I try to use Integration testing my class with JUNit, DBUnit and Hibernate.
+
+For the initialization of the database
+
+To simulate an isolated database, I used this <a href="http://www.inspire-software.com/en/index/view/articles-design-and-impl-dbunit-hibernate-integration-testing.html" rel="nofollow">tutorial</a>. 
+
+Note that I had to create two HibernateUtil class (one (named <code>HibernateUtils.class</code>) based on the tutorial which allowed me to set where <code>hibernate.test.cfg.xml</code> is located, the other one (named <code>HibernateSessionFactory</code> which created the SessionFactory based on <code>hibernate.cfg.xml</code> )
+
+Integration Testing
+
+I have to test the <code>show_Potions()</code> method from <code>Player.class</code>. 
+
+<code>show_Potions()</code> set the potions of the player based on a query from the database. I want the test to make queries in the isolated database not the real database so I proceed that way: <API label="">when</API> the <code>HibernateSessionFactory.configureSessionFactory()</code> is used, we use 'HibernateUtils.newSessionFactory("hibernate.test.cfg.xml")`.
+
+I got the exception : 
+
+<pre><code>
+ org.hibernate.HibernateException: Could not instantiate dialect class
+at org.hibernate.service.jdbc.dialect.internal.DialectFactoryImpl.constructDialect(DialectFactoryImpl.java:82)
+at org.hibernate.service.jdbc.dialect.internal.DialectFactoryImpl.buildDialect(DialectFactoryImpl.java:64)
+at <API label="">org.hibernate.engine.jdbc.internal.JdbcServicesImpl.configure</API>(JdbcServicesImpl.java:146)
+at org.hibernate.service.internal.StandardServiceRegistryImpl.configureService(StandardServiceRegistryImpl.java:75)
+at org.hibernate.service.internal.AbstractServiceRegistryImpl.initializeService(AbstractServiceRegistryImpl.java:159)
+at org.hibernate.service.internal.AbstractServiceRegistryImpl.getService(AbstractServiceRegistryImpl.java:131)
+at org.hibernate.cfg.SettingsFactory.buildSettings(SettingsFactory.java:71)
+at <API label="">org.hibernate.cfg.Configuration</API>.buildSettingsInternal(<API label="">Configuration</API>.java:2277)
+at <API label="">org.hibernate.cfg.Configuration</API>.buildSettings(<API label="">Configuration</API>.java:2273)
+at <API label="">org.hibernate.cfg.Configuration</API>.buildSessionFactory(<API label="">Configuration</API>.java:1742)
+at <API label="">org.hibernate.cfg.Configuration</API>.buildSessionFactory(<API label="">Configuration</API>.java:1782)
+at test.HibernateUtils.newSessionFactory(HibernateUtils.java:27)
+at test.HibernateDbUnitTestCase.setUp(HibernateDbUnitTestCase.java:55)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+at org.junit.internal.runners.MethodRoadie.runBefores(MethodRoadie.java:132)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:95)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:296)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:284)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:86)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:209)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:148)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:122)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:33)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:45)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:101)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:53)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+Caused by: java.lang.ClassCastException: org.hibernate.dialect.HSQLDialect cannot be cast to org.hibernate.dialect.Dialect
+at org.hibernate.service.jdbc.dialect.internal.DialectFactoryImpl.constructDialect(DialectFactoryImpl.java:73)
+... 37 more
+
+java.lang.NullPointerException
+at test.HibernateDbUnitTestCase.tearDown(HibernateDbUnitTestCase.java:71)
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(Unknown Source)
+at <API label="">java.lang.reflect.Method.invoke</API>(Unknown Source)
+at org.junit.internal.runners.MethodRoadie.runAfters(MethodRoadie.java:149)
+at org.junit.internal.runners.MethodRoadie.runBeforesThenTestThenAfters(MethodRoadie.java:101)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.executeTest(PowerMockJUnit44RunnerDelegateImpl.java:296)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$PowerMockJUnit44MethodRunner.runBeforesThenTestThenAfters(PowerMockJUnit44RunnerDelegateImpl.java:284)
+at org.junit.internal.runners.MethodRoadie.runTest(MethodRoadie.java:86)
+at <API label="">org.junit.internal.runners.MethodRoadie.run</API>(MethodRoadie.java:49)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.invokeTestMethod(PowerMockJUnit44RunnerDelegateImpl.java:209)
+at org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.runMethods(PowerMockJUnit44RunnerDelegateImpl.java:148)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl$1.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:122)
+at org.junit.internal.runners.ClassRoadie.runUnprotected(ClassRoadie.java:33)
+at org.junit.internal.runners.ClassRoadie.runProtected(ClassRoadie.java:45)
+at <API label="">org.powermock.modules.junit4.internal.impl.PowerMockJUnit44RunnerDelegateImpl.run</API>(PowerMockJUnit44RunnerDelegateImpl.java:120)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.JUnit4TestSuiteChunkerImpl.run</API>(JUnit4TestSuiteChunkerImpl.java:101)
+at <API label="">org.powermock.modules.junit4.common.internal.impl.AbstractCommonPowerMockRunner.run</API>(AbstractCommonPowerMockRunner.java:53)
+at <API label="">org.powermock.modules.junit4.PowerMockRunner.run</API>(PowerMockRunner.java:53)
+at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:675)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+
+</code></pre>
+
+You can see the codes below.
+
+Thank you for your reply. If you have another way to access the isolated database, I'd be glad to hear it.
+
+
+
+Player.class
+
+<pre><code>
+public class Player extends TablePlayer {
+
+   private List items;
+
+   //other attributes…
+
+   /*
+     * This method set the <API label="">list</API> of potions of the player based on the query from the database.
+     */
+
+   public void show_Potions() throws Exception {
+
+       SessionFactory sf = HibernateSessionFactory.configureSessionFactory();
+        Session session = sf.getCurrentSession();
+        session.getTransaction().begin();
+
+       try {
+
+           StringBuilder query = new StringBuilder();
+            <API label="None">query.append</API>("from TableItems items " +
+                    "left <API label="">join</API> fetch items.name " +
+                    "left <API label="">join</API> fetch items.type " +
+                    "left <API label="">join</API> fetch items.idPlayer player " +
+                    "where player.id = :pid ");
+            <API label="None">query.append</API>("order by items.dateObtained desc");
+
+       List tableItems = session.createQuery(<API label="None">query.toString</API>()).setParameter(“pid”, <API label="None">this.getId</API>()).<API label="None">list</API>();
+
+       List potions = new ArrayList();
+
+       for(TableItems tItem : tableItems){
+            <API label="">Item</API> item = new <API label="None">Item</API>(tItem);
+            if(<API label="None">item.getType</API>()).<API label="None">equals</API>(“POTION”){
+                <API label="None">potions.add</API>(item);
+            }       
+        }
+
+       this.setItems( potions );
+
+       } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e);
+        } finally {
+            <API label="None">session.clear</API>();
+            <API label="None">session.close</API>();
+        }       
+    }
+
+   /*
+     *  Constructor
+     */
+
+
+   public Player(String id) { // Create a player based on the ID found in the Database
+    }
+
+   // other methods...
+
+}
+
+</code></pre>
+
+
+
+PlayerTest
+
+<pre><code>
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(HibernateSessionFactory.class)
+public class PlayerTest extends HibernateDbUnitTestCase {
+
+   private Player player
+    private Player player_to_spy;
+    private List actual_items;
+
+   @Before
+    public void setUp() throws Exception {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+        player_to_spy = new Player(“1”);
+        player = <API label="org.mockito.Mockito.spy">spy</API>(player_to_spy);
+        actual_items = new ArrayList();
+    }
+
+   protected IDataSet getDataSet() throws Exception {  
+           return new FlatXmlDataSet(<API label="None">this.getClass</API>().<API label="None">getResourceAsStream</API>("/test/database.xml"));
+        }  
+
+
+   @Test
+    public void testShow_Potions() throws Exception {
+
+       PowerMockito.mockStatic(HibernateSessionFactory.class);
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(HibernateSessionFactory.configureSessionFactory()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(sessionFactory);     // sessionFactory is an attribute of HibernateDbUnitTestCase
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(HibernateSessionFactory.configureSessionFactory().getCurrentSession()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(session); //session is an attribute of HibernateDbUnitTestCase
+
+       <API label="None">player.setId</API>(“1”);      
+        player.show_Potions();
+        actual_items = player.getItems(); // return the <API label="">list</API> of items.
+
+       List expected_items = new ArrayList();
+
+       <API label="">Item</API> item1 = new item(“1”); // create an <API label="">Item</API> of id n°1 based on the database
+        <API label="None">expected_items.add</API>(item1);
+
+       <API label="None">assertThat</API>(actual_items,<API label="None">isEqualTo</API>(expected_items)); // I’ve written the <API label="None">isEqualTo</API>() method.
+    }
+
+   @After
+    public void destroy() throws Exception {
+        player_to_spy = null;
+        player = null
+        actual_items = null;
+    }
+}
+
+</code></pre>
+
+==========
+I've ended up finding the solution of this issue.
+
+The problem was that I created two SessionFactory in my test. 
+i.e : When I call <code>show_potions()</code> in the test, I call <code>HibernateSessionFactory.configureSessionFactory()</code>. However, the test extends HibernateDBUnitTestCase whose <code>setUp()</code> method calls <code>HibernateUtils.newSessionFactory()</code>. Thus, the test didn't know what hibernate configuration it should use. 
+
+With this method, you won't need PowerMock and you must use JUnit3 since DBunit is based on that. Thus, you must change @Test, @Before and @After with what it is required in Junit3.
+
+This is how I solve the problem.
+
+1) Modify HibernateSessionFactory:
+
+The initial version was :
+
+<pre><code>
+public class HibernateSessionFactory {
+
+private static SessionFactory sessionFactory;
+private static ServiceRegistry serviceRegistry;
+
+
+static {
+    try {
+        // Create sessionFactory based on hibernate.cfg.xml
+        <API label="">Configuration</API> configuration = new <API label="None">Configuration</API>();
+        <API label="None">configuration.configure</API>();
+        serviceRegistry = new ServiceRegistryBuilder().applySettings(<API label="None">configuration.getProperties</API>()).buildServiceRegistry();        
+        sessionFactory = configuration.buildSessionFactory(serviceRegistry);
+
+   } catch (Throwable ex) {
+        <API label="None">System.err.println</API>("Initial SessionFactory creation failed. " + ex);
+        throw new ExceptionInInitializerError(ex);
+    }
+}
+
+public static SessionFactory configureSessionFactory() throws HibernateException {
+    return sessionFactory;
+}
+
+</code></pre>
+
+}
+
+I removed the static block and changed the configureSessionFactory() with the following : 
+
+<pre><code>
+public static SessionFactory configureSessionFactory() throws HibernateException {
+    if(sessionFactory == null) {
+        try{
+            <API label="">Configuration</API> configuration = new <API label="None">Configuration</API>();
+            <API label="None">configuration.configure</API>();
+            serviceRegistry = new ServiceRegistryBuilder().applySettings(<API label="None">configuration.getProperties</API>()).buildServiceRegistry();        
+            sessionFactory = configuration.buildSessionFactory(serviceRegistry);
+        } catch (Throwable ex) {
+            <API label="None">System.err.println</API>("Initial SessionFactory creation failed. " + ex);
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
+    return sessionFactory;
+}
+
+</code></pre>
+
+I've also added this method.
+
+<pre><code>
+public static void setSessionFactory(SessionFactory factory) 
+{ 
+    HibernateSessionFactory.sessionFactory = factory; 
+} 
+
+</code></pre>
+
+2) Modify HibernateDbUnitTestCase
+
+In the setUp, I added the following line:
+
+<pre><code>
+if (sessionFactory == null) {  
+        sessionFactory = HibernateUtils.newSessionFactory("hibernate.test.cfg.xml");  
+        HibernateSessionFactory.setSessionFactory(sessionFactory);
+
+   } 
+
+</code></pre>
+
+And that was all, whenever the 'real' program calls <code>show_potions()</code>, <code>HibernateSessionFactory.configureSessionFactory(</code>) uses <code>"hibernate.cfg.xml"</code>, and <API label="">when</API> the test program calls show_potions, it uses <code>"hibernate.test.cfg.xml"</code>.
+
+I hope it will help other people.
+

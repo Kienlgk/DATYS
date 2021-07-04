@@ -1,0 +1,57 @@
+https://stackoverflow.com/questions/43783516
+I have a static wrapper class for the android <code>Log</code>. 
+
+It looks like this (simplified):
+
+<pre><code>
+// Source: https://github.com/ccrama/Slide/blob/master/app/src/main/java/me/ccrama/redditslide/util/LogUtil.java
+public class LogUtil {
+    private static final int CALLING_METHOD_INDEX;    
+
+   static {
+        int i = 1;
+        for (StackTraceElement ste : Thread.currentThread().<API label="None">getStackTrace</API>()) {
+            i++;
+            if (<API label="None">ste.getClassName</API>().<API label="None">equals</API>(<API label="None">LogUtil.class.getName</API>())) {
+                break;
+            }
+        }
+        CALLING_METHOD_INDEX = i;
+    }
+
+   public static String <API label="">getTag</API>() {
+        final StackTraceElement ste = Thread.currentThread().<API label="None">getStackTrace</API>()[CALLING_METHOD_INDEX];
+        return "(" + ste.getFileName() + ":" + ste.getLineNumber() + ")";
+    }
+
+   public static void v(String message) {
+        Log.v(<API label="None">getTag</API>(), message);
+    }
+}
+
+</code></pre>
+
+My problem: I'm testing another method that calls this <code>LogUtil.v()</code>'s method.
+
+Is there a way to test the other method with Mockito and not Powermock(ito) if possible? 
+
+Currently it throws a <code>LogUtil.v not mocked</code> Exception.
+
+I read that if I have to use PowerMockito, I'm doing something wrong (=> not following TDD).
+
+==========
+( disclaimer: I am one of those folks telling people to not use PowerMock(ito) )
+
+Having said so: when you are using a 3rd party library, which you can't change, then using PowerMock(ito) can be a reasonable option.
+
+In essence, you only got two options:
+
+
+As said; go for the frameworks that allow mocking static methods; and that allow you to prevent such static init code to be executed within your unit-test environment. There is PowerMock(ito), and also <a href="http://jmockit.org/" rel="nofollow noreferrer">JMockit</a>.
+Alternatively, you could build a small tiny wrapper around these classes; and then make sure that all your own code only works with those wrappers. 
+
+
+Thus you have to evaluate the pros/cons of both approaches; and pick the one that "works better" for you and your team. Me, personally, always go for option 2. But of course, that is only possible when writing new code. 
+
+In reality, a massive refactoring of the whole code-base in order to replace those static calls with your own wrapper is not something that should be approached lighthearted.
+

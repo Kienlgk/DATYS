@@ -1,0 +1,61 @@
+https://stackoverflow.com/questions/32730381
+I want to <API label="">spy</API> the Linkedlist in android.
+
+<pre><code>
+List list = new LinkedList();
+List spyData = <API label="org.mockito.Mockito.spy">Mockito.spy</API>(list);
+<API label="None">spyData.add</API>("xxxx");
+
+</code></pre>
+
+However, the exception occured.
+
+<pre><code>
+java.lang.AbstractMethodError: abstract method "boolean <API label="">org.mockito.internal.invocation.AbstractAwareMethod.isAbstract</API>()"
+    at     <API label="">org.mockito.internal.invocation.InvocationImpl.callRealMethod</API>(InvocationImpl.java:109)
+    at <API label="">org.mockito.internal.stubbing.answers.CallsRealMethods.answer</API>(CallsRealMethods.java:41)
+    at <API label="">org.mockito.internal.handler.MockHandlerImpl.handle</API>(MockHandlerImpl.java:93)
+    at <API label="">org.mockito.internal.handler.NullResultGuardian.handle</API>(NullResultGuardian.java:29)
+    at <API label="">org.mockito.internal.handler.InvocationNotifierHandler.handle</API>(InvocationNotifierHandler.java:38)
+    at <API label="">com.google.dexmaker.mockito.InvocationHandlerAdapter.invoke</API>(InvocationHandlerAdapter.java:49)
+    at <API label="">LinkedList_Proxy.add</API>(LinkedList_Proxy.generated)
+    at com.app.test.testmethod(mytest.java:202)
+    at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:191)
+    at android.test.AndroidTestRunner.runTest(AndroidTestRunner.java:176)
+    at android.test.InstrumentationTestRunner.onStart(InstrumentationTestRunner.java:555)
+    at <API label="">android.app.Instrumentation$InstrumentationThread.run</API>(Instrumentation.java:1858)
+
+</code></pre>
+
+The dependencies of libs are
+
+<pre><code>
+dexmaker-1.2.jar
+dexmaker-mockito-1.2.jar
+mockito-core-1.10.19.jar
+
+</code></pre>
+
+Even I update <code>mockito-core-1.10.19.jar</code> to <code>mockito-core-2.0.31-beta.jar</code>,
+
+the problem still exists.
+
+But <code><API label="org.mockito.Mockito.mock">Mockito.mock</API>(Linkedlist.class)</code> is ok, I have no ideas about this problem.
+
+Thank you.
+
+==========
+I just found another way to solve the problem.
+
+This is an issue for dexmaker 1.2, we should upgrade to dexmaker 1.4, dexmaker-mockito 1.4 and include dexmaker-dx-1.4.
+
+So the dependencies are
+
+<pre><code>
+dexmaker-dx-1.4.jar
+dexmaker-1.4.jar
+dexmaker-mockito-1.4.jar
+mockito-core-1.10.19.jar
+
+</code></pre>
+

@@ -1,0 +1,21 @@
+https://stackoverflow.com/questions/35743767
+Java provides <a href="https://docs.oracle.com/javase/7/docs/api/java/util/IdentityHashMap.html" rel="nofollow">IdentityHashMap</a> which is perfect when you want to <API label="">compare</API> objects by <code>==</code> instead of <code><API label="None">equals</API></code> method.
+
+Guava provides nice wrapper for <code>Map</code> which is <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/SetMultimap.html" rel="nofollow">SetMultimap</a>. However there are no implementation of it which uses <API label="None">identity</API> object comparison (<code>==</code>).
+
+Is there anything better than plain
+<code>IdentityHashMap</code>?
+Some<code>IdentitySetMultimap</code> would be ideal.
+
+==========
+You can use <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimaps.html#<API label="com.google.common.collect.Multimaps.newSetMultimap">newSetMultimap</API>(java.util.Map,%20com.google.common.base.Supplier)" rel="noreferrer"><code><API label="com.google.common.collect.Multimaps.newSetMultimap">Multimaps.newSetMultimap</API>(Map, Supplier)</code></a> with <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Maps.html#<API label="com.google.common.collect.Multimaps.newSetMultimap">newIdentityHashMap</API>()" rel="noreferrer"><code><API label="com.google.common.collect.Multimaps.newSetMultimap">Maps.newIdentityHashMap</API>()</code></a> and <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Sets.html#<API label="com.google.common.collect.Multimaps.newSetMultimap">newIdentityHashSet</API>()" rel="noreferrer"><code><API label="com.google.common.collect.Sets.newIdentityHashSet">Sets.newIdentityHashSet</API>()</code></a>:
+
+<pre><code>
+public static  SetMultimap newIdentitySetMultimap() {
+    return <API label="com.google.common.collect.Multimaps.newSetMultimap">Multimaps.newSetMultimap</API>(<API label="com.google.common.collect.Maps.newIdentityHashMap">Maps.newIdentityHashMap</API>(), Sets::<API label="com.google.common.collect.Sets.newIdentityHashSet">newIdentityHashSet</API>);
+}
+
+</code></pre>
+
+This also gives you the ability to use <API label="">identity</API> comparison for only the <API label="">keys</API> or only the <API label="">values</API> by specifying a different map or <API label="">set</API> implementation. The example above will use <API label="">identity</API> comparison for both.
+

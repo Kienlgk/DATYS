@@ -1,0 +1,28 @@
+https://stackoverflow.com/questions/4387820
+Is there really no method that determines the number of elements that satisfy a Predicate in an Iterable?
+Was I right to do this:
+
+<pre><code>
+return <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>(<API label="com.google.common.collect.Iterables.filter">Iterables.filter</API>(iterable, predicate)).<API label="None">size</API>()
+
+</code></pre>
+
+If so, what is the reason that there is no method
+
+<pre><code>
+<API label="">Iterable.frequency</API>(Iterable, Predicate)
+
+</code></pre>
+
+Cheers
+
+==========
+This may be easier:
+
+<pre><code>
+return <API label="com.google.common.collect.Iterables.size">Iterables.size</API>(<API label="com.google.common.collect.Iterables.filter">Iterables.filter</API>(iterable, predicate));
+
+</code></pre>
+
+It avoids the allocation of all that array memory.
+

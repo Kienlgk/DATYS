@@ -1,0 +1,56 @@
+https://stackoverflow.com/questions/50424048
+How does this even work? 
+As per my understanding it shouldn't have. 
+LDAPGroupAccessor is being new initialized in class or can be new initialized in constructor itself, it is not being injected, is not a constructor argument, not a spring bean injection. 
+
+I know it is possible using reflection, but how is <API label="org.mockito.internal.configuration.InjectingAnnotationEngine.injectMocks">injectMocks</API> injecting it ? Doesn't this defeat the purpose of DI ?
+
+<pre><code>
+@Component
+public class AuthorizationHandler {
+
+   private LDAPGroupAccessor groupAccessor = new LDAPGroupAccessor();
+
+   public isUserAuthorized(String userId, String groupId){
+        return groupAccessor.isUserInGroup(userId, ldapGroup);
+    }
+}
+
+public class AuthorizationHandlerTest {
+
+   @InjectMocks
+    private AuthorizationHandler authorizationHandler;
+
+   @Mock
+    private LDAPGroupAccessor groupAccessor = new LDAPGroupAccessor();
+
+   @Before
+    public void setup() {
+        String authorizedUser = "authorizedUser";
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(groupAccessor.isUserInGroup("authorizedUser", "someGroup")).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+    }
+
+   @Test
+    public void test1() {
+        Assert.assertEquals(true, authorizationHandler.isUserAuthorized("authorizedUser", "someGroup"));
+    }
+}
+
+</code></pre>
+
+==========
+It just uses <a href="https://stackoverflow.com/questions/39890849/what-exactly-is-field-injection-and-how-to-avoid-it">field injection</a>. From <a href="http://static.javadoc.io/org.mockito/mockito-core/2.18.3/org/mockito/InjectMocks.html" rel="nofollow noreferrer">the documentation</a>
+
+
+ Field injection; mocks will first be resolved by type (if a single type match injection will happen regardless of the name), then, if there is several property of the same type, by the match of the field name and the mock name. 
+
+
+So the steps are:
+
+
+<code>AuthorizationHandler</code> is instantiated
+The instance initialiser is called
+An <code>LDAPGroupAccessor</code> is created and assigned to <code>groupAccessor</code>
+<code>@InjectMocks</code> runs and replaces the instance allocated to <code>groupAccessor</code> with the <code>@Mock</code>
+
+

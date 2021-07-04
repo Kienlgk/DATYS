@@ -1,0 +1,24 @@
+https://stackoverflow.com/questions/49930467
+Supose this for loop:
+
+<pre><code>
+for (int i = 0; i < 10; i++) {
+    long numFound = barObj.getNumFound();
+    total += numFound;
+}
+
+</code></pre>
+
+I want to make <code>getNumFound()</code> return values from a list for each iteration on the loop using mockito. How do I do that? 
+
+==========
+I would write the following:
+
+<pre><code>
+<API label="org.mockito.Mockito.doAnswer">Mockito.doAnswer</API>(<API label="org.mockito.AdditionalAnswers.returnsElementsOf">AdditionalAnswers.returnsElementsOf</API>(myList))
+       .<API label="org.mockito.stubbing.Stubber.when">when</API>(myMock).myMethod(... whatever ...);
+
+</code></pre>
+
+This uses the <code>Answer</code> described <a href="https://static.javadoc.io/org.mockito/mockito-core/2.6.8/org/mockito/AdditionalAnswers.html#<API label="">returnsElementsOf</API>(java.util.Collection)" rel="nofollow noreferrer">here</a> to return elements of the list, one after the other.
+

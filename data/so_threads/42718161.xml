@@ -1,0 +1,62 @@
+https://stackoverflow.com/questions/42718161
+<a href="https://projectlombok.org/features/val.html" rel="noreferrer">Lombok.val</a> allows you to 
+
+
+ use val as the type of a local variable declaration instead of
+  actually writing the type. When you do this, the type will be inferred from the initializer expression. The local variable will also be made final.
+
+
+So instead of 
+
+<pre><code>
+final ArrayList example = new ArrayList();
+
+</code></pre>
+
+You can write
+
+<pre><code>
+val example = new ArrayList();
+
+</code></pre>
+
+
+
+I've tried to do some research into how this actually works but there doesn't seem to be a huge amount of information. Looking at <a href="https://github.com/rzwitserloot/lombok/blob/master/src/core/lombok/val.java" rel="noreferrer">the github page</a>, I can see that <code>val</code> is an annotation type. The annotation type is then used, rather than an actual annotation.
+
+I wasn't even aware you could even use annotation types in this manner but upon testing it the following code is indeed valid. However, I'm still not sure why you would ever want to use the type in this way.
+
+<pre><code>
+public class Main
+{
+    public @interface Foo { }
+
+   public static void <API label="None">main</API>(String... args)
+    {       
+        Foo bar;
+        <API label="None">System.out.println</API>("End");
+    }
+}
+
+</code></pre>
+
+How does Lombok <API label="">process</API> these usages if they are not annotations, but annotation types? To my (obviously incorrect) understanding, the syntax should look more like:
+
+<pre><code>
+@Val foo = new ArrayList();
+
+</code></pre>
+
+(I'm aware constraints of annotations mean the above is not valid syntax)
+
+==========
+In order for Lombok to work, the source code needs to parse without errors. That's why, as you already mentioned, <code>@val foo = new ArrayList();</code> wouldn't work.
+
+Although Lombok uses annotations, and an annotation processor, the annotation processor is only used as a means to get involved by the compiler. 
+
+Lombok does not have a registered processor for <code>@val</code>. Instead, it processes all java files, visits the whole AST and replaces <code>val</code> by the type of the initialization expression of the local variables.
+
+For the actual replacement, for Eclipse/ecj see <a href="https://github.com/rzwitserloot/lombok/blob/master/src/eclipseAgent/lombok/eclipse/agent/PatchVal.java" rel="nofollow noreferrer">this class</a> and <a href="https://github.com/rzwitserloot/lombok/blob/master/src/eclipseAgent/lombok/eclipse/agent/PatchValEclipse.java" rel="nofollow noreferrer">this one</a>. For javac, see <a href="https://github.com/rzwitserloot/lombok/blob/master/src/core/lombok/javac/handlers/HandleVal.java" rel="nofollow noreferrer">this class</a>.
+
+Disclosure: I am a Lombok developer.
+

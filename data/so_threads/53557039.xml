@@ -1,0 +1,106 @@
+https://stackoverflow.com/questions/53557039
+I'm using AssertJ 3.11.1 and trying to get rid of Hamcrest completely. I managed so far but I'm <API label="">having</API> trouble with the following code:
+
+<pre><code>
+class Foo {
+  private final Map innerMap;
+
+ Foo(Map innerMap) {
+    this.innerMap = innerMap;
+  }
+
+ public Map <API label="">getInnerMap</API>() {
+    return this.innerMap;
+  }
+
+}
+
+Map innerMap = new HashMap<>();
+<API label="None">innerMap.put</API>("key1", "value1");
+<API label="None">innerMap.put</API>("key2", "value2");
+
+Foo foo = new Foo(innerMap);
+
+Map <API label="">map</API> = new HashMap<>();
+<API label="None">map.put</API>(foo, "notUsed");
+
+</code></pre>
+
+With Hamcrest, I can easily do:
+
+<pre><code>
+<API label="None">assertThat</API>(metrics,
+  hasKey(
+    hasProperty("innerMap",
+        <API label="None">allOf</API>(hasEntry("key1", "value1"), hasEntry("key2", "value2")))));
+
+</code></pre>
+
+However, there's no easy translation to AssertJ. My best approach so far has been something like this (Java 8):
+
+<pre><code>
+<API label="">assertThat</API>(<API label="None">metrics.keySet</API>().<API label="None">stream</API>().<API label="None">map</API>(Foo::<API label="None">getInnerMap</API>))
+    .<API label="org.assertj.core.api.AbstractMapAssert.flatExtracting">flatExtracting</API>(Map::entrySet)
+    .<API label="org.assertj.core.api.AbstractListAssert.contains">contains</API>(<API label="None">entry</API>("key1", "value1"), <API label="None">entry</API>("key2", "value2"));
+
+</code></pre>
+
+But this code is not nearly as descriptive as with Hamcrest not to mention that I get an <code>Unchecked generic <API label="">array</API> creation for varargs parameter</code> compilation warning.
+
+Is there a better way to do it? I'm willing to implement my own custom assertion and perhaps use <code><API label="org.assertj.core.api.AbstractMapAssert.hasKeySatisfying">hasKeySatisfying</API>()</code> from <code>AbstractMapAssert</code> if that's necessary for a cleaner code.
+
+I know that I can use <code>HamcrestCondition</code> but I would rather not use Hamcrest at all.
+
+Thanks in advance!
+
+EDIT:
+
+For <API label="">now</API>, I came up with this:
+
+<pre><code>
+public class ExtendedMapAssert extends MapAssert {
+
+ ExtendedMapAssert(final Map actual) {
+    super(actual);
+  }
+
+ public ExtendedMapAssert hasAnyKeySatisfying(final Consumer consumer) {
+    <API label="org.assertj.core.api.MapAssert.isNotNull">isNotNull</API>();
+
+   <API label="org.assertj.core.api.MapAssert.assertThat">assertThat</API>(<API label="None">actual.keySet</API>()).<API label="">isNotEmpty</API>().<API label="">anySatisfy</API>(consumer);
+
+   return this;
+  }
+}
+
+public static  ExtendedMapAssert assertThatMap(final Map <API label="">map</API>) {
+  return new ExtendedMapAssert<>(<API label="">map</API>);
+}
+
+</code></pre>
+
+And then use it like:
+
+<pre><code>
+assertThatMap(metrics)
+  .hasAnyKeySatisfying(
+    metricId ->
+      <API label="">assertThat</API>(metricId.getTags())
+        .<API label="">contains</API>(<API label="">entry</API>("key1", "value1"), <API label="">entry</API>("key2", "value2")));
+
+</code></pre>
+
+Any other ideas?
+
+==========
+You could try <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractMapAssert.html#<API label="">hasKeySatisfying</API>-org.assertj.core.api.Condition-" rel="nofollow noreferrer"><code><API label="org.assertj.core.api.AbstractMapAssert.hasKeySatisfying">hasKeySatisfying</API></code></a> and build a <code>Condition</code> with a lambda (there is no similar assertion that would take a <code>Consumer</code> yet but contributions are welcomed!) or take an approach you suggested but in a simpler way:
+
+<pre><code>
+// assertion fails for empty collections no need to use <API label="">isNotEmpty</API>
+<API label="">assertThat</API>(<API label="">metrics.keySet</API>()).<API label="">anySatisfy</API>(metricId ->
+  <API label="">assertThat</API>(metricId.getTags()).<API label="">contains</API>(<API label="">entry</API>("key1", "value1"), <API label="">entry</API>("key2", "value2"))); 
+
+</code></pre>
+
+Hope it helps ...
+

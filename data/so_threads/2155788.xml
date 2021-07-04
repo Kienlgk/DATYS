@@ -1,0 +1,31 @@
+https://stackoverflow.com/questions/2155788
+1 of the presentation says "These methods are LAZY!"
+
+<pre><code>
+Iterable <API label="None">transform</API>(Iterable, Function)*
+Iterable <API label="None">filter</API>(Iterable, Predicate)*
+T <API label="None">find</API>(Iterable, Predicate)
+Iterable <API label="None">concat</API>(Iterable)
+Iterable <API label="None">cycle</API>(Iterable)
+T <API label="None">getOnlyElement</API>(Iterable)
+Iterable <API label="None">reverse</API>(List)
+
+</code></pre>
+
+Can someone help me understand what they mean by this, lets say I've a collection of <code>Persons</code> and I apply a <API label="">filter</API> to return only the persons whose last name is DOE.
+
+So does this mean that the "filtering happens only on the first call to <API label="None">doeOnly.next</API>()?"
+
+<pre><code>
+List persons= ....
+Iterable doeOnly= <API label="None">Iterables.filter</API>(persons,DOE_AS_LAST_NAME_PREDICATE);
+
+</code></pre>
+
+==========
+It means that the data is filtered as you request it - it doesn't go through your list immediately, and build up a new list of the filtered data. Instead, when you call <code><API label="None">iterator.next</API>()</code> (e.g. automatically in an enhanced for loop) the <API label="">iterator</API> will ask its upstream data source (your collection) for the <API label="">next</API> data item. It will then try to match this against the <API label="">filter</API>. If it matches it, it'll return that item. Otherwise, it'll ask for another item from the collection, keeping going until it either runs out of items or finds a match.
+
+Then when you <API label="">next</API> ask for the <API label="">next</API> item, it'll keep going from where it left off.
+
+In other words, it doesn't just mean "filtering happens only on the first call to <code><API label="None">doeOnly.next</API>()</code>" - it means "filtering happens on each call to <code><API label="None">iterator.next</API>()</code>" where <code><API label="">iterator</API></code> is the result of calling <code><API label="None">doeOnly.iterator</API>()</code>.
+

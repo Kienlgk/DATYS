@@ -1,0 +1,32 @@
+https://stackoverflow.com/questions/6354025
+I am having difficulty make GWT work with Guava. I added <code>guava-r09-gwt.jar</code> to my classpath, and <code></code> (copied from <a href="https://stackoverflow.com/questions/2005687/guava-libraries-and-gwt">this question</a>) to my <code>*.gwt.xml</code> file. However, I still <API label="">get</API> the following error:
+
+
+ [ERROR] Line 99: No source code is
+  <API label="">available</API> for type
+  com.google.gwt.thirdparty.guava.common.collect.Lists;
+  did you forget to inherit a required
+  module?
+
+
+The referenced line is:
+
+<pre><code>
+List suggs = <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>();
+
+</code></pre>
+
+If I try the following <code>inherits</code> tag:
+
+<pre><code>
+  
+
+</code></pre>
+
+Then GWT totally fails - going to the app in the browser gives a 404, and no URL appears in Eclipse's development panel.
+
+What am I doing wrong?
+
+==========
+You'll notice that <code>com.google.gwt.thirdparty.guava.common.collect.Lists</code> is not actually in the Guava jars. Try instead referencing <code>com.google.common.collect.Lists</code> and you should have some more success.
+

@@ -1,0 +1,236 @@
+https://stackoverflow.com/questions/40717638
+Given any two classes, e.g. <code>ClassA</code> <API label="">and</API> <code>ClassB</code> below:
+
+<pre><code>
+class ClassA {
+    private int intA;
+    private String strA;
+    private boolean boolA;
+    // Constructor
+    public ClassA (int intA, String strA, boolean boolA) {
+        this.intA = intA; this.strA = strA; this.boolA = boolA;
+    } // Getters <API label="">and</API> setters etc. below...
+}
+
+class ClassB {
+    private int intB;
+    private String strB;
+    private boolean boolB;
+    // Constructor
+    public ClassB (int intB, String strB, boolean boolB) {
+        this.intB = intB; this.strB = strB; this.boolB = boolB;
+    } // Getters <API label="">and</API> setters etc. below...
+}
+
+</code></pre>
+
+And any two different <code>Collection</code> types, one with <code>ClassA</code> elements <API label="">and</API> the other with <code>ClassB</code> elements, e.g:
+
+<pre><code>
+List myList = <API label="None">Arrays.asList</API>(new ClassA(1, "A", true),
+                                    new ClassA(2, "B", true));
+Set mySet = new HashSet(
+                      <API label="None">Arrays.asList</API>(new ClassB(1, "A", false),
+                                    new ClassB(2, "B", false)));
+
+</code></pre>
+
+What's the simplest way of telling whether the two <code>Collection</code>s are "equivalent"(*) in terms of a specified subset of fields?
+
+(*) The word "equivalent" is used rather then "equal" since this is contextual - i.e. such "equivalence" may be defined differently in another context.
+
+Worked example from above:
+Suppose we specify that <code>intA</code> <API label="">and</API> <code>strA</code> should match with <code>intB</code> <API label="">and</API> <code>strB</code> respectively (but the <code>boolA</code> / <code>boolB</code> values can be ignored). This would make the two collection objects defined above be considered equivalent - but if an element were added to or removed from one of the collections then they no longer would be.
+
+Preferred solution: The method used should be generic for any <code>Collection</code> type. Ideally Java 7 as am confined to using this (but Java 8 may be of additional interest to others). Happy to use Guava or Apache Commons but would prefer not to use more obscure external libraries.
+
+==========
+Here's a Java 8 version using lambdas <API label="">and</API> higher-order functions. It's probably possible to convert this to Java 7 using anonymous inner classes instead of lambdas. (I believe most IDEs have a refactoring operation that does this.) I'll leave that as an exercise for interested readers.
+
+There are actually two distinct problems here:
+
+
+Given two objects of different types, evaluate them by examining respective fields of each. This differs from "<API label="None">equals</API>" <API label="">and</API> "compare" operations which are already defined by the JDK library APIs, so I'll use the term "equivalent" instead.
+Given two collections containing elements of those types, determine if they are "<API label="">equals</API>" for some definition of that term. This is actually quite subtle; see the discussion below.
+
+
+1. Equivalence
+
+Given two objects of types <code>T</code> <API label="">and</API> <code>U</code> we want to determine whether they're equivalent. The result is a boolean. This can be represented by a function of type <code>BiPredicate</code>. But we can't necessarily examine the objects directly; instead, we need to extract respective fields from each object <API label="">and</API> evaluate the results of extraction against each other. If the field extracted from <code>T</code> is of type <code>TR</code> <API label="">and</API> the field extracted from <code>U</code> is of type <code>UR</code>, then the extractors are represented by the function types
+
+<pre><code>
+Function
+Function
+
+</code></pre>
+
+Now we have extracted results of type <code>TR</code> <API label="">and</API> <code>UR</code>. We could just call <code><API label="None">equals</API>()</code> on them, but that's unnecessarily restrictive. Instead, we can provide another equivalence function that will be called to evaluate these two results against each other. That's a <code>BiPredicate</code>.
+
+Given all this, we can write a higher-order function that takes all of these functions <API label="">and</API> produces <API label="">and</API> equivalence function for us (wildcards included for completeness):
+
+<pre><code>
+static  BiPredicate equiv(Function tf,
+                                          Function uf,
+                                          BiPredicate pred) {
+    return (t, u) -> <API label="None">pred.test</API>(<API label="com.google.common.base.Function.apply">tf.apply</API>(t), <API label="com.google.common.base.Function.apply">uf.apply</API>(u));
+}
+
+</code></pre>
+
+It's probably a common case for the results of field extraction to be evaluated using <code><API label="None">equals</API>()</code>, so we can provide an overload for that:
+
+<pre><code>
+static  BiPredicate equiv(Function tf,
+                                    Function uf) {
+    return (t, u) -> equiv(tf, uf, Object::<API label="None">equals</API>).<API label="None">test</API>(t, u);
+}
+
+</code></pre>
+
+I could have provided another type variable <code>R</code> as the result type of both functions, to ensure they're the same type, but it turns out this isn't necessary. Since <code><API label="None">equals</API>()</code> is defined on <code>Object</code> <API label="">and</API> it takes an <code>Object</code> argument, we don't actually care what the function return types are, hence the wildcards.
+
+Here's how to use this to evaluate the OP's example classes using just the string fields:
+
+<pre><code>
+ClassA a = ... ;
+ClassB b = ... ;
+if (equiv(ClassA::getStrA, ClassB::getStrB).<API label="None">test</API>(a, b)) {
+    // they're equivalent
+}
+
+</code></pre>
+
+As a variation, we might also want a primitive specialization in order to avoid unnecessary boxing:
+
+<pre><code>
+static  BiPredicate equivInt(ToIntFunction tf,
+                                       ToIntFunction uf) {
+    return (t, u) -> tf.applyAsInt(t) == uf.applyAsInt(u);
+}
+
+</code></pre>
+
+This lets us construct equivalence functions based on a single field. What if we want to evaluate equivalence based on multiple fields? We can combine an arbitrary number of BiPredicates by chaining the <code><API label="">and</API>()</code> method. Here's how to create a function that evaluates equivalence using the <code>int</code> <API label="">and</API> <code>String</code> fields of the classes from the OP's example. For this, it's probably best to store the function in a variable separately from using it, though this can probably all be inlined (which I think will make it unreadable):
+
+<pre><code>
+BiPredicate abEquiv =
+    equivInt(ClassA::getIntA, ClassB::getIntB)
+        .<API label="None">and</API>(equiv(ClassA::getStrA, ClassB::getStrB));
+
+if (<API label="None">abEquiv.test</API>(a, b)) {
+    // they're equivalent
+}
+
+</code></pre>
+
+As a final example, it's quite powerful to be able to provide an equivalence function for the field extraction results when creating an equivalence function for two classes. For example, suppose we want to extract two String fields <API label="">and</API> consider them equivalent if the extracted strings are <API label="None">equals</API>, ignoring case. The following code results in <code>true</code>:
+
+<pre><code>
+equiv(ClassA::getStrA, ClassB::getStrB, String::equalsIgnoreCase)
+    .<API label="None">test</API>(new ClassA(2, "foo", true),
+          new ClassB(3, "FOO", false))
+
+</code></pre>
+
+2. Collection “Equality”
+
+The second part is to evaluate whether two collections are "<API label="">equals</API>" in some sense. The problem is that in the Collections Framework, the notion of equality for is defined such that a List can only be equal to another List, <API label="">and</API> a Set can only be equal to another Set. It follows that a Collection of some other type can never be equal to either a List or a Set. See the specification of <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Collection.html#<API label="">equals</API>-java.lang.Object-" rel="nofollow noreferrer"><code><API label="None">Collection.equals</API>()</code></a> for some discussion of this point.
+
+This is clearly at odds with what the OP wants. As suggested by the OP, we don't really want "equality," but we want some other property for which we need to provide a definition. Based on the OP's examples, <API label="">and</API> some suggestions in other answers by <a href="https://stackoverflow.com/a/40718320/1441122">Przemek Gumula</a> <API label="">and</API> <a href="https://stackoverflow.com/a/40830950/1441122">janos</a>, it seems like we want the elements in the two collections to somehow be in one-for-one correspondence. I'll call this a <a href="https://en.wikipedia.org/wiki/Bijection" rel="nofollow noreferrer">bijection</a> which might not be mathematically precise, but it seems close enough. Furthermore, the correspondence between each pair of elements should be equivalence as defined above.
+
+Computing this is a bit subtle, since we have our own equivalence relation. We can't use many of the built-in Collections operations, since they all use <code><API label="None">equals</API>()</code>. My first attempt was this:
+
+<pre><code>
+// INCORRECT
+static  boolean isBijection(Collection c1,
+                                 Collection c2,
+                                 BiPredicate pred) {
+    return <API label="None">c1.size</API>() == <API label="None">c2.size</API>() &&
+           <API label="None">c1.stream</API>().<API label="None">allMatch</API>(t -> <API label="None">c2.stream</API>()
+                                       .<API label="None">anyMatch</API>(u -> <API label="None">pred.test</API>(t, u)));
+}
+
+</code></pre>
+
+(This is essentially the same as given by <a href="https://stackoverflow.com/a/40718320/1441122">Przemek Gumula</a>.) This has problems, which boil down to the possibility of more than one element in the one collection corresponding to a single element in the other collection, leaving elements unmatched. This gives strange results if given two multisets, using equality as the equivalence function:
+
+<pre><code>
+{a x 2, b}    // essentially {a, a, b}
+{a, b x 2}    // essentially {a, b, b}
+
+</code></pre>
+
+This function considers these two multisets to be a bijection, which clearly isn't the case. Another problem occurs if the equivalence function allows many-to-one matching:
+
+<pre><code>
+Set set1 = new HashSet<>(<API label="None">Arrays.asList</API>("foo", "FOO", "bar"));
+Set set2 = new HashSet<>(<API label="None">Arrays.asList</API>("fOo", "bar", "quux"));
+
+isBijection(set1, set2, equiv(s -> s, s -> s, String::equalsIgnoreCase))
+
+</code></pre>
+
+The result is <code>true</code>, but if the sets are given in the opposite order, the result is <code>false</code>. That's clearly wrong.
+
+An alternative algorithm is to create a temporary structure <API label="">and</API> remove elements as they're matched. The structure has to account for duplicates, so we need to <API label="">decrement</API> the count <API label="">and</API> only remove the element when the count reaches zero. Fortunately, various Java 8 features make this pretty simple. This is quite similar to the algorithm used in the answer from <a href="https://stackoverflow.com/a/40830950/1441122">janos</a>, though I've extracted the equivalence function into a method parameter. Alas, since my equivalence function can have nested equivalence functions, it means I can't probe the map (which is defined by equality). Instead, I have to search the map's keys, which means the algorithm is O(N^2). Oh well.
+
+The code, however, is pretty simple. First, the frequency map is generated from the second collection using <code>groupingBy</code>. Then, the elements of the first collection are iterated, <API label="">and</API> the frequency map's keys are searched for an equivalent. If one is found, its occurrence count is decremented. Note the return value of <code>null</code> from the remapping function passed to <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Map.html#<API label="">compute</API>-K-java.util.function.BiFunction-" rel="nofollow noreferrer"><code><API label="">Map.compute</API>()</code></a>. This has the side effect of removing the entry, not setting the mapping to <code>null</code>. It's a bit of an API hack, but it's quite effective.
+
+For every element in the first collection, an equivalent element in the second collection must be found, otherwise it bails out. After all elements of the first collection have been processed, all elements from the frequency map should also have been processed, so it's simply tested for being empty.
+
+Here's the code:
+
+<pre><code>
+static  boolean isBijection(Collection c1,
+                                 Collection c2,
+                                 BiPredicate pred) {
+    Map freq = <API label="None">c2.stream</API>()
+                          .collect(Collectors.groupingBy(u -> u, Collectors.counting()));
+    for (T t : c1) {
+        Optional ou = <API label="None">freq.keySet</API>()
+                             .<API label="None">stream</API>()
+                             .<API label="None">filter</API>(u -> <API label="None">pred.test</API>(t, u))
+                             .findAny();
+        if (<API label="com.google.common.base.Optional.isPresent">ou.isPresent</API>()) {
+            <API label="None">freq.compute</API>(<API label="com.google.common.base.Optional.isPresent">ou.get</API>(), (u, c) -> c == 1L ? null : c - 1L);
+        } else {
+            return false;
+        }
+    }
+
+   return <API label="None">freq.isEmpty</API>();
+}
+
+</code></pre>
+
+It's not entirely clear whether this definition is the correct one. But it seems intuitively to be what people want. It's fragile, though. If the equivalence function isn't symmetric, <code>isBijection</code> will fail. There are also some degrees of freedom aren't accounted for. For example, suppose the collections are
+
+<pre><code>
+{a, b}
+{x, y}
+
+</code></pre>
+
+And <code>a</code> is equivalent to both <code>x</code> <API label="">and</API> <code>y</code>, but <code>b</code> is only equivalent to <code>x</code>. If <code>a</code> is matched to <code>x</code>, the result of <code>isBijection</code> is <code>false</code>. But if <code>a</code> were matched to <code>y</code>, the result would be <code>true</code>.
+
+Putting it Together
+
+Here's the OP's example, coded up using the <code>equiv()</code>, <code>equivInt()</code>, <API label="">and</API> <code>isBijection</code> functions:
+
+<pre><code>
+List myList = <API label="None">Arrays.asList</API>(new ClassA(1, "A", true),
+                                    new ClassA(2, "B", true));
+
+Set mySet = new HashSet<>(<API label="None">Arrays.asList</API>(new ClassB(1, "A", false),
+                                                new ClassB(2, "B", false)));
+
+BiPredicate abEquiv =
+    equivInt(ClassA::getIntA, ClassB::getIntB)
+        .<API label="None">and</API>(equiv(ClassA::getStrA, ClassB::getStrB));
+
+isBijection(myList, mySet, abEquiv)
+
+</code></pre>
+
+The result of this is <code>true</code>.
+

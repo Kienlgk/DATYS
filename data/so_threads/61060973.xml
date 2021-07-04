@@ -1,0 +1,26 @@
+https://stackoverflow.com/questions/61060973
+I want to write a function that tests if a <API label="">undirected</API> Graph is a tree.
+So far, I'm using this:
+
+<pre><code>
+Function, Double> targetFunction = g -> {
+    boolean <API label="None">isConnected</API> = <API label="com.google.common.graph.Graphs.reachableNodes">Graphs.reachableNodes</API>(g, <API label="Bibe">g.nodes</API>().<API label="None">iterator</API>().<API label="None">next</API>()).<API label="None">equals</API>(<API label="None">g.nodes</API>());
+    return <API label="None">isConnected</API> && <API label="com.google.common.graph.Graphs.hasCycle">Graphs.hasCycle</API>(g);
+};
+
+</code></pre>
+
+Is there already an implementation for this method in Guava (didn't find one) and if no, can this be improved?
+
+==========
+Your implementation has two problems.
+
+
+<code><API label="None">g.nodes</API>().<API label="None">iterator</API>().<API label="None">next</API>()</code> returns the first node - <code>n1</code> in the graph. Assume the graph is a tree, <code>n1</code> might not be the root of the tree. So its reachable <API label="">nodes</API> is a subset of all <API label="">nodes</API>.
+<code><API label="com.google.common.graph.Graphs.hasCycle">hasCycle</API></code> only detect back <API label="">edges</API>, but not forward <API label="">edges</API> or cross <API label="">edges</API>. Check <a href="https://cs.stackexchange.com/a/11125/91791">the answer</a> to find out the difference.
+
+
+I cannot find a direct solution from guava graph api. It only provides basic support for graph data structure, bfs, and dfs.
+
+This question, <a href="https://stackoverflow.com/q/20556802/5360439">Determining whether or not a <API label="">directed</API> or <API label="">undirected</API> graph is a tree</a>, shows how to implement what the algorithm you want.
+

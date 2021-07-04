@@ -1,0 +1,8 @@
+https://stackoverflow.com/questions/2136915
+I've been reading that ComputingMap only supports <API label="">identity</API> equality and not the <API label="None">equals</API>(). Can someone clarify why?
+
+==========
+As for all concurrent maps built using <a href="http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/MapMaker.html" rel="nofollow noreferrer">MapMaker</a>, <API label="None">equals</API>() is used for strong references and <API label="">identity</API> equality is used for weak and soft references.
+
+See <a href="http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/MapMaker.html#softKeys()" rel="nofollow noreferrer">softKeys</a>, <a href="http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/MapMaker.html#<API label="">weakKeys</API>()" rel="nofollow noreferrer"><API label="com.google.common.collect.MapMaker.weakKeys">weakKeys</API></a>, <a href="http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/MapMaker.html#<API label="">softValues</API>()" rel="nofollow noreferrer"><API label="">softValues</API></a>, <a href="http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/MapMaker.html#<API label="">weakValues</API>()" rel="nofollow noreferrer"><API label="com.google.common.collect.MapMaker.weakValues">weakValues</API></a>.
+

@@ -1,0 +1,35 @@
+https://stackoverflow.com/questions/61206024
+Guava <code>MultiMap</code> has implementations <code>ImmutableListMultimap</code> and <code>ImmutableSetMultimap</code>. Given that I have created an <code>ImmutableListMultimap</code> instance, how can I convert that into a <code>java.util.Map</code>?
+
+The <code><API label="com.google.common.collect.ImmutableListMultimap.asMap">asMap</API>()</code> method return a <code>java.util.Map</code>, but that cannot be cast to <code>java.util.Map</code>.
+
+The best I have now is
+
+<pre><code>
+ final Map listMultimap = <API label="com.google.common.collect.ImmutableListMultimap.asMap">multimap.asMap</API>();
+ // convert to Map
+ final Map listMap = <API label="None">listMultimap.entrySet</API>().<API label="None">stream</API>()
+     .collect(<API label="None">Collectors.toMap</API>(
+                  Map.Entry::<API label="None">getKey</API>, 
+                  e -> (List) <API label="None">e.getValue</API>()));
+
+
+</code></pre>
+
+but that does not look ideal. Given that the instance variable is of type ListMultimap, shouldn't there be a convenient method to represent it as a <code>Map<..., List></code>?
+
+Apache commons-collections <code>ArrayListValuedHashMap</code> has the same issue.
+
+==========
+<a href="https://guava.dev/releases/29.0-jre/api/docs/com/google/common/collect/ListMultimap.html#<API label="">asMap</API>--" rel="nofollow noreferrer"><code><API label="com.google.common.collect.ListMultimap.asMap">ListMultimap.asMap</API>()</code></a> docs mention
+
+
+ Note: The returned map's values are guaranteed to be of type <code>List</code>. To obtain this map with the more specific generic type <code>Map</code>, call <code><API label="com.google.common.collect.Multimap.asMap">Multimaps.asMap</API>(ListMultimap)</code> instead.
+
+
+So just use one of static <a href="https://guava.dev/releases/29.0-jre/api/docs/com/google/common/collect/Multimaps.html#<API label="">asMap</API>-com.google.common.collect.ListMultimap-" rel="nofollow noreferrer">helper methods for this in <code>Multimaps</code></a> which:
+
+
+ Returns <code><API label="com.google.common.collect.Multimap.asMap">multimap.asMap</API>()</code>, with its type corrected from <code>Map</code> to <code>Map</code>.
+
+

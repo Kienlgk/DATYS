@@ -1,0 +1,128 @@
+https://stackoverflow.com/questions/23273230
+Out of the following two test cases in BundleProcessorTest.java, i am getting below exception, although, my first test case passes successfully.
+
+
+ org.mockito.exceptions.misusing.InvalidUseOfMatchersException: 
+  Misplaced argument matcher detected here:
+  
+  -> at bundle.test.BundleProcessorTest.bundlePluginShouldNotBeNull(BundleProcessorTest.java:22)
+  
+  You cannot use argument matchers outside of verification or stubbing.
+  Examples of correct usage of argument matchers:
+      when(mock.get(anyInt())).thenReturn(null);
+      doThrow(new RuntimeException()).when(<API label="org.mockito.Mockito.mock">mock</API>).someVoidMethod(anyObject());
+      verify(<API label="org.mockito.Mockito.mock">mock</API>).someMethod(contains("foo"))
+  
+  Also, this error might show up because you use argument matchers with
+  methods that cannot be mocked. Following methods cannot be
+  stubbed/verified: final/private/equals()/hashCode().
+  
+  at
+  bundle.test.BundleProcessorTest.bundlePluginCollectionShouldNotBeNull(BundleProcessorTest.java:28)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)  at
+  sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+
+
+Please find below simplified code listing :-
+
+BundlePlugin.java 
+
+<pre><code>
+package bundle;
+
+import java.util.List;
+
+public class BundlePlugin {
+
+   private final String pluginName ;
+    private final List featureContent ;
+
+   public BundlePlugin(String pluginName, List featureContent) {
+        super();
+        this.pluginName = pluginName;
+        this.featureContent = featureContent;
+    }
+
+   public String getPluginName() {
+        return pluginName;
+    }
+
+   public List getFeatureContent() {
+        return featureContent;
+    }
+}
+
+</code></pre>
+
+BundleProcessor.java
+
+<pre><code>
+package bundle;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class BundleProcessor {
+
+   public BundlePlugin getBundlePlugin(String pluginName, Iterator artifactIterator) {
+
+       List featureContent = new ArrayList() ;
+
+       return new BundlePlugin(pluginName, featureContent);
+    }
+}
+
+</code></pre>
+
+BundleProcessorTest.java
+
+<pre><code>
+package bundle.test;
+
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+
+import java.util.Iterator;
+import java.util.List;
+
+import org.junit.Test;
+
+import bundle.BundleProcessor;
+
+public class BundleProcessorTest {
+
+   BundleProcessor bundleProcessor = new BundleProcessor() ;   
+
+   @Test
+    public void bundlePluginShouldNotBeNull() {
+
+       Iterator artifactIterator = <API label="org.mockito.Mockito.mock">mock</API>(Iterator.class) ;
+        bundle.BundlePlugin bundlePlugin = bundleProcessor.getBundlePlugin(<API label="org.mockito.Mockito.anyString">anyString</API>(), artifactIterator) ;
+        <API label="None">assertNotNull</API>( bundlePlugin );
+    }
+
+   @Test
+    public void bundlePluginContentShouldNotBeNull() {
+        Iterator artifactIterator = <API label="org.mockito.Mockito.mock">mock</API>(Iterator.class) ;
+        bundle.BundlePlugin bundlePlugin = bundleProcessor.getBundlePlugin(<API label="org.mockito.Mockito.anyString">anyString</API>(), artifactIterator) ;
+
+       List featureContent = bundlePlugin.getFeatureContent() ;
+        <API label="None">assertNotNull</API>( featureContent );
+    }
+}
+
+</code></pre>
+
+How to execute this test without problem.
+
+
+
+Edit 1:
+
+But if i <API label="">mark</API> the bundlePluginCollectionShouldNotBeNull test with @Ignore annotation, then first test case passes without any exception.
+
+==========
+You are using mockito <code><API label="org.mockito.Mockito.anyString">anyString</API>()</code> while calling the test method, it should be used only for verifying a <API label="org.mockito.Mockito.argThat">mock</API> object to ensure a certain method is called with any string parameter inside the test, but not to invoke the test itself. For your test use empty string <code>""</code> instead to <code><API label="org.mockito.Mockito.anyString">anyString</API>()</code>. 
+

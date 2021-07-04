@@ -1,0 +1,65 @@
+https://stackoverflow.com/questions/62579685
+Had an issue with generating a HMAC-SHA1 <API label="">hash</API>. I convert it to Base64 and send it to an external system, who verifies the result. However, they're producing a different Base64-encoded <API label="">hash</API>. As far as I can tell, they're using Java Mac (javax.crypto.mac) to generate the <API label="">hash</API>, whereas I am using the Google Guava Codec API.
+I checked a couple of online <API label="">hash</API> generators (i.e. <a href="https://www.freeformatter.com/hmac-generator.html" rel="nofollow noreferrer">https://www.freeformatter.com/hmac-generator.html</a>) and they produced the same <API label="">hash</API> as me. I tried Apache Commons Codec API and it also produced the same results. Yet, this external system was producing a different Base64-encoded <API label="">hash</API>. Secret/key and message are exactly the same.
+As it turns out, converting the <API label="">hash</API> to a String first, not a Byte, was the issue. I was converting the <API label="">hash</API> to a String first and then encoding with Base64. The external system was converting the <API label="">hash</API> to a Byte first and then encoding with Base64. The online generators that I found seem to convert the <API label="">hash</API> to a String first, like myself, which is why my <API label="">hash</API> matched with the online <API label="">hash</API> generators.
+Is there a proper way to convert the <API label="">hash</API>? For good practice, should I be using <API label="None">asBytes</API>(), <API label="None">toString</API>() or something else?
+Here's the code using Guava Codec API:
+<pre><code>
+import <API label="">com.google.common.hash</API>.Hasher;
+import <API label="">com.google.common.hash</API>.Hashing;
+
+import java.util.Base64;
+
+public class HmacSha1TokenAuth {
+
+public static void <API label="">main</API>(String[] args) {
+
+ String secret = "12345";
+  String valueToDigest = "TestUser";
+
+ byte[] key = <API label="None">secret.getBytes</API>();
+
+ Hasher hasher = <API label="com.google.common.hash.Hashing.hmacSha1">Hashing.hmacSha1</API>(key).<API label="com.google.common.hash.HashFunction.newHasher">newHasher</API>();
+  Hasher hasher2 = <API label="com.google.common.hash.Hashing.hmacSha1">Hashing.hmacSha1</API>(key).<API label="com.google.common.hash.HashFunction.newHasher">newHasher</API>();
+
+ <API label="com.google.common.hash.Hasher.putBytes">hasher.putBytes</API>(<API label="None">valueToDigest.getBytes</API>());
+  <API label="com.google.common.hash.Hasher.putBytes">hasher2.putBytes</API>(<API label="None">valueToDigest.getBytes</API>());
+
+ // This is what I used and also found a few online <API label="">hash</API> generators using the same approach
+  String hashAsString = <API label="com.google.common.hash.Hasher.hash">hasher.hash</API>().<API label="com.google.common.hash.HashCode.toString">toString</API>();
+
+ // This is what the external system used
+  byte[] hashAsByte = <API label="com.google.common.hash.Hasher.hash">hasher2.hash</API>().<API label="com.google.common.hash.HashCode.asBytes">asBytes</API>();
+
+ String base64AsString = Base64.getEncoder().encodeToString(<API label="None">hashAsString.getBytes</API>());
+  String base64AsByte = Base64.getEncoder().encodeToString(hashAsByte);
+
+ <API label="None">System.out.println</API>("Hash As String: " + hashAsString);
+  <API label="None">System.out.println</API>("Hash As String(Converted to Bytes): " + <API label="None">hashAsString.getBytes</API>());  
+  <API label="None">System.out.println</API>("Base64 Value of Hash As String: " + base64AsString);
+  <API label="None">System.out.println</API>("Hash As Byte: " + hashAsByte);
+  <API label="None">System.out.println</API>("Base64 Value of Hash As Byte: " + base64AsByte);
+
+ /*** My Results ***/
+  // Hash As String: c8094bb1e0896a3f813036bdaeb37b753d9f4f5b
+  // Hash As String(Converted to Bytes): [B@61443d8f
+  // Base64 Value of Hash As String: YzgwOTRiYjFlMDg5NmEzZjgxMzAzNmJkYWViMzdiNzUzZDlmNGY1Yg==
+  
+  /*** External System Results ***/
+  // Hash As Byte: [B@445b84c0
+  // Base64 Value of Hash As Byte: yAlLseCJaj+BMDa9rrN7dT2fT1s=
+
+}
+
+}
+
+</code></pre>
+
+==========
+Base64 encodes bytes, the hasher produce bytes, so there's no reason to convert to String.
+I suppose examples you have seen are about converting base64 starting from strings variables.
+Different result are due to different encoding of <API label="com.google.common.hash.HashCode.toString">toString</API>() or <API label="None">getBytes</API>() conversions.
+From guava documentation you can see <API label="com.google.common.hash.HashCode.toString">hashcode.toString</API>() converts in exadecimal, while <API label="None">bytes.toString</API>() is platform dependent (supposedly UTF8)?
+<a href="https://guava.dev/releases/16.0/api/docs/com/google/common/<API label="">hash</API>/HashCode.html#<API label="">toString</API>()" rel="nofollow noreferrer">https://guava.dev/releases/16.0/api/docs/com/google/common/<API label="">hash</API>/HashCode.html#<API label="">toString</API>()</a>
+<a href="https://guava.dev/releases/16.0/api/docs/com/google/common/<API label="">hash</API>/HashCode.html#<API label="">fromString</API>(java.lang.String)" rel="nofollow noreferrer">https://guava.dev/releases/16.0/api/docs/com/google/common/<API label="">hash</API>/HashCode.html#<API label="">fromString</API>(java.lang.String)</a>
+

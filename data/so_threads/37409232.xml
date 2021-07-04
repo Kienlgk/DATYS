@@ -1,0 +1,74 @@
+https://stackoverflow.com/questions/37409232
+There <API label="">is</API> test code which thorws exception and I can't understand - why?
+
+Exception:
+
+<pre><code>
+    org.mockito.exceptions.misusing.InvalidUseOfMatchersException: 
+
+</code></pre>
+
+Test code:
+
+<pre><code>
+ @Test
+    public void testUpdateBookingFormData() throws Exception {
+        <API label="org.mockito.Mockito.when">when</API>(registrantFormService.getRegistrantFormByUUID(<API label="org.mockito.Matchers.any">any</API>(String.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(registrantForm);
+        <API label="org.mockito.Mockito.when">when</API>(bookingService.getById(<API label="org.mockito.Matchers.any">any</API>(Long.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(booking);
+        <API label="org.mockito.Mockito.when">when</API>(eventFieldRepository.findByEventIdOrderBySortIndexAsc(<API label="org.mockito.Matchers.any">any</API>(Long.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(eventFieldList);
+        <API label="org.mockito.Mockito.when">when</API>(registrantAggregateService.getRegistrantDataAggregate(<API label="org.mockito.Matchers.any">any</API>(RegistrantKey.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(registrantAggregate);
+        <API label="org.mockito.Mockito.when">when</API>(bookingFormStrategiesFactory.chooseStrategy(<API label="org.mockito.Matchers.any">any</API>(Long.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(bookingFormStrategy);
+        <API label="org.mockito.Mockito.when">when</API>(bookingFormValidatorsFactory.getValidatorForForm(<API label="org.mockito.Matchers.any">any</API>(Booking.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(validator);
+        <API label="org.mockito.Mockito.when">when</API>(<API label="">validator.validate</API>(<API label="org.mockito.Matchers.any">any</API>(BookingFormBean.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(true);
+        <API label="org.mockito.Mockito.when">when</API>(bookingFormStrategy.getFormByKey(<API label="org.mockito.Matchers.any">any</API>(Booking.class), <API label="org.mockito.Matchers.any">any</API>(RegistrantKey.class))).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(bookingFormBean);
+
+       BookingFormsCollectionBean bookingFormsCollectionBean = bookingFormsService.updateBookingFormData(<API label="org.mockito.Matchers.eq">eq</API>(<API label="None">booking.getKey</API>().getVisitorId()), <API label="org.mockito.Mockito.anyString">anyString</API>(), <API label="org.mockito.Mockito.anyMapOf">anyMapOf</API>(String.class, String[].class));
+
+       <API label="None">assertThat</API>(bookingFormsCollectionBean, <API label="org.hamcrest.core.Is.is">is</API>(<API label="org.hamcrest.core.IsNull.notNullValue">IsNull.notNullValue</API>()));
+    }
+
+</code></pre>
+
+What I am doing wrong?
+
+UPD: Full code <a href="http://pastebin.com/rprLG8Nt" rel="nofollow">http://pastebin.com/rprLG8Nt</a>
+
+UPD2: This full exception message:
+
+<pre><code>
+  org.mockito.exceptions.misusing.InvalidUseOfMatchersException: 
+Invalid use of argument matchers!
+1 matchers expected, 3 recorded:
+-> at com.evm.front.service.logic.bookingprocess.BookingFormsServiceTest.testUpdateBookingFormData(BookingFormsServiceTest.java:106)
+-> at com.evm.front.service.logic.bookingprocess.BookingFormsServiceTest.testUpdateBookingFormData(BookingFormsServiceTest.java:106)
+-> at com.evm.front.service.logic.bookingprocess.BookingFormsServiceTest.testUpdateBookingFormData(BookingFormsServiceTest.java:106)
+
+This exception may occur if matchers are combined with raw values:
+    //incorrect:
+    someMethod(<API label="org.mockito.Matchers.anyObject">anyObject</API>(), "raw String");
+When using matchers, all arguments have to be provided by matchers.
+For example:
+    //correct:
+    someMethod(<API label="org.mockito.Matchers.anyObject">anyObject</API>(), <API label="org.mockito.Matchers.eq">eq</API>("String by matcher"));
+
+For more info see javadoc for Matchers class.
+
+
+   at com.evm.front.service.logic.bookingprocess.BookingFormsService.updateBookingFormData(BookingFormsService.java:202)
+    at com.evm.front.service.logic.bookingprocess.BookingFormsServiceTest.testUpdateBookingFormData(BookingFormsServiceTest.java:106)
+    at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+    at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+
+</code></pre>
+
+==========
+The exception points us to line <code>106</code>. But that line has two matchers while the exception complains about three. However, the next non-empty line, line <code>108</code> <API label="">is</API> strange: it includes matchers without a <code><API label="org.mockito.Mockito.when">when</API>()</code> call. You can try to invoke it with actual values, something like this:
+
+<pre><code>
+BookingFormsCollectionBean bookingFormsCollectionBean = bookingFormsService.
+    updateBookingFormData(<API label="None">booking.getKey</API>().getVisitorId(), "salala", Collections.EMPTY_MAP);
+
+</code></pre>
+
+You can later use more specific data to feed this test with.
+

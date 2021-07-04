@@ -1,0 +1,62 @@
+https://stackoverflow.com/questions/14412237
+we are try to <API label="">run</API> hive jobs on giraph, to do graph analysis, but every time we just keep bumping into new errors that we have never seen before.. and even after trying for hours we find no solutions.. now the we getting a new error..
+
+we used following command to <API label="">run</API> hive job
+
+<pre><code>
+sudo -u hdfs hive --service jar \
+    giraph-hcatalog-0.2-SNAPSHOT-jar-with-dependencies.jar \
+    org.apache.giraph.io.hcatalog.HiveGiraphRunner \
+    -vertexClass org.apache.giraph.vertex.MutableVertex \
+    -vertexInputFormatClass org.apache.giraph.io.hcatalog.HCatalogVertexInputFormat \
+    -vertexOutputFormatClass org.apache.giraph.io.hcatalog.HCatalogVertexOutputFormat \
+    -w 1 -vi giraph_input -o giraph_output \
+    HIVE_OPTS="-hiveconf javax.jdo.option.ConnectionURL=jdbc:mysql://localhost/metastore 
+               -hiveconf javax.jdo.option.ConnectionDriverName=com.mysql.jdbc.Driver
+               -hiveconf javax.jdo.option.ConnectionUserName=root
+               -hiveconf javax.jdo.option.ConnectionPassword=root
+               -hiveconf datanucleus.autoCreateSchema=false
+               -hiveconf datanucleus.fixedDatastore=true"
+
+</code></pre>
+
+is there anything wrong in i/p..? just wanted to <API label="">run</API> hive job using hivegiraphrunner, with hcat inputformatvertex and outformatvertex
+
+hadoop, hive, mysql, are working, and runnig properly (cofigured hadoop_env , hive-site)
+using hadoop-0.20.2 hadoop-hive (cloudera)
+
+giraph jars were a successful <API label="">build</API>
+
+is their something that i missed, or should configure 
+
+any suggestion will be a great help..!!
+
+getting following exceptions.. 
+
+<pre><code>
+Exception in thread "<API label="">main</API>" java.lang.NoSuchMethodError: com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor()Lcom/google/common/util/concurrent/ListeningExecutorService;
+    at com.google.common.cache.LocalCache.(LocalCache.java:156)
+    at com.google.common.cache.LocalCache$LocalManualCache.(LocalCache.java:4765)
+    at <API label="">com.google.common.cache.CacheBuilder.build</API>(CacheBuilder.java:821)
+    at org.apache.hcatalog.common.HiveClientCache.(HiveClientCache.java:89)
+    at org.apache.hcatalog.common.HCatUtil.getHiveClient(HCatUtil.java:537)
+    at org.apache.hcatalog.mapreduce.HCatUtils.getInputJobInfo(HCatUtils.java:75)
+    at org.apache.giraph.io.hcatalog.GiraphHCatInputFormat.setVertexInput(GiraphHCatInputFormat.java:81)
+    at <API label="">org.apache.giraph.io.hcatalog.HiveGiraphRunner.run</API>(HiveGiraphRunner.java:174)
+    at <API label="">org.apache.hadoop.util.ToolRunner.run</API>(ToolRunner.java:65)
+    at <API label="">org.apache.hadoop.util.ToolRunner.run</API>(ToolRunner.java:79)
+    at <API label="">org.apache.giraph.io.hcatalog.HiveGiraphRunner.main</API>(HiveGiraphRunner.java:147)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:601)
+    at <API label="">org.apache.hadoop.util.RunJar.main</API>(RunJar.java:197)
+    <API label="">enter</API> code here
+
+</code></pre>
+
+==========
+Giraph has a dependency on guava 12.0 (cf. its <a href="https://github.com/apache/giraph/blob/trunk/pom.xml" rel="nofollow">POM</a>, lines 752-756), which explains that <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/MoreExecutors.html#sameThreadExecutor%28%29" rel="nofollow"><code>MoreExecutors.sameThreadExecutor()</code></a> (introduced in 10.0) is not found if you already have r06 in hive/lib and Hive directly loads giraph in its JVM.
+
+You could try upgrading the jar in Hive, but with such distance between the 2 versions, it could well be incompatible. In that case, I guess you may have to upgrade Hive, though I'm not a Hadoop user and don't know the details.
+ 

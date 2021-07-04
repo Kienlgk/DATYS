@@ -1,0 +1,79 @@
+https://stackoverflow.com/questions/21921507
+I've been using Guava's <code>ImmutableMap</code> with a <code>Builder</code> for awhile without giving much thought to how/why it works. I've been using the <API label="">builder</API> in the way described by the <a href="https://google.github.io/guava/releases/19.0/api/docs/com/google/common/collect/ImmutableMap.Builder.html" rel="noreferrer">Javadoc</a>:
+
+<pre><code>
+ImmutableMap WORD_TO_INT =
+          new ImmutableMap.Builder()
+              .<API label="None">put</API>("one", 1)
+              .<API label="None">put</API>("two", 2)
+              .<API label="None">put</API>("three", 3)
+              .<API label="None">build</API>();
+
+</code></pre>
+
+I've also seen examples <a href="https://stackoverflow.com/a/9489463/772385">elsewhere</a> on SO of this syntax:
+
+<pre><code>
+ImmutableMap myMap = <API label="com.google.common.collect.ImmutableMap.builder">ImmutableMap.builder</API>()
+    .<API label="None">put</API>("one", 1) 
+    .<API label="None">put</API>("two", 2) 
+    .<API label="None">put</API>("three", 3) 
+    .<API label="None">build</API>();
+
+</code></pre>
+
+Both seem to produce the exact same result.
+
+A quick glance at the <code>ImmutableMap</code> <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/collect/ImmutableMap.java" rel="noreferrer">source</a> shows that the static <code><API label="None">builder</API>()</code> call in the 2nd example returns: <code>new Builder()</code>
+
+There doesn't appear to be any functional <API label="">difference</API> between the two methods. 
+
+Is there any <API label="">difference</API> under the hood? Any reason to prefer one or the other?
+
+EDIT: Adding bytecode <API label="">difference</API>.
+
+The bytecode generated is almost identical except for one line:
+
+Method 1(<code>Builder</code>):
+
+<pre><code>
+static {};
+     0  new com.google.common.collect.ImmutableMap$Builder [12]
+     3  dup
+     4  invokespecial com.google.common.collect.ImmutableMap$Builder() [14]
+     7  ldc  [17]
+     ........
+
+</code></pre>
+
+Method 2:(<code><API label="">builder</API>()</code>)
+
+<pre><code>
+static {};
+     0  invokestatic <API label="com.google.common.collect.ImmutableMap.builder">com.google.common.collect.ImmutableMap.builder</API>() : com.google.common.collect.ImmutableMap$Builder [12]
+     3  ldc  [18]
+     ........
+
+</code></pre>
+
+After that they're pretty much the same, the <API label="">first</API> line being different makes sense given the source differences, but I'm not sure why the <API label="">first</API> one calls <code>dup</code> and the second doesn't.
+
+==========
+No, they are identical. The reason for the <API label="">first</API> syntax is that it makes a nice one-liner.
+
+The reason for the second syntax is the you might have a loop or other flow control, you may need to pass the <code>Builder</code> around.
+
+For example:
+
+<pre><code>
+public static void <API label="None">main</API>(final String[] args) throws Exception {
+    final ImmutableList.Builder lb = <API label="com.google.common.collect.ImmutableMap.builder">ImmutableList.builder</API>();
+    for (final String arg : args) {
+        <API label="None">lb.add</API>(Integer.parseInt(arg));
+    }
+}
+
+</code></pre>
+
+And before you say it, yes a <code>FluentIterable</code> would probably be better in this case - but it's just an example.
+

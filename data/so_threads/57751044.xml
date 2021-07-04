@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/57751044
+I am unable to find the direct API (i.e. total bits, memory size in bytes should be total_bits / 8). The only way I found is to serialize into a byte array, but this may take further memory:
+
+<pre><code>
+    BloomFilter bloomFilter = <API label="com.google.common.hash.BloomFilter.create">BloomFilter.create</API>(Funnels.
+            <API label="com.google.common.hash.Funnels.stringFunnel">stringFunnel</API>(StandardCharsets.UTF_8), 100_000_000);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    <API label="com.google.common.hash.BloomFilter.writeTo">bloomFilter.writeTo</API>(baos);
+    <API label="">System.out.println</API>(<API label="None">baos.toByteArray</API>().length);
+
+</code></pre>
+
+Is there any efficient ways to do this?
+
+==========
+You can't do it easily with the Guava Bloom filter API. (Other libraries such as <a href="https://github.com/FastFilter/fastfilter_java/blob/master/src/main/java/org/fastfilter/Filter.java" rel="nofollow noreferrer">FastFilter</a> have methods such as getBitCount() so you can easily retrieve it. But the Guava Bloom filter currently, has no such method.)
+
+There are online tools that allow you to calculate the missing parameters for Bloom filters, for example the <a href="https://hur.st/bloomfilter/" rel="nofollow noreferrer">Bloom Filter Calculator</a>. As the Guava Bloom filter is a regular Bloom filter, you can calculate the space usage yourself from the parameters, using the formulas of the Bloom filter (which the Guava Bloom filter implementation also uses internally):
+
+<pre><code>
+import static <API label="None">java.lang.Math.log</API>;
+import static <API label="None">java.lang.Math.pow</API>;
+
+// expected insertions
+int n = 100_000_000;
+
+// false positive probability; default: 3% for Guava
+double fpp = 0.03;
+
+double bits = n * <API label="None">log</API>(fpp) / -<API label="None">log</API>(<API label="None">pow</API>(2, <API label="None">log</API>(2)));
+int bytes = (int) Math.ceil(bits / 8);
+
+// result for the above: 91230511
+
+</code></pre>
+
+This is only an estimation; the number could be off due to rounding. And of course, serializing a Java object uses a bit more space, and heap memory.
+

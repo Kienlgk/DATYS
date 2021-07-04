@@ -1,0 +1,32 @@
+https://stackoverflow.com/questions/24701679
+What I'm doing: I'm gathering a potentially large collection of objects and asking the user for input based on the collection. I want to cache the objects to avoid reacquiring them, but I want the collection to expire after a short time in case the user flakes out. If needed, I'll reacquire the objects. The collection will not change over the short time <API label="None">span</API> involved.
+
+What I've looked at: <a href="https://code.google.com/p/guava-libraries/wiki/CachesExplained" rel="nofollow" title="Caches Explained">Guava's Cache</a> looks promising because of the time-based expiration. However, a couple of things bother me about it. I don't really need a map -- the collection will be accessed in its entirety or not at all. And I'm worried that I can run into a race condition where items in the Cache start expiring as I'm accessing the Cache. That adds a level of complexity, having to track if all my items are in the Cache, eliminating some of the value of the cache.
+
+My Question: Am I asking for trouble if, instead of placing individual items in the Cache, I make a Guava ImmutableCollection of them and place that into the Cache? It seems that way I access the entire collection in one go, and the collection is either in the cache or it isn't (in which case I rebuild it all). Are there pitfalls with this approach that I'm not seeing?
+
+==========
+It's not unusual to have a static, singleton key for a Guava cache.  <code>Cache</code> provides a lot of benefit even when not used as a <code>Map</code>.  I would just do something like this:
+
+<pre><code>
+ private static final Object CACHE_KEY = new Object();
+
+private LoadingCache cache = 
+      <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+        .<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(5, TimeUnit.MINUTES)
+        .<API label="None">softValues</API>()
+        .<API label="None">build</API>(valuesLoader());
+
+//...
+ List values = <API label="None">cache.get</API>(CACHE_KEY);
+
+</code></pre>
+
+In my code base, I use caches with single values in a few places, so I've abstracted this to a <code>SingleValueLoadingCache</code> which exposes a no-arg <code><API label="None">get</API>()</code> method and encapsulates the cache and key.
+
+
+ It seems that way I access the entire collection in one go, and the collection is either in the cache or it isn't (in which case I rebuild it all). Are there pitfalls with this approach that I'm not seeing?
+
+
+Just in case you haven't found it yet, you probably want a <code>LoadingCache</code> by passing a <code>CacheLoader</code> to the <code><API label="">build</API></code> method of the <code>CacheBuilder</code>.  That way you just always call <code><API label="None">get</API>()</code>, and if the value isn't in the cache, it is loaded for you automatically and synchronously, using the <code>CacheLoader</code> you've provided.
+

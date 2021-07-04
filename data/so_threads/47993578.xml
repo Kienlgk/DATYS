@@ -1,0 +1,31 @@
+https://stackoverflow.com/questions/47993578
+I am trying to understand <a href="https://google.github.io/guava/releases/20.0/api/docs/com/google/common/collect/Multimaps.html" rel="nofollow noreferrer">Multimaps</a> class's <a href="https://google.github.io/guava/releases/20.0/api/docs/com/google/common/collect/Multimaps.html#<API label="">index</API>-java.util.Iterator-com.google.common.base.Function-" rel="nofollow noreferrer"><API label="">index</API></a> function. If I want to use it like a HashMap then I can just put multiple values against a key and retrieve them with the same key.
+
+But if I want to group the data according to some criteria then Multimaps implementation like <a href="https://javahowtodoit.wordpress.com/2014/09/15/guava-function-example-how-to-use-function-with-multimaps-<API label="">index</API>/" rel="nofollow noreferrer">this</a> is used.
+
+Now I have a doubt in below declaration of <API label="None">index</API> function.
+
+<pre><code>
+public static  ImmutableListMultimap <API label="None">index</API>(Iterator values, Function keyFunction)
+
+</code></pre>
+
+If ImmutableListMultimap is to be returned with <code></code> then why does Function have the type declaration of <code></code>, which is exactly opposite?
+
+Also how does the anonymous inner class of type Function works as shown in <a href="https://javahowtodoit.wordpress.com/2014/09/15/guava-function-example-how-to-use-function-with-multimaps-<API label="">index</API>/" rel="nofollow noreferrer">this</a> example? I am not able to understand who calls the <API label="">apply</API> method defined inside the anonymous inner class Function?
+
+==========
+
+ If ImmutableListMultimap is to be returned with  then why does Function have the type declaration of , which is exactly opposite?
+
+
+A Multimap has the two type parameters <code>K</code> for the keys and <code>V</code> for the values. The <code><API label="None">index</API></code> method has the parameters <code>Iterator values</code> (obviously for the values) and <code>Function keyFunction</code> (for generating a key for a value).
+
+That means that the <code>keyFunction</code> has to <API label="">accept</API> a value (of type <code>V</code> or one of its supertypes, since you can pass any value of type <code>V</code> to a method accepting a supertype of <code>V</code>) and it has to return the key (of type <code>K</code>) for that value. This leads to the type <code>Function</code>.
+
+
+ Also how does the anonymous inner class of type Function works as shown in <a href="https://javahowtodoit.wordpress.com/2014/09/15/guava-function-example-how-to-use-function-with-multimaps-<API label="">index</API>/" rel="nofollow noreferrer">this</a> example? I am not able to understand who calls the <API label="">apply</API> method defined inside the anonymous inner class Function?
+
+
+If you look at the implementation of the <code><API label="None">index</API></code> method (<a href="https://github.com/google/guava/blob/v23.0/guava/src/com/google/common/collect/Multimaps.java#L1630" rel="nofollow noreferrer">https://github.com/google/guava/blob/v23.0/guava/src/com/google/common/collect/Multimaps.java#L1630</a>), you will see that line 1637 that the <code><API label="None">index</API></code> method calls <code><API label="">keyFunction.apply</API>(value)</code>
+

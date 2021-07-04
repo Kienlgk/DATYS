@@ -1,0 +1,56 @@
+https://stackoverflow.com/questions/37555363
+I want to do something like this:
+
+<pre><code>
+ CacheBuilder
+            .<API label="com.google.common.cache.CacheBuilder.newBuilder">newBuilder</API>()
+            .<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(CONFIG.cacheMaxSize())
+            .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(CONFIG.cacheTimeout(),
+                                CONFIG.cacheTimeUnit())
+            .<API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API>()
+            .<API label="com.google.common.cache.CacheBuilder.build">build</API>(cacheLoader);
+
+</code></pre>
+
+The behavior I expect is that an entry will only be expired if the value is not referenced AND the expiration time has passed. Is that how this usage will work?
+
+==========
+Not directly, since the weak value can be garbage collected as soon as there are no more strong references to the object. What you could do however is use a <a href="http://google.github.io/guava/releases/snapshot/api/docs/com/google/common/cache/ForwardingCache.html" rel="nofollow"><code>ForwardingCache</code></a> backed by two separate caches, a weak-value cache and a timed-expiry cache, so that the time-based cache holds a strong reference to the object thereby keeping it in the weak-value cache. It'd look something like this:
+
+<pre><code>
+public class WeakValuedExpiringCache extends ForwardingCache {
+  private final Cache expiringCache;
+  private final Cache weakCache;
+
+ public WeakValuedExpiringCache(CacheBuilder expiringSpec) {
+    expiringCache = <API label="com.google.common.cache.CacheBuilder.build">expiringSpec.build</API>();
+    weakCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API>().<API label="com.google.common.cache.CacheBuilder.build">build</API>();
+  }
+
+ // weakCache is the canonical cache since it will hold values longer than
+  // expiration if there remain other strong references
+  protected Cache delagate() {
+    return weakCache;
+  }
+
+ @override
+  public V <API label="com.google.common.cache.ForwardingCache.get">get</API>(K key, Callable valueLoader)
+     throws ExecutionException {
+    // repopulate the expiring cache if needed, and update the weak cache
+    V value = <API label="com.google.common.cache.Cache.get">expiringCache.get</API>(key, valueLoader);
+    <API label="com.google.common.cache.Cache.put">weakCache.put</API>(key, value); // don't call <API label="com.google.common.cache.Cache.put">super.put</API>() here
+  }
+
+ @Override
+  public void <API label="com.google.common.cache.ForwardingCache.put">put</API>(K key, V value) {
+    <API label="com.google.common.cache.Cache.put">expiringCache.put</API>(key, value);
+    <API label="com.google.common.cache.ForwardingCache.put">super.put</API>(key, value);
+  }
+
+ // Handle <API label="com.google.common.cache.ForwardingCache.putAll">putAll</API>(), <API label="com.google.common.cache.ForwardingCache.cleanUp">cleanUp</API>(), <API label="com.google.common.cache.ForwardingCache.invalidate">invalidate</API>(), and <API label="com.google.common.cache.ForwardingCache.invalidateAll">invalidateAll</API>() similarly
+}
+
+</code></pre>
+
+You can do the same thing with a <a href="http://google.github.io/guava/releases/snapshot/api/docs/com/google/common/cache/ForwardingLoadingCache.html" rel="nofollow"><code>ForwardingLoadingCache</code></a> as well, just like <code>.<API label="com.google.common.cache.Cache.get">get</API>()</code> above you should load the value from the <code>expiringCache</code> and <code>.<API label="com.google.common.cache.Cache.put">put</API>()</code> it into the <code>weakCache</code> in the relevant loading methods.
+

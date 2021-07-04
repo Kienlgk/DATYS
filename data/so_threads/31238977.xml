@@ -1,0 +1,25 @@
+https://stackoverflow.com/questions/31238977
+I´m using a guava AtomicLongMap to count the number of phrases in a document.
+
+<pre><code>
+AtomicLongMap frequentPhrases = <API label="com.google.common.util.concurrent.AtomicLongMap.create">AtomicLongMap.create</API>();
+<API label="com.google.common.util.concurrent.AtomicLongMap.getAndIncrement">frequentPhrases.getAndIncrement</API>(phrase.trim());
+
+</code></pre>
+
+Everything works like a charm, but I cannot find a way to <API label="">sort</API> that Map by the number of occurrences. 
+
+==========
+You could save the entries to a <code>List</code>, and then <API label="">sort</API> it by the entry's value, in reverse order:
+
+<pre><code>
+List sorted = 
+    new ArrayList<>(<API label="com.google.common.util.concurrent.AtomicLongMap.asMap">frequentPhrases.asMap</API>().<API label="None">entrySet</API>());
+<API label="None">Collections.sort</API>(sorted, <API label="None">Collections.reverseOrder</API>(Map.Entry.comparingByValue()));
+
+for (Map.Entry entry : sorted) {
+    <API label="None">System.out.println</API>(entry); // Or something more useful
+}
+
+</code></pre>
+

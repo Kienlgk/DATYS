@@ -1,0 +1,35 @@
+https://stackoverflow.com/questions/63466731
+I am trying to use Guava Cache [version 29.0-jre] as with Guice as follows:
+<a href="https://i.stack.imgur.com/NyQx8.png" rel="nofollow noreferrer"></a>
+My observation is, Guava cache is calling the load method every time even when the key exists in the cache. Why is this happening?
+<a href="https://i.stack.imgur.com/bAVfl.png" rel="nofollow noreferrer"></a>
+In the above debug console we can observe that the key [uuid] and value [json object] are already present in the cache. However, on the next get request the control still goes inside load method.
+Another observation is, I tried multiple attempts and can see entries with the same key getting loaded multiple times in the cache.
+<a href="https://i.stack.imgur.com/Rj3KV.png" rel="nofollow noreferrer"></a>
+
+==========
+
+we can observe that the key [uuid]
+
+There's your error. That's not the key. You said it yourself: <code>.<API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>()</code> is in your CacheBuilder setup. The key isn't the UUID, it's the identity of the object representing it.
+From the <a href="https://guava.dev/releases/29.0-jre/api/docs/com/google/common/cache/CacheBuilder.html" rel="nofollow noreferrer">CacheBuilder</a> docs:
+
+Note: by default, the returned cache uses equality comparisons (the <API label="None">equals</API> method) to determine equality for keys or values. However, if <API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>() was specified, the cache uses identity (==) comparisons instead for keys. Likewise, if <API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API>() or <API label="com.google.common.cache.CacheBuilder.softValues">softValues</API>() was specified, the cache uses identity comparisons for values.
+
+Thus, the key is not the UUID you're seeing. It's the literal object identity of that UUID object. Let me try to explain with an example. Imagine your cache had String keys.
+<pre><code>
+// Without .weakKey:
+
+String a = new String("Hello");
+String b = new String("Hello");
+
+are the same key.
+
+// With .weakKey THEY ARE NOT, because..
+
+a == b; // this is false. Thus, .<API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>() cache says not equal.
+<API label="None">a.equals</API>(b); // this is true. Thus, strong keys cache says equal.
+
+</code></pre>
+You seem to want both the 'use .<API label="None">equals</API> for identity' aspect, as well as '... but don't impede garbage collection' aspect. I'm not aware of an easy way to get that.
+

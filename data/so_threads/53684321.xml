@@ -1,0 +1,72 @@
+https://stackoverflow.com/questions/53684321
+I was trying to test guava concurrent package, as below.
+
+I expect that the created thread pool will <API label="">execute</API> the "Runnable" class instance and then wait for termination.
+
+<pre><code>
+import <API label="">com.google.common.util.concurrent.ThreadFactoryBuilder</API>;
+import java.util.concurrent.*;
+public class MyTest {
+    public static void <API label="">main</API>(String [] args) {
+        final CountDownLatch latch = new CountDownLatch(2);
+        ThreadFactory namedThreadFactory = new <API label="com.google.common.util.concurrent.ThreadFactoryBuilder.ThreadFactoryBuilder">ThreadFactoryBuilder</API>().<API label="com.google.common.util.concurrent.ThreadFactoryBuilder.ThreadFactoryBuilder">setNameFormat</API>("UseCountDownLatch").<API label="com.google.common.util.concurrent.ThreadFactoryBuilder.build">build</API>();
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                10,
+                10,
+                100,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(1),
+                namedThreadFactory);
+        <API label="None">executor.execute</API>(new Runnable() {
+            @Override
+            public void <API label="None">run</API>() {
+                latch.countDown();
+            }
+        });
+        try {
+            executor.wait();
+            <API label="None">latch.await</API>();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+</code></pre>
+
+But in fact, it prints:
+
+<pre><code>
+Exception in thread "<API label="">main</API>" java.lang.IllegalMonitorStateException
+at java.lang.Object.wait(Native Method)
+at java.lang.Object.wait(Object.java:502)
+at <API label="">UseCountDownLatch.main</API>(MyTest.java:28)
+
+</code></pre>
+
+If I <API label="">remove</API> the line of 
+
+<pre><code>
+executor.wait();
+
+</code></pre>
+
+Then program hangs there, without stopping. So where did I get wrong to gracefully <API label="">execute</API> and finish the task in ThreadPool? How to fix it?
+
+Thanks a lot.
+
+==========
+The observation that <a href="https://stackoverflow.com/a/53684387/217324">you haven't incremented the count for the countdownLatch enough</a> is correct, +1 from me. To fix it you could <API label="">add</API> another task like the Runnable you pass in to the <API label="None">execute</API> method. 
+
+For why you are getting the IllegalMonitorStateException: it's because you called wait on the executor without holding the implicit lock on the executor object. That isn't anything that would make sense for you to do here. Maybe you confused it with <a href="https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html#<API label="">awaitTermination</API>(long,%20java.util.concurrent.TimeUnit)" rel="nofollow noreferrer"><API label="None">awaitTermination</API></a>?
+
+
+ boolean <API label="None">awaitTermination</API>(long timeout,
+                         TimeUnit unit)
+                           throws InterruptedException
+  
+  Blocks until all tasks have completed execution after a shutdown request, or the timeout occurs, or the current thread is interrupted, whichever happens first.
+
+
+But for this case just call shutdown on the executor so it will know that no new tasks are coming and it can terminate the worker threads once the running tasks complete. 
+

@@ -1,0 +1,59 @@
+https://stackoverflow.com/questions/37205868
+Could I somehow use AssertJ to assert a List has only one <API label="">instance</API> of a (sub)class?
+
+<pre><code>
+public class A {}
+public class B extends A {}
+public class C extends A {}
+
+@Test
+public void <API label="">test</API>() {
+  List<a> list = new ArrayList<a>();
+  <API label="None">list.add</API>(new B());
+
+ <API label="org.assertj.core.api.Assertions.assertThat">Assertions.assertThat</API>(list).<API label="org.assertj.core.api.ListAssert.containsOnlyOnce">containsOnlyOnce</API>(B.class);
+}
+
+</code></pre>
+
+==========
+You need to define a <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/<API label="">Condition</API>.html" rel="nofollow"><API label="">Condition</API></a>.
+
+Following will assert that <code>list</code> contains only a single object reference of type <code>B.class</code>. 
+
+<pre><code>
+<API label="">Condition</API> condition = new <API label="org.assertj.core.api.Condition.Condition">Condition</API>() {
+    @Override
+    public boolean <API label="">matches</API>(Object o) {
+        return <API label="None">o.getClass</API>() == B.class;
+    }};
+
+<API label="org.assertj.core.api.Assertions.assertThat">Assertions.assertThat</API>(list).<API label="org.assertj.core.api.ListAssert.areExactly">areExactly</API>(1, condition);
+
+</code></pre>
+
+It will <API label="">fail</API> for following cases:
+
+<pre><code>
+<API label="None">list.add</API>(new B());
+<API label="None">list.add</API>(new B());
+
+</code></pre>
+
+and also for
+
+<pre><code>
+B b = new B();
+<API label="None">list.add</API>(b);
+<API label="None">list.add</API>(b);
+
+</code></pre>
+
+Using the Java 8 Stream API it can be achieved like
+
+<pre><code>
+long countOfClassB = <API label="None">list.stream</API>().<API label="None">filter</API>(t -> t instanceof B).<API label="None">count</API>();
+<API label="org.assertj.core.api.Assertions.assertThat">Assertions.assertThat</API>(countOfClassB).<API label="org.assertj.core.api.LongAssert.isEqualTo">isEqualTo</API>(1L);
+
+</code></pre>
+

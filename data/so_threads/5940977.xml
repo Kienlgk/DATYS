@@ -1,0 +1,83 @@
+https://stackoverflow.com/questions/5940977
+I'd like to find or implement a <code>MutableGuiceKeyToInstanceMap</code> working just like <code>com.google.common.collect.MutableClassToInstanceMap</code> from Guava, but using <code>com.google.inject.Key</code> from Guice in place of <code>Class</code>.
+
+I couldn't find it in Guice and I can't implement it the way <code>MutableClassToInstanceMap</code> was implemented because of its superclass <code>ConstrainedMap</code> being package-private. I can't use <code>MapConstraint.constrainedMap</code> either, since I would <API label="">get</API> no chance to add the methods <code><API label="None">getInstance</API></code> and <code><API label="None">putInstance</API></code> (and without them it's all quite pointless).
+
+Making an own copy of the <code>ConstrainedMap</code> class would force me to copy quite a few additional classes, so this isn't the way to go. Making a helper Map via <code>MapConstraint.constrainedMap</code> and making <code>MutableGuiceKeyToInstanceMap extends ForwardingMap</code> which delegates everything to the helper could work, but it's still quite cumbersome. Any better idea?
+
+Do you think proposing to make <code>ConstrainedMap</code> public is a good idea?
+
+==========
+I don't see why you don't like the combination of <code>ForwardingMap</code> and <code>MapConstraint.constrainedMap</code>. The code is quite straightforward, and looks almost exactly like what you'd <API label="">get</API> if you were to extend <code>ConstrainedMap</code> directly:
+
+<pre><code>
+import com.google.common.collect.ForwardingMap;
+import com.google.common.collect.MapConstraint;
+import com.google.common.collect.MapConstraints;
+import com.google.inject.Key;
+import org.apache.commons.lang.NotImplementedException;
+
+import java.util.HashMap;
+import java.util.Map;
+
+
+public final class MutableGuiceKeyToInstanceMap
+        extends ForwardingMap, B> {
+
+   /**
+     * Returns a new {@code MutableGuiceKeyToInstanceMap} instance backed by a {@link
+     * java.util.HashMap} using the default initial capacity and load factor.
+     */
+    public static  MutableGuiceKeyToInstanceMap <API label="">create</API>() {
+        return new MutableGuiceKeyToInstanceMap(new HashMap, B>());
+    }
+
+   /**
+     * Returns a new {@code MutableGuiceKeyToInstanceMap} instance backed by a given
+     * empty {@code backingMap}. The caller surrenders control of the backing map,
+     * and thus should not allow any direct references to it to remain accessible.
+     */
+    public static  MutableGuiceKeyToInstanceMap <API label="">create</API>(Map, B> backingMap) {
+        return new MutableGuiceKeyToInstanceMap(backingMap);
+    }
+
+
+   private final Map, B> <API label="">delegate</API>;
+
+   private MutableGuiceKeyToInstanceMap(Map, B> <API label="">delegate</API>) {
+        <API label="">this.delegate</API> = MapConstraints.constrainedMap(<API label="">delegate</API>, VALUE_MATCHES_GUICE_KEY);
+    }
+
+   @Override
+    protected Map, B> <API label="com.google.common.collect.ForwardingMap.delegate">delegate</API>() {
+        return <API label="">delegate</API>;
+    }
+
+   private static final MapConstraint, Object> VALUE_MATCHES_GUICE_KEY = new MapConstraint, Object>() {
+        @Override
+        public void checkKeyValue(Key key, Object value) {
+            matchesGuiceKey(key, value);
+        }
+    };
+
+   public  T <API label="">putInstance</API>(Key key, T value) {
+        return matchesGuiceKey(key, <API label="">put</API>(key, value));
+    }
+
+   public  T <API label="">getInstance</API>(Key key) {
+        return matchesGuiceKey(key, <API label="">get</API>(key));
+    }
+
+   private static  T matchesGuiceKey(Key key, B value) {
+        throw new NotImplementedException("TODO");
+    }
+
+   private static final long serialVersionUID = 0;
+}
+
+</code></pre>
+
+The code is pretty similar to <code>MutableClassToInstanceMap</code>, and there is no need to extend <code>ForwardingMap</code>... Sure, you need to add a <code><API label="com.google.common.collect.ForwardingMap.delegate">delegate</API>()</code> method and its accompanying field, but the rest is identical.
+
+I left out the <code>matchesGuiceKey()</code> implementation as an exercise for the reader. Good luck! You <a href="http://www.angelikalanger.com/GenericsFAQ/JavaGenericsFAQ.html" rel="nofollow">might</a> <a href="http://blog.crazybob.org/2006/12/super-type-tokens.html" rel="nofollow">need</a> <a href="http://gafter.blogspot.com/2007/05/limitation-of-super-type-tokens.html" rel="nofollow">it</a>.
+

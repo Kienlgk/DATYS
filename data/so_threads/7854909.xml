@@ -1,0 +1,32 @@
+https://stackoverflow.com/questions/7854909
+I am looking among the standard libraries (like apache commons, jax, jboss, javax) for an interface or enum that lists the values of all the standard mime-type (aka content-type).
+
+This interface should not be encumbered with too deep with other classes that would make it difficult to include the whole bunch as gwt source code.
+
+for example
+
+<pre><code>
+interface ContentType{
+  String <API label="None">JSON</API> = "Application/JSON";
+  blah ... blah ...
+}
+
+</code></pre>
+
+or,
+
+<pre><code>
+enum ContentType{
+  <API label="None">JSON</API>("Application/JSON"),
+  blah ... blah ...
+}
+
+</code></pre>
+
+==========
+Guava library
+
+We have a <a href="https://en.wikipedia.org/wiki/Google_Guava" rel="nofollow noreferrer">Guava</a> class for this: <a href="http://google.github.io/guava/releases/19.0/api/docs/com/google/common/net/MediaType.html" rel="nofollow noreferrer"><code>com.google.common.net.MediaType</code></a>.
+
+It was released with Guava 12 as stated in the source code and in <a href="http://code.google.com/p/guava-libraries/issues/detail?id=823#c9" rel="nofollow noreferrer">Issue 823</a>. <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/net/MediaType.java" rel="nofollow noreferrer">Sources</a> are <API label="">available</API>, too.
+

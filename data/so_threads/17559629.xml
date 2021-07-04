@@ -1,0 +1,90 @@
+https://stackoverflow.com/questions/17559629
+It's possible this is the expected behavior, but I can't find any documentation that says so.  I'm using Guava <code>14.0.1</code>.  In the below example, entries in the map that don't have a strong reference to the key get removed, which is what I expect, but the <API label="">size</API> of the map gets out of sync.
+
+In the first check, both the <API label="">size</API> and count are 5.  However, in the second check the <API label="">size</API> is reported as 5, but the count is 0.  Why does the second check report the map <API label="">size</API> as 5 when there aren't actually any entries in the map?
+
+<pre><code>
+import com.google.common.collect.Lists;
+import <API label="">com.google.common.collect.MapMaker</API>;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+public class MapSizeCheck {
+    public static void <API label="">main</API>(String[] args) {
+        keepReferencesAndCheckSize();
+        <API label="None">System.out.println</API>();
+        discardReferencesAndCheckSize();
+    }
+
+   private static void keepReferencesAndCheckSize() {
+        Map map = new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>().<API label="com.google.common.collect.MapMaker.weakKeys">weakKeys</API>().<API label="com.google.common.collect.MapMaker.makeMap">makeMap</API>();
+        List refs = <API label="com.google.common.collect.Lists.newArrayList">Lists.newArrayList</API>();
+
+       for(int i=0;i<5;i++) {
+            Object key = new Object();
+            Object value = new Object();
+
+           <API label="None">map.put</API>(key, value);
+            <API label="None">refs.add</API>(key); // Hold a strong reference to the key.
+        }
+
+       System.gc();
+
+       int <API label="">size</API> = <API label="None">map.size</API>();
+        int count = 0;
+
+       Iterator it = <API label="None">map.keySet</API>().<API label="None">iterator</API>();
+        while(<API label="None">it.hasNext</API>()) {
+            count++;
+            <API label="None">it.next</API>();
+        }
+
+       <API label="None">System.out.println</API>("Size  : " + <API label="">size</API>);
+        <API label="None">System.out.println</API>("Count : " + count);
+    }
+
+   private static void discardReferencesAndCheckSize() {
+        Map map = new <API label="com.google.common.collect.MapMaker.MapMaker">MapMaker</API>().<API label="com.google.common.collect.MapMaker.weakKeys">weakKeys</API>().<API label="com.google.common.collect.MapMaker.makeMap">makeMap</API>();
+
+       for(int i=0;i<5;i++) {
+            Object key = new Object();
+            Object value = new Object();
+
+           <API label="None">map.put</API>(key, value);
+        }
+
+       System.gc();
+
+       int <API label="">size</API> = <API label="None">map.size</API>();
+        int count = 0;
+
+       Iterator it = <API label="None">map.keySet</API>().<API label="None">iterator</API>();
+        while(<API label="None">it.hasNext</API>()) {
+            count++;
+            <API label="None">it.next</API>();
+        }
+
+       <API label="None">System.out.println</API>("Size  : " + <API label="">size</API>);
+        <API label="None">System.out.println</API>("Count : " + count);
+    }
+}
+
+</code></pre>
+
+==========
+This is expected behavior, but it's not made as explicit in <code><API label="">MapMaker</API></code>'s docs as it could be.  It is, however, consistent with <a href="http://docs.guava-libraries.googlecode.com/git-history/release/javadoc/com/google/common/cache/CacheBuilder.html" rel="noreferrer"><code>CacheBuilder</code>'s docs</a>:
+
+
+ If <API label="com.google.common.collect.MapMaker.weakKeys">weakKeys</API>, <API label="com.google.common.collect.MapMaker.weakValues">weakValues</API>, or softValues are requested, it is possible for a key or value present in the cache to be reclaimed by the garbage collector. Entries with reclaimed keys or values may be removed from the cache on each cache modification, on occasional cache accesses, or on calls to <API label="com.google.common.cache.Cache.cleanUp">Cache.cleanUp</API>(); such entries may be counted in <API label="com.google.common.cache.Cache.size">Cache.size</API>(), but will never be visible to read or write operations.
+
+
+...as well as the <a href="http://docs.oracle.com/javase/6/docs/api/java/util/WeakHashMap.html#<API label="">size</API>%28%29" rel="noreferrer">JDK's own <code>WeakHashMap</code></a>:
+
+
+ <code>public int <API label="">size</API>()</code>
+  
+  Returns the number of key-value mappings in this map. This result is a snapshot, and may not reflect unprocessed entries that will be removed before <API label="">next</API> attempted access because they are no longer referenced.
+
+

@@ -1,0 +1,46 @@
+https://stackoverflow.com/questions/39276289
+The following test yields a <code>NullPointerException</code>. Is it not possible to set expectations on a lazy property?
+
+<pre><code>
+class GarbTest {
+    @Test
+    fun xx(){
+        val aa = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(AA::class.java)
+        Mockito.`when`(aa.bb).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("zz")
+    }
+
+   open class AA(){
+        val bb by lazy { "cc" }
+    }
+}
+
+</code></pre>
+
+==========
+In your example, <code>AA.bb</code> is <code>final</code>. <code>final</code>/<code>private</code>/<code><API label="None">equals</API>()</code>/<code><API label="None">hashCode</API>()</code> methods cannot be stubbed/verified by Mockito. You need to <API label="">mark</API> <code>bb</code> as <code>open</code>:
+
+<pre><code>
+open class AA(){
+    open val bb by lazy { "cc" }
+}
+
+</code></pre>
+
+You might also consider using <a href="https://github.com/nhaarman/mockito-kotlin" rel="nofollow">nhaarman/mockito-kotlin: Using Mockito with Kotlin</a>. e.g.:
+
+<pre><code>
+class GarbTest {
+    @Test
+    fun xx() {
+        val aa = <API label="">mock</API>() {
+            on { bb } doReturn "zz"
+        }
+    }
+
+   open class AA() {
+        val bb: String = "cc"
+    }
+}
+
+</code></pre>
+

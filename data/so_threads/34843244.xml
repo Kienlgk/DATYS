@@ -1,0 +1,93 @@
+https://stackoverflow.com/questions/34843244
+I'm trying to use Mockito framework with android instrumentation tests but I can't <API label="">initialize</API> it correctly. I have the following test class:
+
+<pre><code>
+class MainKontorTest extends ActivityInstrumentationTestCase2 {
+
+   @Mock Dependency bar;
+
+   @Override
+    public void setUp() {
+        super.setUp();
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    }
+
+   public void testSomething() {
+        Foo foo = new Foo(bar);
+    }
+}
+
+</code></pre>
+
+When I try to <API label="">run</API> this test, I <API label="">get</API> the following error and stacktrace:
+
+
+ java.lang.ExceptionInInitializerError 
+  at <API label="">org.mockito.internal.creation.cglib.ClassImposterizer.createProxyClass</API>(ClassImposterizer.java:95)
+  at <API label="">org.mockito.internal.creation.cglib.ClassImposterizer.imposterise</API>(ClassImposterizer.java:57)
+  at <API label="">org.mockito.internal.creation.cglib.ClassImposterizer.imposterise</API>(ClassImposterizer.java:49)
+  at <API label="">org.mockito.internal.creation.cglib.CglibMockMaker.createMock</API>(CglibMockMaker.java:24)
+  at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:33)
+  at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:59)
+  at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1285)
+  at <API label="">org.mockito.internal.configuration.MockAnnotationProcessor.process</API>(MockAnnotationProcessor.java:33)
+  at <API label="">org.mockito.internal.configuration.MockAnnotationProcessor.process</API>(MockAnnotationProcessor.java:16)
+  at <API label="">org.mockito.internal.configuration.DefaultAnnotationEngine.createMockFor</API>(DefaultAnnotationEngine.java:43)
+  at <API label="">org.mockito.internal.configuration.DefaultAnnotationEngine.process</API>(DefaultAnnotationEngine.java:66)
+  at org.mockito.internal.configuration.InjectingAnnotationEngine.processIndependentAnnotations(InjectingAnnotationEngine.java:71)
+  at <API label="">org.mockito.internal.configuration.InjectingAnnotationEngine.process</API>(InjectingAnnotationEngine.java:55)
+  at <API label="">org.mockito.MockitoAnnotations.initMocks</API>(MockitoAnnotations.java:108)
+  at org.arkadiy.moduledelegationsample.ui.main.MainKontorTest.setUp(MainKontorTest.java:20)
+  at junit.framework.TestCase.runBare(TestCase.java:132)
+  at junit.framework.TestResult$1.protect(TestResult.java:115)
+  at android.support.test.internal.runner.junit3.AndroidTestResult.runProtected(AndroidTestResult.java:77)
+  at <API label="">junit.framework.TestResult.run</API>(TestResult.java:118)
+  at <API label="">android.support.test.internal.runner.junit3.AndroidTestResult.run</API>(AndroidTestResult.java:55)
+  at <API label="">junit.framework.TestCase.run</API>(TestCase.java:124)
+  at <API label="">android.support.test.internal.runner.junit3.NonLeakyTestSuite$NonLeakyTest.run</API>(NonLeakyTestSuite.java:63)
+  at junit.framework.TestSuite.runTest(TestSuite.java:243)
+  at <API label="">junit.framework.TestSuite.run</API>(TestSuite.java:238)
+  at <API label="">android.support.test.internal.runner.junit3.DelegatingTestSuite.run</API>(DelegatingTestSuite.java:103)
+  at <API label="">android.support.test.internal.runner.junit3.AndroidTestSuite.run</API>(AndroidTestSuite.java:69)
+  at <API label="">android.support.test.internal.runner.junit3.JUnit38ClassRunner.run</API>(JUnit38ClassRunner.java:90)
+  at org.junit.runners.Suite.runChild(Suite.java:128)
+  at org.junit.runners.Suite.runChild(Suite.java:27)
+  at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+  at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+  at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+  at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+  at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+  at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+  at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:137)
+  at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:115)
+  at <API label="">android.support.test.internal.runner.TestExecutor.execute</API>(TestExecutor.java:54)
+  at android.support.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:240)
+  at <API label="">android.app.Instrumentation$InstrumentationThread.run</API>(Instrumentation.java:1869)
+  Caused by: org.mockito.cglib.core.CodeGenerationException: java.lang.reflect.InvocationTargetException-->null
+  at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:238)
+  at <API label="">org.mockito.cglib.core.KeyFactory$Generator.create</API>(KeyFactory.java:145)
+  at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:117)
+  at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:109)
+  at <API label="">org.mockito.cglib.core.KeyFactory.create</API>(KeyFactory.java:105)
+  at org.mockito.cglib.proxy.Enhancer.(Enhancer.java:70)
+  ... 40 more
+  Caused by: java.lang.reflect.InvocationTargetException
+  at <API label="">java.lang.reflect.Method.invoke</API>(Native Method)
+  at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:372)
+  at <API label="">org.mockito.cglib.core.ReflectUtils.defineClass</API>(ReflectUtils.java:385)
+  at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:220)
+  ... 45 more
+  Caused by: java.lang.UnsupportedOperationException: can't load this type of class file
+  at <API label="">java.lang.ClassLoader.defineClass</API>(ClassLoader.java:300)
+  ... 49 more
+
+
+How can I use Mockito with Instrumentation tests? I have tried using Mockito with newer <a href="http://developer.android.com/intl/es/training/testing/ui-testing/espresso-testing.html#build" rel="noreferrer">Rule api</a> but the error was the same.
+
+==========
+The mocks that Mockito creates are generated class files; however, Mockito is designed for use in a JVM, so out of the <API label="">box</API> it generates <code>.class</code> files using <code>cglib</code>. Android Instrumentation test cases <API label="">run</API> on devices or emulators, so they need Dalvik <code>.dex</code> files.
+
+You'll need to ensure you're including <a href="https://github.com/crittercism/dexmaker">DexMaker</a> on your classpath. The <a href="http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.crittercism.dexmaker%22">dexmaker-mockito</a> Maven project seems to be right, though it depends on Mockito 1.10.5, which is a few versions behind at this point.
+
+As a side note, unless you use the <a href="http://developer.android.com/tools/testing-support-library/index.html">Android Testing Support Library</a>, you will need to use JUnit3 semantics. You will not be able to use <code>@Rule</code> fields or custom test runners; you will also need to override <code>setUp</code> and <code>tearDown</code> (as opposed to <code>@Before</code> and <code>@After</code> annotations) and <API label="">name</API> your tests as <code>testFooBar</code> (as opposed to <code>@Test</code> annotations).
+

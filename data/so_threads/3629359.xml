@@ -1,0 +1,12 @@
+https://stackoverflow.com/questions/3629359
+Like the title says, i would like to get a thread-safe HashSet using Guava Collections.
+Are any available?
+
+==========
+This would be the right answer, Using the Sets class from Guava. Anyway the answer from @crhis was good intended.
+
+<pre><code>
+<API label="com.google.common.collect.Sets.newSetFromMap">Sets.newSetFromMap</API>(new ConcurrentHashMap());
+
+</code></pre>
+

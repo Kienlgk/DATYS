@@ -1,0 +1,104 @@
+https://stackoverflow.com/questions/19869247
+I'm using PowerMock (Mockito) to mock a subcall to another method in the same class. More specifically I have something like this:
+
+<pre><code>
+public class myClass{
+    public void MyMethod1(){
+        //do something
+        try{
+            myMethod2();
+        } catch (MyExceptionType e) {
+            //do something
+            throw e;
+        }
+    }
+
+   public int MyMethod2() throws MyExceptionType {...}
+}
+
+</code></pre>
+
+Now in my unit tests, I'm able to mock responses of MyMethod2 using a spy, and doing something like <code><API label="org.mockito.Mockito.doReturn">doReturn</API>(1).<API label="org.mockito.stubbing.Stubber.when">when</API>(myClass).myMethod2()</code>. However, something strange happens <API label="">when</API> I do something like this: <code><API label="org.mockito.Mockito.doThrow">doThrow</API>(myExeptionType).<API label="org.mockito.stubbing.Stubber.when">when</API>(myClass).myMethod2()</code>. When I call myClass.myMethod1() during my test, it throws a NullPointerException, but the strange bit is that if I use a debugger and inspect <code>throw e</code>, e is the correct exception of type MyExceptionType.
+
+Here's the stack trace of that NullPointerException:
+
+<pre><code>
+java.lang.NullPointerException
+    at java.util.Arrays$ArrayList.(Arrays.java:2842)
+    at <API label="">java.util.Arrays.asList</API>(Arrays.java:2828)
+    at <API label="">org.mockito.internal.exceptions.stacktrace.StackTraceFilter.filter</API>(StackTraceFilter.java:31)
+    at <API label="">org.mockito.internal.exceptions.stacktrace.ConditionalStackTraceFilter.filter</API>(ConditionalStackTraceFilter.java:23)
+    at <API label="">org.mockito.internal.invocation.realmethod.FilteredCGLIBProxyRealMethod.invoke</API>(FilteredCGLIBProxyRealMethod.java:29)
+    at <API label="">org.mockito.internal.invocation.InvocationImpl.callRealMethod</API>(InvocationImpl.java:108)
+    at <API label="">org.mockito.internal.stubbing.answers.CallsRealMethods.answer</API>(CallsRealMethods.java:36)
+    at <API label="">org.mockito.internal.handler.MockHandlerImpl.handle</API>(MockHandlerImpl.java:93)
+    at <API label="">org.mockito.internal.handler.NullResultGuardian.handle</API>(NullResultGuardian.java:29)
+    at <API label="">org.mockito.internal.handler.InvocationNotifierHandler.handle</API>(InvocationNotifierHandler.java:38)
+    at <API label="">org.mockito.internal.creation.MethodInterceptorFilter.intercept</API>(MethodInterceptorFilter.java:51)
+    at com.amazon.inventory.workflow.common.wrapper.FCContainerServiceWrapper$$EnhancerByMockitoWithCGLIB$$a0f00456.getContainerHierarchyDown()
+    at com.amazon.inventory.workflow.common.wrapper.containerservice.GetContainerHierarchyDownTest.runTest(GetContainerHierarchyDownTest.java:50)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:45)
+    at <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:15)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:42)
+    at <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:20)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:28)
+    at <API label="">org.powermock.modules.junit4.rule.PowerMockStatement.evaluate</API>(PowerMockRule.java:49)
+    at <API label="">org.junit.rules.ExpectedException$ExpectedExceptionStatement.evaluate</API>(ExpectedException.java:110)
+    at <API label="">org.junit.rules.RunRules.evaluate</API>(RunRules.java:18)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:263)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:68)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:47)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:231)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:60)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:229)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:50)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:222)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:300)
+    at org.junit.runners.Suite.runChild(Suite.java:128)
+    at org.junit.runners.Suite.runChild(Suite.java:24)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:231)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:60)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:229)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:50)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:222)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:300)
+    at <API label="">org.junit.runner.JUnitCore.run</API>(JUnitCore.java:148)
+    at com.intellij.junit4.JUnit4IdeaTestRunner.startRunnerWithArgs(JUnit4IdeaTestRunner.java:77)
+    at com.intellij.rt.execution.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:195)
+    at <API label="">com.intellij.rt.execution.junit.JUnitStarter.main</API>(JUnitStarter.java:63)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at <API label="">com.intellij.rt.execution.application.AppMain.main</API>(AppMain.java:120)
+
+</code></pre>
+
+Hopefully my question is not too confusing, thanks!
+
+==========
+Your comments and subsequent <API label="">answer</API> have revealed the problem.  You're trying to mock your exception object.  Mockito was not designed to be able to do this.  The reason is that exceptions are generally considered to be value objects.  They carry around information - a message, a stack trace, sometimes a reference to a second exception; but as a general rule, they don't actually have any functionality.
+
+The purpose of mocking any class is to get an object that has none of its own functionality, that is, none of its methods do anything, except where explicitly implemented within the test.  But an exception already fits that criterion, so there is nothing to be gained by mocking it.  The advice at <a href="http://www.mockobjects.com/2007/04/test-smell-everything-is-mocked.html" rel="nofollow">http://www.mockobjects.com/2007/04/test-smell-everything-is-mocked.html</a> is good advice indeed.
+
+So, you have a couple of options, both of which will solve your problem nicely.  
+
+(1) Create a real exception and use that in your test.  Depending on what constructors <code>MyException</code> has, this might look like this.
+
+<pre><code>
+MyException <API label="">toThrow</API> = new MyException("testing");
+<API label="org.mockito.Mockito.doThrow">doThrow</API>(<API label="">toThrow</API>).<API label="org.mockito.stubbing.Stubber.when">when</API>(someMock).someMethod();
+
+</code></pre>
+
+(2) Let Mockito create the exception object for you, by just specifying its class in the <code><API label="org.mockito.Mockito.doThrow">doThrow</API></code> call.
+
+<pre><code>
+<API label="org.mockito.Mockito.doThrow">doThrow</API>(MyException.class).<API label="org.mockito.stubbing.Stubber.when">when</API>(someMock).someMethod();
+
+</code></pre>
+

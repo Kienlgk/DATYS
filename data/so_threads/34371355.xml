@@ -1,0 +1,60 @@
+https://stackoverflow.com/questions/34371355
+I can't find how to do check with assertj the following (which is very common):
+
+Suppose I have:
+
+<pre><code>
+ result1 = {"AAA", "BBB"}
+ result2 = {"DDD"}
+
+</code></pre>
+
+I want to check the values in result is one of these:
+
+<pre><code>
+String[] valid = String[]{"AAA", "BBB", "CCC"};
+
+</code></pre>
+
+using assertj, whould be something as:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(result1).xxxx(valid);
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(result2).xxxx(valid);
+
+</code></pre>
+
+So that result1 would pass check, but result2 not.
+
+<API label="">contains</API>() does not work (it checks that result <API label="">contains</API> all valid elements)
+
+I don't want have to create a custom condition for this kind of checking
+
+Any idea?
+
+==========
+You can wtite it the other way around:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(valid).<API label="">contains</API>(result1);
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(valid).<API label="">contains</API>(result2);
+
+</code></pre>
+
+If you insist on having the result on the left and valid on the right side, you can use:
+
+<pre><code>
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(result1).<API label="org.assertj.core.api.ObjectArrayAssert.isSubsetOf">isSubsetOf</API>(<API label="None">Arrays.asList</API>(valid));
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(result2).<API label="org.assertj.core.api.ObjectArrayAssert.isSubsetOf">isSubsetOf</API>(<API label="None">Arrays.asList</API>(valid));
+
+</code></pre>
+
+Or, why not to define the valid as a set, rather than an <API label="">array</API>?
+
+<pre><code>
+Set valid = <API label="org.assertj.core.util.Sets.newHashSet">Sets.newHashSet</API>("AAA", "BBB", "CCC"); //Sets comes from google guava
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(result1).<API label="org.assertj.core.api.ObjectArrayAssert.isSubsetOf">isSubsetOf</API>(valid);
+<API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(result2).<API label="org.assertj.core.api.ObjectArrayAssert.isSubsetOf">isSubsetOf</API>(valid);
+
+</code></pre>
+

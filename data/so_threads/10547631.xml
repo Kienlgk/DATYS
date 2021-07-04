@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/10547631
+I have a collection of objects that I would like to <API label="">partition</API> into two collections, one of which passes a predicate and one of which fails a predicate. I was hoping there would be a <a href="http://code.google.com/p/guava-libraries/" rel="nofollow noreferrer">Guava</a> method to do this, but the closest they come is <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/collect/Collections2.html#<API label="">filter</API>-java.util.Collection-com.google.common.base.Predicate-" rel="nofollow noreferrer"><API label="com.google.common.collect.Collections2.filter">filter</API></a>, which doesn't give me the other collection.
+
+I would image the signature of the method would be something like this:
+
+<pre><code>
+public static  Pair, Collection <API label="">partition</API>(Collection source, Predicate predicate)
+
+</code></pre>
+
+I realize this is super fast to code myself, but I'm looking for an existing library method that does what I want.
+
+==========
+Use Guava's <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/collect/Multimaps.html#<API label="">index</API>-java.lang.Iterable-com.google.common.base.Function-" rel="nofollow noreferrer"><code><API label="com.google.common.collect.Multimaps.index">Multimaps.index</API></code></a>.
+
+Here is an example, which partitions a list of words into two <API label="">parts</API>: those which have <API label="">length</API> > 3 and those that don't.
+
+<pre><code>
+List words = <API label="">Arrays.asList</API>("foo", "bar", "hello", "world");
+
+ImmutableListMultimap partitionedMap = <API label="com.google.common.collect.Multimaps.index">Multimaps.index</API>(words, new Function(){
+    @Override
+    public Boolean <API label="None">apply</API>(String input) {
+        return <API label="None">input.length</API>() > 3;
+    }
+});
+<API label="None">System.out.println</API>(partitionedMap);
+
+</code></pre>
+
+prints:
+
+<pre><code>
+false=[foo, bar], true=[hello, world]
+
+</code></pre>
+

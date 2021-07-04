@@ -1,0 +1,60 @@
+https://stackoverflow.com/questions/34543874
+I don't understand the behaviour of Guava's Sets#<API label="">difference</API> about <API label="">isEmpty</API>() method :
+
+<pre><code>
+  public static  SetView <API label="">difference</API>(final Set set1, final Set set2) {
+    <API label="com.google.common.base.Preconditions.checkNotNull">checkNotNull</API>(set1, "set1");
+    <API label="com.google.common.base.Preconditions.checkNotNull">checkNotNull</API>(set2, "set2");
+
+   final Predicate notInSet2 = <API label="com.google.common.base.Predicates.not">Predicates.not</API>(<API label="com.google.common.base.Predicates.in">Predicates.in</API>(set2));
+    return new SetView() {
+      @Override public Iterator <API label="">iterator</API>() {
+        return <API label="com.google.common.collect.Iterators.filter">Iterators.filter</API>(<API label="None">set1.iterator</API>(), notInSet2);
+      }
+      @Override public int <API label="None">size</API>() {
+        return <API label="None">Iterators.size</API>(<API label="">iterator</API>());
+      }
+      @Override public boolean <API label="None">isEmpty</API>() {
+        return <API label="None">set2.containsAll</API>(set1);
+      }
+      @Override public boolean <API label="None">contains</API>(Object element) {
+        return <API label="None">set1.contains</API>(element) && !<API label="None">set2.contains</API>(element);
+      }
+  };
+}
+
+</code></pre>
+
+More precisely, I don't understand how <code><API label="None">set2.containsAll</API>(set1);</code> can be used as result of <code><API label="None">isEmpty</API>()</code>.
+
+With an example :
+
+
+set1 = A,B
+set2 = A,B,C,D,E
+
+
+the <API label="">difference</API> (C,D,E) will definitely <API label="">not</API> be empty.
+But <API label="com.google.common.collect.Sets.difference">Sets.difference</API>(set1, set2).<API label="">isEmpty</API>() will return true as (A,B,C,D,E).<API label="">containsAll</API>(A,B) is true.
+
+Even if the javadoc says that, I don't understand the logic :
+
+
+ {@code set2} may also contain elements <API label="">not</API> present <API label="">in</API> {@code set1}; these are simply ignored
+
+
+Am I mistaking ? Shall I fill an issue ?
+
+(I'm using guava-18.0)
+
+==========
+From the guava documentation of "public static  Sets.SetView <API label="com.google.common.collect.Sets.difference">difference</API>(Set set1, Set set2)":
+
+
+ The returned set <API label="">contains</API> all elements that are contained by set1 and <API label="">not</API> contained by set2
+
+
+As you can see none of your set1 meets these criteria, so the <API label="com.google.common.collect.Sets.difference"">difference</API> set is empty.
+
+Note that the <API label="">difference</API> method is <API label="">not</API> commutative for the arguments and the <API label="com.google.common.collect.Sets.difference"">difference</API> set is <API label="">not</API> (C, D, E) as you think when you call <code><API label="com.google.common.collect.Sets.difference"">difference</API>(set1, set2);</code>
+

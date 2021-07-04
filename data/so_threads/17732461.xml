@@ -1,0 +1,64 @@
+https://stackoverflow.com/questions/17732461
+I have a class which returns different Strings. I want to be able to stub all the methods in this class without having to explicitly stub each methods. Does mockito have stub by regex?
+
+Thanks 
+
+==========
+You can implement the <code>Answer</code> interface to do what you want.  Here's a test case showing it in action:
+
+<pre><code>
+package com.sandbox;
+
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+public class SandboxTest {
+
+   @Test
+    public void testMocking() {
+        Foo foo = <API label="">mock</API>(Foo.class, new Answer() {
+            @Override
+            public Object <API label="">answer</API>(InvocationOnMock invocation) throws Throwable {
+                String name = <API label="org.mockito.invocation.InvocationOnMock.getMethod">invocation.getMethod</API>().<API label="None">getName</API>();
+                if (<API label="None">name.contains</API>("get")) {
+                    return "this is a getter";
+                }
+                return null;
+            }
+        });
+
+       assertEquals("this is a getter", foo.getY());
+        assertEquals("this is a getter", foo.getX());
+    }
+
+   public static class Foo {
+        private String x;
+        private String y;
+
+       public String getX() {
+            return x;
+        }
+
+       public void setX(String x) {
+            this.x = x;
+        }
+
+       public String getY() {
+            return y;
+        }
+
+       public void setY(String y) {
+            this.y = y;
+        }
+    }
+
+}
+
+</code></pre>
+
+Instead of using <code><API label="">contains</API></code> you can use a regex matcher if you want.  
+

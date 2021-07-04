@@ -1,0 +1,72 @@
+https://stackoverflow.com/questions/29269408
+Is there any way to pull the <API label="None">count</API> from a <code>Multiset</code> into a list? 
+
+<pre><code>
+String[] data = loadStrings("data/data.txt"); 
+
+Multiset myMultiset = <API label="com.google.common.collect.ImmutableMultiset.copyOf">ImmutableMultiset.copyOf</API>(data);
+
+for (String word : <API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>(myMultiset).<API label="None">elementSet</API>()) {
+    <API label="None">System.out.println</API>(word + ": " + <API label="None">myMultiset.count</API>(word));
+    // ...
+}
+
+</code></pre>
+
+As it stands I can output the most commonly occurring words into the console in Processing. I was wondering if it is at all possible to add the corresponding words and their <API label="">count</API> into an array or a list. I have tried like so:
+
+<pre><code>
+for (String word : <API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>(myMultiset).<API label="None">elementSet</API>()) {
+    float a[] = <API label="None">myMultiset.count</API>(word);
+}
+
+</code></pre>
+
+but only received errors stating I cannot convert an <code>int</code> to a <code>float[]</code>
+
+Is this even possible? Am I going about it all wrong? I've never used <code>Multiset</code>s before so any help would be really useful
+
+UPDATE:
+I have used this to get a copy of the highest <API label="">count</API> but am unable to convert it into a list.
+
+<pre><code>
+Multiset sortedList = <API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>(myMultiset);
+
+</code></pre>
+
+==========
+Please see <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multiset.html#<API label="">entrySet</API>()" rel="nofollow"><code><API label="com.google.common.collect.Multiset.entrySet">Multiset.entrySet</API>()</code> docs</a>:
+
+
+ Returns a view of the contents of this multiset, grouped into Multiset.Entry instances, each providing an element of the multiset and the <API label="">count</API> of that element.
+
+
+So, i.e. to get the top 5 most occurring owrds, I'd loop over the <code><API label="">entrySet</API>()</code>:
+
+<pre><code>
+ImmutableMultiset top = <API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>(myMultiset);
+
+Iterator it = <API label="None">top.entrySet</API>().<API label="None">iterator</API>();
+
+for (int i = 0; (i < 5) && <API label="None">it.hasNext</API>(); i++) {
+    Multiset.Entry entry = <API label="None">it.next</API>();
+
+   String word = entry.getElement();
+    int <API label="">count</API> = <API label="None">entry.getCount</API>();
+
+   // do something fancy with word and <API label="">count</API>...
+}
+
+</code></pre>
+
+I'm assuming you need to show the top 5 most occurring words and their frequencies. If you only need the words, just use <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/ImmutableCollection.html#<API label="None">asList</API>()" rel="nofollow"><code><API label="None">asList</API>()</code></a> method:
+
+<pre><code>
+ImmutableMultiset top = <API label="com.google.common.collect.Multisets.copyHighestCountFirst">Multisets.copyHighestCountFirst</API>(myMultiset);
+
+ImmutableList list = <API label="None">top.asList</API>();
+
+</code></pre>
+
+and iterate over <code>list</code> to get the first 5 elements.
+

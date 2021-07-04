@@ -1,0 +1,107 @@
+https://stackoverflow.com/questions/17389563
+Suppose I have a validation annotation on my Interface method to <API label="">validate</API> input arguments and return value.
+Is it possible at the moment (V 1.9.5) to tell Mockito to <API label="">invoke</API> this validator during the invocation process?
+
+The background would be to prevent developers from writing unrealistic tests by mocking the given interface in a way that violates the specified validator.
+
+So what I would want is to register something like
+
+<pre><code>
+class MyAnswerInterceptor implements AnswerInterceptor {
+    @Override
+    public Answer <API label="">intercept</API>(final Answer <API label="">answer</API>) {
+        return new Answer() {
+            @Override
+            public T <API label="">answer</API>(InvocationOnMock invocation) throws Throwable {
+                validateArguments(invocation);
+                T result = <API label="org.mockito.Answers.answer">answer.answer</API>(invocation);
+                validateReturnValue(result);
+                return result;
+            }
+        }
+    }
+}
+
+</code></pre>
+
+to be called on every <API label="">answer</API> of a given mock.
+Is this possible at all? I've looked into the code, also to check if I could hack in at some point (even using reflection or the like), but it seems due to entanglement of instance creation and logic, it's hardly possible to achieve what I want (i.e. stuff like <code>MockHandler mockHandler = new <API label="org.mockito.internal.handler.MockHandlerFactory.MockHandlerFactory">MockHandlerFactory</API>().<API label="org.mockito.internal.handler.MockHandlerFactory.create">create</API>(settings);</code> makes it impossible to hook in and put custom stuff on top without patching and deploying the whole thing...)
+
+Any insight would be highly appreciated :-)
+
+==========
+You could achieve that by creating a custom <a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/plugins/MockMaker.html" rel="nofollow"><code>MockMaker</code></a>. 
+
+
+ MockMaker is an extension point that makes it possible to use custom dynamic proxies and avoid using the default cglib/asm/objenesis implementation
+
+
+Our custom implementation delegates all the complex stuff to the default <code>MockMaker</code>: <code><API label="">CglibMockMaker</API></code>. It "decorates" only the <a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/plugins/MockMaker.html#createMock(org.mockito.mock.MockCreationSettings,%20org.mockito.invocation.MockHandler)" rel="nofollow"><code><API label="org.mockito.plugins.MockMaker.createMock">createMock</API></code></a> method by registering on the <code>settings</code> parameter an <a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/listeners/InvocationListener.html" rel="nofollow"><code>InvocationListener</code></a>. This listener will be notified when an <code>invocation</code> have been done allowing use to call <code>validateArguments</code> and <code>validateReturnValue</code>.
+
+<pre><code>
+import org.mockito.internal.creation.CglibMockMaker;
+import org.mockito.invocation.Invocation;
+import org.mockito.invocation.MockHandler;
+import org.mockito.listeners.InvocationListener;
+import org.mockito.listeners.MethodInvocationReport;
+import org.mockito.mock.MockCreationSettings;
+import org.mockito.plugins.MockMaker;
+
+public class ValidationMockMaker implements MockMaker {
+    private final MockMaker delegate = new <API label="org.mockito.internal.creation.cglib.CglibMockMaker.CglibMockMaker">CglibMockMaker</API>();
+
+   public ValidationMockMaker() {
+    }
+    @Override
+    public  T <API label="">createMock</API>(MockCreationSettings settings, MockHandler handler) {
+        <API label="org.mockito.mock.MockCreationSettings.getInvocationListeners">settings.getInvocationListeners</API>().<API label="None">add</API>(new InvocationListener() {
+
+           @Override
+            public void <API label="">reportInvocation</API>(MethodInvocationReport methodInvocationReport) {
+                Invocation invocation = (Invocation) <API label="org.mockito.listeners.MethodInvocationReport.getInvocation">methodInvocationReport.getInvocation</API>();
+                validateArguments(<API label="org.mockito.invocation.Invocation.getArguments">invocation.getArguments</API>());
+                validateReturnValue(<API label="org.mockito.listeners.MethodInvocationReport.getReturnedValue">methodInvocationReport.getReturnedValue</API>());
+            }
+        });
+        return <API label="org.mockito.plugins.MockMaker.createMock">delegate.createMock</API>(settings, handler);
+    }
+
+   @Override
+    public MockHandler <API label="">getHandler</API>(Object mock) {
+        return <API label="org.mockito.plugins.MockMaker.getHandler">delegate.getHandler</API>(mock);
+    }
+
+   @Override
+    public void <API label="">resetMock</API>(Object mock, MockHandler newHandler, MockCreationSettings settings) {
+        <API label="org.mockito.plugins.MockMaker.resetMock">delegate.resetMock</API>(mock, newHandler, settings);
+    }
+
+   protected void validateArguments(Object... arguments) {
+//        <API label="None">Arrays.stream</API>(arguments).<API label="None">forEach</API>(Objects::requireNonNull);
+    }
+
+   private void validateReturnValue(Object result) {
+//        Objects.requireNonNull(result);
+    }
+}
+
+</code></pre>
+
+
+
+Last but not least, we need to tell to Mockito to use our implementation. This is possible by adding a file 
+
+<pre><code>
+mockito-extensions/org.mockito.plugins.MockMaker 
+
+</code></pre>
+
+containing our MockMaker class name: 
+
+<pre><code>
+ValidationMockMaker
+
+</code></pre>
+
+See <a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/plugins/MockMaker.html" rel="nofollow"><code>Using the extension point</code></a> section in the javadoc.
+

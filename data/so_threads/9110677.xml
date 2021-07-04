@@ -1,0 +1,83 @@
+https://stackoverflow.com/questions/9110677
+During deserialization of one of our data structure (using the default mechanism (no custom writeObject/<API label="">readObject</API>)), an instance of ImmutableMap$SerializedForm (from google's Guava library) shows up.
+
+Such an instance should not be visible from clients of guava because instances of SerializedForm are replaced using readResolve (see for example "writeReplace" in class com.google.common.collect.ImmutableMap).
+
+Hence deserialization fails with the following message : 
+
+<pre><code>
+java.lang.ClassCastException: cannot assign instance of com.google.common.collect.ImmutableMap$SerializedForm
+to field .. of type java.util.Map in instance of com.blah.C
+
+</code></pre>
+
+This is right since ImmutableMap$SerializedForm is not a <API label="">subtype</API> of java.util.Map, yet
+it should have been replaced. What is going wrong ?
+
+We have no custom writeObject/<API label="">readObject</API> in class com.blah.C. We do have custom serialization code in <API label="">parent</API> objects (that contain com.blah.C).
+
+update, here's the top of the stacktrace:
+
+<pre><code>
+java.lang.ClassCastException: cannot assign instance of com.google.common.collect.ImmutableSet$SerializedForm to field com.blah.ast.Automaton.bodyNodes of type java.util.Set in instance of com.blah.ast.Automaton
+at java.io.ObjectStreamClass$FieldReflector.setObjFieldValues(ObjectStreamClass.java:2039)
+at java.io.ObjectStreamClass.setObjFieldValues(ObjectStreamClass.java:1212)
+at java.io.ObjectInputStream.defaultReadFields(ObjectInputStream.java:1952)
+at java.io.ObjectInputStream.readSerialData(ObjectInputStream.java:1870)
+at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:1752)
+at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1328)
+at <API label="">java.io.ObjectInputStream.readObject</API>(ObjectInputStream.java:350)
+at <API label="">java.util.ArrayList.readObject</API>(ArrayList.java:593)
+at <API label="">sun.reflect.GeneratedMethodAccessor9.invoke</API>(Unknown Source)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:597)
+at java.io.ObjectStreamClass.invokeReadObject(ObjectStreamClass.java:974)
+at java.io.ObjectInputStream.readSerialData(ObjectInputStream.java:1848)
+at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:1752)
+at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1328)
+at java.io.ObjectInputStream.defaultReadFields(ObjectInputStream.java:1946)
+at java.io.ObjectInputStream.defaultReadObject(ObjectInputStream.java:479)
+at <API label="">com.blah.ast.AstNode.readObject</API>(AstNode.java:189)
+at <API label="">sun.reflect.GeneratedMethodAccessor10.invoke</API>(Unknown Source)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:597)
+at java.io.ObjectStreamClass.invokeReadObject(ObjectStreamClass.java:974)
+at java.io.ObjectInputStream.readSerialData(ObjectInputStream.java:1848)
+at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:1752)
+at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1328)
+at <API label="">java.io.ObjectInputStream.readObject</API>(ObjectInputStream.java:350)
+at <API label="">java.util.ArrayList.readObject</API>(ArrayList.java:593)
+at <API label="">sun.reflect.GeneratedMethodAccessor9.invoke</API>(Unknown Source)
+at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:25)
+at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:597)
+at java.io.ObjectStreamClass.invokeReadObject(ObjectStreamClass.java:974)
+at java.io.ObjectInputStream.readSerialData(ObjectInputStream.java:1848)
+at java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:1752)
+at java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1328)
+at java.io.ObjectInputStream.defaultReadFields(ObjectInputStream.java:1946)
+at java.io.ObjectInputStream.defaultReadObject(ObjectInputStream.java:479)
+at <API label="">com.blah.ast.AstNode.readObject</API>(AstNode.java:189)
+
+</code></pre>
+
+==========
+This week, we faced again this bug; but I found the root reason. The class loader used by ObjectInputStream is highly-context dependant (some would say indeterministic). Here is the relevant part of Sun's documentation (it's an excerpt from ObjectInputStream#resolveClass(ObjectStreamClass)):
+
+
+ [The class loader] is determined as follows: if there is a method on the current thread's stack whose declaring class was defined by a user-defined class loader (and was not a generated to implement reflective invocations), then it is the class loader corresponding to the closest such method to the currently executing frame; otherwise, it is null. If this call results in a ClassNotFoundException and the name of the passed ObjectStreamClass instance is the Java language keyword for a primitive type or void, then the Class object representing that primitive type or void will be returned (e.g., an ObjectStreamClass with the name "int" will be resolved to Integer.TYPE). Otherwise, the ClassNotFoundException will be thrown to the caller of this method. 
+
+
+In our application, we have an Eclipse plugin B that depends on an utility-only plugin A. We were deserializing objects whose classes are in B, but deserialization was initiated in A (creating an ObjectInputStream there), and that was the problem. Rarely (i.e. depending on the call stack as the doc says) deserialization chose the wrong class loader (one that could not load B-classses). To solve this problem, we passed an appropriate loader from the top-level deserialization caller (in B) to the utility method in A. This method now uses a custom ObjectInputStream as follows (note the free variable "loader"):
+
+<pre><code>
+ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file)) {
+                @SuppressWarnings("rawtypes")
+                @Override
+                protected Class resolveClass(ObjectStreamClass objectStreamClass)
+                        throws IOException, ClassNotFoundException {
+                    return Class.forName(<API label="None">objectStreamClass.getName</API>(), true, loader);
+                }
+            };
+
+</code></pre>
+

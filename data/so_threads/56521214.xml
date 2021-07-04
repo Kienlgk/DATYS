@@ -1,0 +1,176 @@
+https://stackoverflow.com/questions/56521214
+I have an async callback for that I wrote a junit test case. I am following <code>CountDownLatch</code> approach. If callback is failing I have to <API label="">fail</API> the test case. Here is my code
+
+<pre><code>
+    lock = new CountDownLatch(<API label="None">buildId.size</API>());
+    DockerBuildController controller = <API label="None">context.getBean</API>(DockerBuildController.class);
+    BuildService actualService = (BuildService) <API label="None">ReflectionTestUtils.getField</API>(controller, "buildService");
+    BuildService service = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(BuildService.class);
+    <API label="None">ReflectionTestUtils.setField</API>(controller, "buildService", service);
+    <API label="org.mockito.Mockito.doAnswer">Mockito.doAnswer</API>(new Answer() {
+        public Void <API label="">answer</API>(InvocationOnMock invocation) throws GitAPIException, IOException {
+            Object[] args = <API label="org.mockito.invocation.InvocationOnMock.getArguments">invocation.getArguments</API>();
+            <API label="">System.out.println</API>("called with arguments: " + <API label="None">Arrays.toString</API>(args));
+            actualService.dockerBuildCallback(args[0].<API label="None">toString</API>(), args[1].<API label="None">toString</API>(), args[2].<API label="None">toString</API>(),
+                    args[3].<API label="None">toString</API>(), args[4].<API label="None">toString</API>());
+            if (args[2].<API label="None">equals</API>("success")) {
+                lock.countDown();
+            } else {
+                try {
+                    Assert.assertTrue(<API label="None">buildId.contains</API>(args[0]) && args[2].<API label="None">equals</API>("success"));
+                } catch (AssertionError e) {
+                    actualService.dockerBuildCallback(args[0].<API label="None">toString</API>(), args[1].<API label="None">toString</API>(), "success",
+                            args[3].<API label="None">toString</API>(), args[4].<API label="None">toString</API>());
+                    lock.countDown();
+                    <API label="None">fail</API>(args[0] + " failed.");
+                }
+            }
+            return null;
+        }
+    }).<API label="org.mockito.Mockito.when">when</API>(service).dockerBuildCallback(<API label="org.mockito.Mockito.anyString">Mockito.anyString</API>(), <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>(), <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>(),
+            <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>(), <API label="org.mockito.Mockito.anyString">Mockito.anyString</API>());
+    try {
+        <API label="">lock.await</API>();
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    }
+
+</code></pre>
+
+I <code><API label="org.mockito.Mockito.doAnswer">doAnswer</API></code> catch I want to <API label="">fail</API> the test case. Its throwing the following AssertionError but in test report its showing test case green.
+
+<pre><code>
+java.lang.AssertionError: 2e58e41c-e4a9-4a71-909e-4b7cb822af9c failed.
+    at <API label="">org.junit.Assert.fail</API>(Assert.java:88)
+    at <API label="">com.walmart.vajra.test.fw.BaseTest$1.answer</API>(BaseTest.java:65)
+    at <API label="">com.walmart.vajra.test.fw.BaseTest$1.answer</API>(BaseTest.java:1)
+    at <API label="">org.mockito.internal.stubbing.StubbedInvocationMatcher.answer</API>(StubbedInvocationMatcher.java:39)
+    at <API label="">org.mockito.internal.handler.MockHandlerImpl.handle</API>(MockHandlerImpl.java:96)
+    at <API label="">org.mockito.internal.handler.NullResultGuardian.handle</API>(NullResultGuardian.java:29)
+    at <API label="">org.mockito.internal.handler.InvocationNotifierHandler.handle</API>(InvocationNotifierHandler.java:35)
+    at org.mockito.internal.creation.bytebuddy.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:63)
+    at org.mockito.internal.creation.bytebuddy.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:49)
+    at org.mockito.internal.creation.bytebuddy.MockMethodInterceptor$DispatcherDefaultingToRealMethod.interceptAbstract(MockMethodInterceptor.java:128)
+    at com.walmart.vajra.service.BuildService$MockitoMock$857778281.dockerBuildCallback(Unknown Source)
+    at com.walmart.vajra.controller.DockerBuildController.dockerBuildCallback(DockerBuildController.java:103)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)
+    at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:189)
+    at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:138)
+    at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:102)
+    at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:895)
+    at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:800)
+    at <API label="">org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle</API>(AbstractHandlerMethodAdapter.java:87)
+    at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1038)
+    at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:942)
+    at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1005)
+    at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:908)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:660)
+    at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:882)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:741)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:231)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at org.springframework.boot.actuate.web.trace.servlet.HttpTraceFilter.doFilterInternal(HttpTraceFilter.java:90)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at com.walmart.vajra.filters.VajraLocalThreadFilter.doFilterInternal(VajraLocalThreadFilter.java:56)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:320)
+    at <API label="">org.springframework.security.web.access.intercept.FilterSecurityInterceptor.invoke</API>(FilterSecurityInterceptor.java:127)
+    at org.springframework.security.web.access.intercept.FilterSecurityInterceptor.doFilter(FilterSecurityInterceptor.java:91)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:119)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:137)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:111)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:170)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:116)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:74)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.context.SecurityContextPersistenceFilter.doFilter(SecurityContextPersistenceFilter.java:105)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:56)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:334)
+    at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:215)
+    at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:178)
+    at <API label="">org.springframework.web.filter</API>.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:357)
+    at <API label="">org.springframework.web.filter</API>.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:270)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at <API label="">org.springframework.web.filter</API>.RequestContextFilter.doFilterInternal(RequestContextFilter.java:99)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at <API label="">org.springframework.web.filter</API>.FormContentFilter.doFilterInternal(FormContentFilter.java:92)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at <API label="">org.springframework.web.filter</API>.HiddenHttpMethodFilter.doFilterInternal(HiddenHttpMethodFilter.java:93)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetricsFilter.filterAndRecordMetrics(WebMvcMetricsFilter.java:117)
+    at org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetricsFilter.doFilterInternal(WebMvcMetricsFilter.java:106)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at <API label="">org.springframework.web.filter</API>.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:200)
+    at <API label="">org.springframework.web.filter</API>.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:107)
+    at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+    at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+    at <API label="">org.apache.catalina.core.StandardWrapperValve.invoke</API>(StandardWrapperValve.java:199)
+    at <API label="">org.apache.catalina.core.StandardContextValve.invoke</API>(StandardContextValve.java:96)
+    at <API label="">org.apache.catalina.authenticator.AuthenticatorBase.invoke</API>(AuthenticatorBase.java:490)
+    at <API label="">org.apache.catalina.core.StandardHostValve.invoke</API>(StandardHostValve.java:139)
+    at <API label="">org.apache.catalina.valves.ErrorReportValve.invoke</API>(ErrorReportValve.java:92)
+    at <API label="">org.apache.catalina.core.StandardEngineValve.invoke</API>(StandardEngineValve.java:74)
+    at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:343)
+    at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:408)
+    at <API label="">org.apache.coyote.AbstractProcessorLight.process</API>(AbstractProcessorLight.java:66)
+    at <API label="">org.apache.coyote.AbstractProtocol$ConnectionHandler.process</API>(AbstractProtocol.java:791)
+    at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1417)
+    at <API label="">org.apache.tomcat.util.net.SocketProcessorBase.run</API>(SocketProcessorBase.java:49)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+    at <API label="">java.util.concurrent.ThreadPoolExecutor$Worker.run</API>(ThreadPoolExecutor.java:624)
+    at <API label="">org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run</API>(TaskThread.java:61)
+    at <API label="">java.lang.Thread.run</API>(Thread.java:748)
+
+</code></pre>
+
+My requirement is to show this test as red.
+
+==========
+Following the <code>Arrange->Act->Assert</code> unit testing structure, there should not be any assertions in the Arrange phase (unless it is a guard assert which yours is not).
+
+The <code><API label="org.mockito.Mockito.doAnswer">doAnswer</API></code> functional interface is part of the <code>Arrange</code> phase of a unit test.
+
+It also may be the case that Mockito is swallowing that assertion exception for some reason.
+
+Try not to assert inside the <code><API label="org.mockito.Mockito.doAnswer">doAnswer</API></code> but set some kind of flag instead and do the check in the <code>Assert</code> phase:
+
+<pre><code>
+this.success = <API label="None">buildId.contains</API>(args[0]) && args[2].<API label="None">equals</API>("success");
+
+
+...
+// Assert
+<API label="None">assertThat</API>(this.success).<API label="None">isTrue</API>();
+
+</code></pre>
+

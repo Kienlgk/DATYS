@@ -1,0 +1,47 @@
+https://stackoverflow.com/questions/28994316
+We <API label="">have</API> a test suite that primarily uses JUnit assertions <API label="">with</API> Hamcrest matchers. One <API label="">of</API> our team started experimenting <API label="">with</API> <a href="http://joel-costigliola.github.io/assertj/">AssertJ</a> <API label="">and</API> impressed people <API label="">with</API> its syntax, flexibility <API label="">and</API> declarative-ness. There is one feature that JUnit provides that I can't <API label="">find</API> an equivalent for <API label="">in</API> AssertJ: adding a custom assert <API label="">failure</API> message.
+
+We're often comparing objects that <API label="">are</API> <API label="">not</API> made for human readability <API label="">and</API> will <API label="">have</API> random-seeming Ids or UUIDs <API label="">and</API> it's impossible <API label="">to</API> tell what they're supposed <API label="">to</API> be by the data they contain. This is an unavoidable situation for our codebase, sadly, <API label="">as</API> part <API label="">of</API> the purpose it fulfills is mapping data between other services without necessarily understanding what it is.
+
+In JUnit, the <a href="http://junit.org/apidocs/org/junit/Assert.html#<API label="">assertThat</API>(java.lang.String,%20T,%20org.hamcrest.Matcher)"><code><API label="">assertThat</API></code></a> method provides a version <API label="">with</API> a <code>String reason</code> parameter before the <code>Matcher</code> param. This makes it trivial <API label="">to</API> <API label="">add</API> a short debug string shedding some light on the problem, like what the <API label="">comparison</API> should mean <API label="">to</API> a human.
+
+AssertJ, on the other hand, provides a jillion different <a href="http://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/Assertions.html#<API label="">assertThat</API>(org.assertj.core.api.AssertProvider)">genericized <code>static <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API></code></a> methods which return some form <API label="">of</API> <a href="http://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/Assert.html">interface Assert</a> or one <API label="">of</API> its many implementing classes. This interface does <API label="">not</API> provide a standard way <API label="">of</API> setting a custom message <API label="">to</API> be included <API label="">with</API> failures.
+
+Is there any way <API label="">to</API> <API label="">get</API> this functionality <API label="">from</API> the AssertJ API or one <API label="">of</API> its extensions without <API label="">having</API> <API label="">to</API> <a href="http://joel-costigliola.github.io/assertj/assertj-core-custom-assertions.html"><API label="">create</API> a custom assert class for every assert type</a> we want <API label="">to</API> <API label="">add</API> messages <API label="">to</API>?
+
+==========
+And <API label="">in</API> classic fashion, I found what I was looking for moments after posting the question. Hopefully this will <API label="">make</API> it easier for the next person <API label="">to</API> <API label="">find</API> without first <API label="">having</API> <API label="">to</API> know what it's called. The magic method is the deceptively short-named <a href="https://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/AbstractAssert.html#<API label="">as</API>(java.lang.String,%20java.lang.Object...)" rel="noreferrer"><code><API label="None">as</API></code></a>, which is part <API label="">of</API> another interface that <code>AbstractAssert</code> implements: <a href="https://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/Descriptable.html" rel="noreferrer">Descriptable</a>, <API label="">not</API> the base Assert interface.
+
+
+ <code>public S <API label="">as</API>(String <API label="">description</API>, Object... args)</code>
+  
+  Sets the <API label="">description</API> <API label="">of</API> this object supporting <code><API label="">String.format</API>(String, Object...)</code> syntax.
+  Example :
+
+<pre><code>
+try {
+  // set a bad age <API label="">to</API> Mr Frodo which is really 33 years old.
+  frodo.setAge(50);
+  // you can specify a test <API label="">description</API> <API label="">with</API> <API label="org.assertj.core.api.Descriptable.as">as</API>() method or <API label="org.assertj.core.api.Descriptable.describedAs">describedAs</API>(), it supports String <API label="">format</API> args
+  <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(frodo.getAge()).<API label="org.assertj.core.api.AbstractAssert.as">as</API>("check %s's age", <API label="">frodo.getName</API>()).<API label="">isEqualTo</API>(33);
+} catch (AssertionError e) {
+  <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(e).<API label="">hasMessage</API>("[check Frodo's age] expected:<[33]> but was:<[50]>");
+}
+
+</code></pre>
+
+
+Where that quoted string <API label="">in</API> the catch block <code><API label="">hasMessage</API></code> is what appears <API label="">in</API> your unit test output log if the assertion fails.
+
+
+
+I found this by noticing the <code><API label="org.assertj.core.api.AbstractAssert.failWithMessage">failWithMessage</API></code> helper <API label="">in</API> the <a href="https://joel-costigliola.github.io/assertj/assertj-core-custom-assertions.html" rel="noreferrer">custom assert page</a> linked <API label="">in</API> the question. The <a href="https://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/AbstractAssert.html#<API label="">failWithMessage</API>(java.lang.String,%20java.lang.Object...)" rel="noreferrer">JavaDoc</a> for that method points out that it is protected, so it can't be used by callers <API label="">to</API> set a custom message. It does however mention the <code><API label="org.assertj.core.api.AbstractAssert.as">as</API></code> helper: 
+
+
+ Moreover, this method honors any <API label="">description</API> set <API label="">with</API> <code><API label="org.assertj.core.api.AbstractAssert.as">as</API>(String, Object...)</code> or overridden error message defined by the user <API label="">with</API> <code><API label="org.assertj.core.api.AbstractAssert.overridingErrorMessage">overridingErrorMessage</API>(String, Object...)</code>.
+
+
+... <API label="">and</API> the <a href="https://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/AbstractAssert.html#<API label="">overridingErrorMessage</API>(java.lang.String,%20java.lang.Object...)" rel="noreferrer"><API label="org.assertj.core.api.AbstractAssert.overridingErrorMessage">overridingErrorMessage</API></a> helper, which completely replaces the standard AssertJ <code>expected: ... but was:...</code> message <API label="">with</API> the new string provided.
+
+The AssertJ homepage doesn't mention either helper until the features highlights page, which shows examples <API label="">of</API> the <code><API label="">as</API></code> helper <API label="">in</API> the <a href="https://joel-costigliola.github.io/assertj/assertj-core-features-highlight.html#soft-assertions" rel="noreferrer">Soft Assertions</a> section, but doesn't directly <API label="">describe</API> what it does.
+

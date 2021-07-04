@@ -1,0 +1,125 @@
+https://stackoverflow.com/questions/60555861
+I have a handful of very similar projects, all Java, SpringBoot, and Maven.  All of them have one class with the same name, and almost identical contents.  I added an additional method in one of them, the class with the problem I'm going to <API label="">describe</API>, but I'm pretty sure that detail is a coincidence.
+
+Each project also has a test class corresponding to that very similar class, and the skeleton of that test class is identical in each class.  The test class has an <code>@InjectMocks</code> for the class under test (CUT), and two <code>@Mock</code> annotations, one of which corresponds to an instance variable of the CUT.
+
+The test class does have a <code>@Before</code> method that creates an instance variable used by the tests.
+
+All the variations of the test class have "<code>@RunWith(MockitoJUnitRunner.class)</code>".
+
+If I run one of the "good" tests and set a breakpoint on the first line of the @Before method and then look at the "this" variables in the variables pane, I see the types of the two @Mock-ed instance variables end with "$MockitoMock".
+
+If I do the same thing in the "bad" test, the types of the two @Mock-ed variables do NOT end with "<code>$MockitoMock</code>".  In fact, these appear to be normal instances of the corresponding classes, not mocked classes.
+
+Even more curious, in the "bad" test, I tried making explicit calls to "<code>instvar = <API label="org.mockito.Mockito.mock">mock</API>(clazz.class)</code>" in the <code>@Before</code> method, and after I step over those, the type of the instance variable is STILL not a mocked type, HOWEVER, when I click on the instance variable, the toString panel shows "<code>Mock for ..., <API label="">hashCode</API>: 1028811481</code>".  If I "Resume" at this point, I can hit a breakpoint in the allegedly mocked class, with that same instance whose toString value says "<code>Mock for ...</code>".
+
+That's the issue in words.  Now I guess I'll show some code.
+
+Here's part of the "bad" test class:
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class RestClientTest {
+    @InjectMocks
+    RestClient restClient;
+
+   @Mock
+    RestClientFactory restClientFactory;
+
+   @Mock
+    RestTemplate restTemplate;
+
+   HttpEntity requestEntity;
+
+   @Before
+    public void setup() {
+        requestEntity = new HttpEntity<>(new HttpHeaders());
+        restClientFactory   = <API label="org.mockito.Mockito.mock">mock</API>(RestClientFactory.class);
+        restTemplate        = <API label="org.mockito.Mockito.mock">mock</API>(RestTemplate.class);
+        <API label="None">ReflectionTestUtils.setField</API>(restClient, "restClientFactory", restClientFactory);
+    }
+
+</code></pre>
+
+Here's part of the "good" test class:
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class RestClientTest {
+    @InjectMocks
+    RestClient restClient;
+
+   @Mock
+    RestClientFactory restClientFactory;
+
+   @Mock
+    RestTemplate restTemplate;
+
+   HttpEntity requestEntity;
+
+   @Before
+    public void setup() {
+        requestEntity = new HttpEntity<>(new HttpHeaders());
+    }
+
+</code></pre>
+
+I've determined that both "good" and "bad" projects are using version 2.15.0 of mockito-core.
+
+Update:
+
+I tried stepping into the "<API label="org.mockito.Mockito.mock">mock</API>" call in the bad test, and set breakpoints there, because it goes here from annotation processing, so I can see the behavior of both the bad and good case.
+
+Here's what I saw in the good case:
+
+<a href="https://i.stack.imgur.com/gewic.png" rel="nofollow noreferrer"></a>
+
+I stepped over until line 65 and stepped into "<API label="None">createMock</API>()".  That put me in the MockUtil class:
+
+<a href="https://i.stack.imgur.com/Kl1Yu.png" rel="nofollow noreferrer"></a>
+
+The type of "mockMaker" is "org.mockito.internal.creation.bytebuddy.ByteBuddyMockMaker".
+
+I stepped to line 35 and stepped into the "<API label="None">mockMaker.createMock</API>()" method:
+
+<a href="https://i.stack.imgur.com/ppETS.png" rel="nofollow noreferrer"></a>
+
+Now let's <API label="">start</API> over and run the "bad" case:
+
+We first hit the initial breakpoint:
+<a href="https://i.stack.imgur.com/erc3K.png" rel="nofollow noreferrer"></a>
+
+And then here:
+<a href="https://i.stack.imgur.com/P0ea7.png" rel="nofollow noreferrer"></a>
+
+Now we see that the type of "mockMaker" is DIFFERENT from the good case.  The type is "org.mockito.internal.creation.bytebuddy.InlineByteBuddyMockMaker".
+
+I'm not going to continue to step through this, but this path does produce the "fake <API label="">mock</API>" with the different toString value.
+
+Now that I think about it, this instance is like a "spy" in that it's managed by Mockito, but all the methods call the original class method by default.  I have no clue why it takes a different path here.
+
+I would hope that this is enough information to give a clue to someone who better understands how this works.
+
+==========
+
+ The type of "mockMaker" [in the "good" case] is "org.mockito.internal.creation.bytebuddy.ByteBuddyMockMaker".
+
+
+
+
+
+ Now [in the "bad" case] we see that the type of "mockMaker" is DIFFERENT from the good case. The type is "org.mockito.internal.creation.bytebuddy.InlineByteBuddyMockMaker".
+
+
+So, the "good" project is using the default <API label="">mock</API>-maker, which uses subclassing — see <a href="https://github.com/mockito/mockito/blob/release/2.x/src/main/java/org/mockito/internal/creation/bytebuddy/ByteBuddyMockMaker.java" rel="nofollow noreferrer">ByteBuddyMockMaker.java</a> — while the "bad" project is using a non-default <API label="">mock</API>-maker that tries to use <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/instrument/package-summary.html" rel="nofollow noreferrer">Java instrumentation</a> to avoid subclassing: <a href="https://github.com/mockito/mockito/blob/release/2.x/src/main/java/org/mockito/internal/creation/bytebuddy/InlineByteBuddyMockMaker.java" rel="nofollow noreferrer">InlineByteBuddyMockMaker.java</a>. That matches up with the behavior difference that you observed
+
+According to the Javadoc for InlineByteBuddyMockMaker:
+
+
+ This <API label="">mock</API> maker must to be activated explicitly for supporting mocking final types and methods:
+  
+  This <API label="">mock</API> maker can be activated by creating the file <code>/mockito-extensions/org.mockito.plugins.MockMaker</code> containing the text <code><API label="">mock</API>-maker-inline</code> or <code>org.mockito.internal.creation.bytebuddy.InlineByteBuddyMockMaker</code>.
+
+
+So to figure out why this is happening, you should search in your classpath to find out how the <code>/mockito-extensions/org.mockito.plugins.MockMaker</code> resource is ending up in there.
+

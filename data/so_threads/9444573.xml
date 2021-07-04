@@ -1,0 +1,57 @@
+https://stackoverflow.com/questions/9444573
+I used <code>ToStringBuilder.reflectionToString(class)</code> in commons-lang, to implement <code><API label="None">toString</API>()</code> for simple DTOs. Now I'm trying to use Google Guava instead of Apache commons library. And I found <code>Objects.ToStringHelper</code> in Guava. But it's too verbose if there're lots of members in the class. For example:
+
+<pre><code>
+@Override
+public String <API label="">toString</API>() {
+    return <API label="com.google.common.base.MoreObjects.toStringHelper">MoreObjects.toStringHelper</API>(<API label="None">this.getClass</API>()).<API label="None">add</API>("name", name)
+            .<API label="None">add</API>("emailAddress", emailAddress)
+            .<API label="None">add</API>("department", department).<API label="None">add</API>("yearJoined", yearJoined)
+            .<API label="None">toString</API>();
+}
+
+</code></pre>
+
+is much simpler if I use commons-lang:
+
+<pre><code>
+@Override
+public String <API label="None">toString</API>() {
+    return ToStringBuilder.reflectionToString(this);
+}
+
+</code></pre>
+
+Is there any better ways to implement <code><API label="None">toString</API>()</code> with Guava, not with commons-lang?
+
+<a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/MoreObjects.html" rel="noreferrer">Guava docs</a>
+
+==========
+I have a little trick for Guava's <code><API label="com.google.common.base.MoreObjects.toStringHelper">com.google.common.base.MoreObjects.toStringHelper</API>()</code>. I configured IntelliJ IDEA to use it when auto-generating <code><API label="None">toString</API>()</code> methods. I assume you can do the same in Eclipse. Here's how to do it in Intellij:
+
+
+go inside a class
+hit Alt + Insert to popup the "Generate" menu
+choose <code><API label="">toString</API>()</code>
+click the "Settings" button
+go to the "Templates" tab
+create a new template named "Guava's <API label="com.google.common.base.MoreObjects.toStringHelper">MoreObjects.toStringHelper</API>()" (I did it by copying the "ToStringBuilder" template)
+change the template to:
+
+<pre><code>
+public String <API label="None">toString</API>() {
+#set ($autoImportPackages = "com.google.common.base.MoreObjects")
+    return <API label="com.google.common.base.MoreObjects.toStringHelper">MoreObjects.toStringHelper</API>(this)
+#foreach ($member in $members)
+    .<API label="None">add</API>("$member.name", $member.accessor)
+#end
+    .<API label="None">toString</API>();
+}
+
+</code></pre>
+save the template, <API label="">close</API> the "Settings" and "Generate <API label="None">toString</API>()" windows
+you can now choose the <code>Guava's <API label="com.google.common.base.MoreObjects.toStringHelper">MoreObjects.toStringHelper</API>()</code> template when generating <code><API label="None">toString</API>()</code> methods
+
+
+When you <API label="">add</API> a new field to the class, simply re-generate the <code><API label="None">toString</API>()</code> method (IDEA will ask you to confirm that you want to replace the existing <code><API label="None">toString</API>()</code> method).
+

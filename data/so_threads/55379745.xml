@@ -1,0 +1,82 @@
+https://stackoverflow.com/questions/55379745
+Mockito is hard to use <API label="">when</API> we need to <API label="">mock</API> overloaded methods <API label="">when</API> one of them is using varargs. Consider the below methods from Spring's <code>RestTemplate</code>
+
+<pre><code>
+void <API label="">put</API>(String url, Object request, Object... uriVariables) throws RestClientException;
+
+void <API label="">put</API>(String url, Object request, Map uriVariables) throws RestClientException;
+
+</code></pre>
+
+Mocking the second one is straight forward, but mocking the first one is not possible as using <code><API label="org.mockito.Mockito.any">any</API>()</code> would result in an ambiguous method call matching both the methods and there is no alternative to match just <code>Object...</code>
+
+Sharing the solution as Q & A that I arrived after putting some effort so as to help those in the same boat. All other alternatives welcome.
+
+==========
+Solution to this can be attempted by making use of the feature to provide a <code>defaultAnswer</code> to the <API label="">mock</API>. The defaultAnswer will evaluate that the invocation is for the specific method and perform the needed action, and let the invocation follow the natural flow if the required method is not targeted.
+
+This can be explained well with an example. Consider the two overloaded methods in the class below:
+
+<pre><code>
+public class StringConcat {
+    public String concatenate(int i, String... strings) {
+        return i + <API label="None">Arrays.stream</API>(strings).collect(Collectors.joining(","));
+    }
+
+   public String concatenate(int i, List strings) {
+        return i + <API label="None">strings.stream</API>().collect(Collectors.joining(","));
+    }
+}
+
+</code></pre>
+
+The second method can be mocked using Mockito like below:
+
+<pre><code>
+StringConcat stringConcat = <API label="org.mockito.Mockito.mock">mock</API>(StringConcat.class);
+<API label="org.mockito.Mockito.when">when</API>(stringConcat.concatenate(<API label="org.mockito.Mockito.anyInt">anyInt</API>(), <API label="org.mockito.Mockito.anyList">anyList</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("hardcoded value");
+
+</code></pre>
+
+To represent varargs, we do not have <code><API label="org.mockito.Mockito.anyVararg">anyVararg</API>()</code> method (deprecated and does not work, not sure if it worked in older versions). But the same can be handled by creating the <API label="">mock</API> with defaultAnswer like below:
+
+<pre><code>
+@Test
+void testWithDefaultAnswer(){
+    // Creating <API label="">mock</API> object with default <API label="">answer</API>
+    StringConcat stringConcat = <API label="org.mockito.Mockito.mock">mock</API>(StringConcat.class, invocation -> {
+        Method method = <API label="org.mockito.invocation.Invocation.getMethod">invocation.getMethod</API>();
+        if (<API label="None">method.getName</API>().<API label="None">contains</API>("concatenate") && 
+               <API label="None">method.getParameters</API>()[<API label="None">method.getParameters</API>().length-1].<API label="None">isVarArgs</API>()){
+            if(<API label="org.mockito.invocation.Invocation.getArguments">invocation.getArguments</API>().length>=method.getParameterCount()){
+                List varArgParams = <API label="None">Arrays.stream</API>(<API label="org.mockito.invocation.Invocation.getArguments">invocation.getArguments</API>())
+                          .<API label="None">skip</API>(method.getParameterCount()-1)
+                          .collect(<API label="None">Collectors.toList</API>());
+                return <API label="org.mockito.invocation.Invocation.getArguments">invocation.getArguments</API>()[0]+":"
+                      +<API label="None">varArgParams.toString</API>(); // mocked result <API label="">when</API> varargs provided
+            }
+            return ""+<API label="org.mockito.invocation.Invocation.getArguments">invocation.getArguments</API>()[0]; // mocked result <API label="">when</API> varargs not provided
+        }
+        return <API label="None">Answers.RETURNS_DEFAULTS.answer</API>(invocation); // Ensures seamless mocking of <API label="">any</API> other methods
+    });
+
+   // Mock <API label="">any</API> non varargs methods as needed
+    <API label="org.mockito.Mockito.when">when</API>(stringConcat.concatenate(<API label="org.mockito.Mockito.anyInt">anyInt</API>(), <API label="org.mockito.Mockito.anyList">anyList</API>())).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("hardcoded"); // mocking as usual
+
+   // Test the mocks
+    <API label="">System.out.println</API>(stringConcat.concatenate(1, "a", "b")); // default <API label="">answer</API> based <API label="">mock</API>, with varargs provided
+    <API label="">System.out.println</API>(stringConcat.concatenate(1)); // default <API label="">answer</API> based <API label="">mock</API>, without varargs provided
+    <API label="">System.out.println</API>(stringConcat.concatenate(1, <API label="None">Lists.newArrayList</API>("a", "b"))); // mocked non varargs method
+}
+
+</code></pre>
+
+Output:
+
+<pre><code>
+1:[a, b]
+1
+hardcoded
+
+</code></pre>
+

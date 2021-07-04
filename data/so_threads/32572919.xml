@@ -1,0 +1,54 @@
+https://stackoverflow.com/questions/32572919
+I have a <code>List</code> and am looking for the most efficient/elegant solution to loop over it, again and again (kind of like a round robin algorithm):
+
+<pre><code>
+// Returns a list of 20 widgets, with an id of 1 - 20 respectively.
+List widgets = getWidgets();
+Widget widget = pickWidget(); // Returns the 1st widget with id = 1.
+widget = pickWidget(); // Returns the 2nd widget with id = 2.
+widget = pickWidget(); // Return the 3rd widget with id = 3.
+// ..etc.
+widget = pickWidget(); // Returns the 19th widget with id = 19.
+widget = pickWidget(); // Returns the 20th widget with id = 20.
+widget = pickWidget(); // Returns the 1st widget with id = 1 (it <API label="">cycle</API> back).
+
+</code></pre>
+
+That's the usage, for the implementation the best I've been able to find is Guava's <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Iterables.html#<API label="None">cycle</API>(java.lang.Iterable)" rel="nofollow"><code><API label="com.google.common.collect.Iterables.cycle">Iterables.cycle</API>(...)</code></a>:
+
+<pre><code>
+Widget pickWidget() {
+    for(Widget w : <API label="com.google.common.collect.Iterables.cycle">Iterables.cycle</API>(widgets)) {
+        return w;
+    }
+}
+
+</code></pre>
+
+The problem is that <code><API label="None">cycle</API></code> doesn't leave a marker inside <code>widgets</code> so that it can "remember" where it let off the last time <code>pickWidget()</code> was called.
+
+Any ideas here? Apache's <code>CircularFifoQueue</code> seems close but no cigar, as I don't want anything popped off the queue, I just want it to <API label="">cycle</API> over the same list time and time again as it is called.
+
+========== 
+It doesn't need to leave any marker. The Iterator of the Iterable returned by <API label="None">cycle</API>() keeps that <API label="None">mark</API> internally. All you need is to keep a reference to this <API label="None">iterator</API>:
+
+<pre><code>
+private Iterator cyclingIterator = <API label="com.google.common.collect.Iterables.cycle">Iterables.cycle</API>(widgets).<API label="None">iterator</API>();
+
+public Widget pick() {
+    return <API label="None">cyclingIterator.next</API>();
+}
+
+</code></pre>
+
+Or simply, since you don't actually need the Iterable, but only the <API label="None">iterator</API>:
+
+<pre><code>
+private Iterator cyclingIterator = <API label="com.google.common.collect.Iterables.cycle">Iterators.cycle</API>(widgets);
+
+public Widget pick() {
+    return <API label="None">cyclingIterator.next</API>();
+}
+
+</code></pre>
+

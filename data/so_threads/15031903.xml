@@ -1,0 +1,13 @@
+https://stackoverflow.com/questions/15031903
+Say I have a guava Multimap.  I have a value, "Foo", that may belong to one or more <API label="">keys</API>.  Is there any way I can figure out which <API label="">keys</API> contain an entry "Foo"?
+
+==========
+You can invert the Multimap. For this you can use the method <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimaps.html#<API label="com.google.common.collect.Multimaps.invertFrom">invertFrom</API>%28com.google.common.collect.Multimap,%20M%29" rel="noreferrer"><code><API label="com.google.common.collect.Multimaps.invertFrom">Multimaps.invertFrom</API></code></a>.
+
+For example, if your Multimap is a <code>Multimap</code>
+
+<pre><code>
+Multimap invertedMultimap = <API label="com.google.common.collect.Multimaps.invertFrom">Multimaps.invertFrom</API>(myMultimap, <API label="ArrayListMultimap.create">ArrayListMultimap.create</API>());
+
+</code></pre>
+

@@ -1,0 +1,70 @@
+https://stackoverflow.com/questions/47087419
+<pre><code>Class Permission implements ContainerRequestContext
+{
+
+   @context
+    HttpServletRequest servletRequest;
+
+   public void <API label="">filter</API>(ContainerRequestContext containerRequestContext) throws IOException 
+    {
+        String Path=servletRequest.getPathInfo;
+
+       int id=<API label="None">containerRequestContext.getId</API>;
+
+       if(id==null){
+            containerRequestContext.abortWith(new ServerResponse(ExceptionUtil.getErrorMessageObject(...),errorCode,new Header()));
+        }
+    }
+}
+
+</code></pre>
+
+For the Testing purpose,
+
+How to fetch the <code>errorCode</code> set inside the <code>ServerResponse</code> object <API label="">when</API> we are setting the id=null.
+
+<pre><code>
+ @RunWith(MockitoJUnitRunner.class)
+    class Test {
+
+ @InjectMocks
+  private Permission permission;
+  @Mock
+  private HttpServletRequest servletRequest;
+  @Mock
+  private ContainerRequestContext containerRequestContext;
+
+ @Test
+  public void <API label="">test</API>()
+  {
+      <API label="org.mockito.Mockito.when">when</API>(servletRequest.getPathInfo()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("/getid");
+      <API label="org.mockito.Mockito.when">when</API>(<API label="None">containerRequestContext.getId</API>()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(null);
+      <API label="None">permission.filter</API>(containerRequestContext);
+
+     Response r = //Need the code. How to get the Response that i have set on permission class <API label="">when</API> id=null so that i can fetch the errorCode from that.
+  //With that erroCode i can write my <API label="">test</API> methods.
+  }
+}
+
+</code></pre>
+
+==========
+What you need is an <code>ArgumentCaptor</code>:
+
+<pre><code>
+ArgumentCaptor argumentCaptor = <API label="org.mockito.ArgumentCaptor.forClass">ArgumentCaptor.forClass</API>(Response.class);
+<API label="org.mockito.Mockito.verify">verify</API>(containerRequestContext).abortWith( <API label="org.mockito.ArgumentCaptor.capture">argumentCaptor.capture</API>() );
+
+</code></pre>
+
+This checks if the method <code>abortWith</code> has been called exactly once (once being the default for <code><API label="org.mockito.Mockito.verify">verify</API></code>) and stores the argument it has been called with in the <code>ArgumentCaptor</code> from which you can get it via...
+
+<pre><code>
+Response response = <API label="org.mockito.ArgumentCaptor.getValue">argumentCaptor.getValue</API>();
+
+</code></pre>
+
+For further details see the <a href="https://static.javadoc.io/org.mockito/mockito-core/2.11.0/org/mockito/ArgumentCaptor.html" rel="nofollow noreferrer">JavaDoc</a>.
+
+Of course, there are other ways (for example, you could use an <code>Answer</code>) but they are not as easy. 
+

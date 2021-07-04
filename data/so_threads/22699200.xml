@@ -1,0 +1,42 @@
+https://stackoverflow.com/questions/22699200
+Why guava's <code><API label="com.google.common.collect.Iterables.filter">Iterables.filter</API></code> wants superclass in predicate?
+
+<pre><code>
+public static  Iterable <API label="com.google.common.collect.Iterables.filter">filter</API>(final Iterable <API label="">unfiltered</API>, final Predicate predicate)
+
+</code></pre>
+
+Could you show me how I can <API label="">filter</API> objects of custom class ? I tried this
+
+I tried this
+
+<pre><code>
+Iterator it = tsp.getAllItems(getCustomerId(), "getId", <API label="">filter</API>);
+
+<API label="com.google.common.collect.Iterables.filter">com.google.common.collect.Iterables.filter</API>(it, new Predicate() {
+    @Override
+    public boolean <API label="com.google.common.base.Predicate.apply">apply</API>(Object input)
+    {
+        return false;
+    }
+});
+
+</code></pre>
+
+which fails with following compilation error. I'm confused.
+
+
+ Error:(132, 44) java:
+  C:\work\sideprojects\zzzz\SVN\inlineschedule-feature\test\cucumber\java\zzzz\com\zzz\cucumber\DBTestDriver.java:132:
+  cannot <API label="">find</API> symbol symbol  : method
+  <API label="">filter</API>(java.util.Iterator,>) location: class
+  com.google.common.collect.Iterables
+
+
+I'm using JDK6
+
+==========
+Your compilation error is due to the fact that you're passing an <code>Iterator</code> to <code><API label="com.google.common.collect.Iterables.filter">Iterables.filter</API></code>, which expects an <code>Iterable</code> as its first argument. You want <code><API label="com.google.common.collect.Iterators.filter">Iterators.filter</API></code>.
+
+It's unrelated to your actual problem, but since you asked: <code><API label="com.google.common.collect.Iterables.filter">Iterables.filter</API></code> takes a <code>Predicate</code> so that you can, for example, use a <code>Predicate</code> to <API label="">filter</API> a <code>List</code>. If the predicate can handle some supertype of the type you want to <API label="">filter</API>, you can use that predicate.
+

@@ -1,0 +1,63 @@
+https://stackoverflow.com/questions/27109768
+I'm using mockito and developping with java6 and spring. 
+
+I'm working on a test API for some developpers and I propose a few methods for mocking objects and methods (it's a legacy code...).
+Now, I want to replace all this things by mockito but I always propose a test API. So, I developped some methods using mockito. 
+
+I have an old method with two parameters (String). A first parameter is a mocked service id and its method with parameters. And the second parameter is the returned Object.
+Example : 
+
+<pre><code>
+mockReturnObject("myServiceId.myMethod(String, Integer)", myReturnedObject);
+
+</code></pre>
+
+Now, I want to use <API label="org.mockito.Mockito.mock">mock</API>, <API label="org.mockito.Mockito.when">when</API> and <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API> mockito methods, and I don't see how... 
+Perhaps with reflection but with "when" method it's impossible because mockito need the effective method. 
+How can I do that ? thanks.
+
+==========
+This is a bad idea: you're trying to reimplement some of the systems Mockito already provides while losing out on many of the features Mockito offers. However, there is a way to make this work, with some difficulty. The key is to write a <a href="http://docs.mockito.googlecode.com/hg/org/mockito/Mockito.html#11" rel="nofollow noreferrer" title="11. Stubbing with callbacks">custom Answer</a>, make it the <a href="http://docs.mockito.googlecode.com/hg/org/mockito/Mockito.html#<API label="">mock</API>(java.lang.Class,%20org.mockito.stubbing.Answer)" rel="nofollow noreferrer">default <API label="org.mockito.stubbing.Answer.answer">answer</API></a> for the <API label="">mock</API>, and then compare your object, method name, and method parameter types using <a href="http://docs.mockito.googlecode.com/hg/org/mockito/invocation/InvocationOnMock.html" rel="nofollow noreferrer">InvocationOnMock</a>.
+<pre><code>
+public class ReflectiveMockAnswer implements Answer {
+  @Override public Object <API label="">answer</API>(InvocationOnMock invocation) {
+    // Assume you've successfully parsed each String into a StubbedResponse, with
+    // Object target, String method, String[] argTypes, and Object returnValue.
+    // A Set would beat a for-loop here, should you need to optimize.
+    for (StubbedResponse stubbedResponse : allStubbedResponses) {
+      if (stubbedResponse.target == <API label="org.mockito.invocation.InvocationOnMock.getMock">invocation.getMock</API>()
+          && <API label="">stubbedResponse.method.equals</API>(<API label="org.mockito.invocation.InvocationOnMock.getMethod">invocation.getMethod</API>().<API label="None">getName</API>())
+          && stringArraysEqual(stubbedResponse.argTypes,
+              typeNamesFrom(<API label="org.mockito.invocation.InvocationOnMock.getMethod">invocation.getMethod</API>().<API label="None">getParameterTypes</API>())) {
+        return stubbedResponse.returnValue;
+      }
+    }
+    throw new RuntimeException("Unstubbed method called.");
+  }
+}
+
+// Later...
+Object yourMockObject = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(classToMock, new ReflectiveMockAnswer());
+
+</code></pre>
+At that point, you've implemented a simplified version of Mockito within and based on the full version of Mockito. You'll also need to:
+
+Parse the string into a StubbedResponse, probably with regular expressions
+Identify the field in your bean-under-test by name
+Replace that field with a <API label="">mock</API> of the appropriate class, created as above, before the bean-under-test has a chance to interact with it
+
+...and acknowledge that this solution doesn't handle:
+
+Verification
+Any sort of argument matching, including basic "<API label="">equals</API>" matching
+Name collisions in parameter types (com.foo.SomeClass vs com.bar.SomeClass)
+Repeated calls (<code><API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(1, 2, 3).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(new RuntimeException())</code>)
+
+...and cannot handle:
+
+Code search tools: you can only tell which methods are mocked other than by searching for strings, not with tools like "Find references" in Eclipse the way Mockito can
+Compile-time checking and automated refactoring tools: your tests would break at runtime if field names, method names, or parameters change; Mockito doesn't have that problem
+Final methods: Mockito can't, so you can't either
+
+Unless this is a "straw man" or very temporary solution, I recommend strongly to just introduce Mockito directly into your test cases, one test at a time.
+

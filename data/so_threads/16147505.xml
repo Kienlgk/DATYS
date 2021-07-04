@@ -1,0 +1,64 @@
+https://stackoverflow.com/questions/16147505
+I have the following classes:
+
+<pre><code>
+public class School{
+    List classRooms;
+}
+
+public class ClassRoom{
+    List students;
+}
+
+public class Student{
+    String name;
+    List typeIdList;
+}
+
+</code></pre>
+
+I need to get just the <code>typeId</code> that are a common factor among all students within the given class roomS.
+
+To be able to get all students within the given class roomS that has typeID=123, I do the following:
+
+<pre><code>
+final long typeIdToSearchFor = ...;
+Collection filtered = <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(students,
+    new Predicate() {
+        @Override
+        public boolean <API label="None">apply</API>(Student s) {
+            return s.typeId == typeIdToSearchFor;
+        }
+    }
+);
+
+</code></pre>
+
+Just wondering if Guava can handle something like that?
+By <API label="">intersection</API> I mean that it MUST occur at all instance to consider this type.
+
+I know that a <code>for</code> loop will be more readable but I just discover Guava capabilities.
+
+==========
+You can use a <a href="http://docs.guava-libraries.googlecode.com/git-history/release/javadoc/index.html?com/google/common/collect/Multiset.html" rel="nofollow"><code>Multiset</code></a> which can count occurrences:
+
+<pre><code>
+ClassRoom classRoom = /* comes from somewhere */;
+List students = classRoom.getStudents();
+
+// Aggregate all the typeIds.
+Multiset typeIds = <API label="com.google.common.collect.HashMultiset.create">HashMultiset.create</API>();
+for (Student student : students) {
+    // Assuming a student doesn't have duplicated typeIds:
+    <API label="None">typeIds.addAll</API>(student.getTypeIds());
+}
+
+// Find which typeIds are present for all the students.
+for (Multiset.Entry entry : <API label="None">typeIds.entrySet</API>()) {
+    if (<API label="None">entry.getCount</API>() == <API label="None">students.size</API>()) {
+        <API label="None">System.out.println</API>(entry.getElement());
+    }
+}
+
+</code></pre>
+

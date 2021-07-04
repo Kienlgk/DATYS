@@ -1,0 +1,106 @@
+https://stackoverflow.com/questions/24295197
+I have a problem <API label="">when</API> trying to match an array that is passed as a parameter to a method that receives a varargs array. 
+
+The anyVararg() matcher that is mentioned in other questions/answers doesn't work for me because I want to make sure the provided array is the one I need.
+
+I reduced the problem to this example which is easier to understand and abstracts the problem (my real issue is production code and has busines logic so it would be confusing for the purpose of this question):
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class UnitTest {
+    private Object[] objectArray;
+    private List expected;
+    private TestTarget target;
+
+   @Before
+    public void setUp() {
+        objectArray = new Object[]{ new Object() };
+        expected = <API label="None">Arrays.asList</API>(new Object(), new Object());
+        target = <API label="org.mockito.Mockito.spy">Mockito.spy</API>(new TestTarget());
+    }
+
+   @Test
+    public void testMakeList() { // this pass as <API label="org.mockito.Mockito.eq">eq</API> works well with normal array
+        <API label="org.mockito.Mockito.doReturn">doReturn</API>(expected).<API label="org.mockito.stubbing.Stubber.when">when</API>(target).<API label="None">toList</API>(<API label="org.mockito.Mockito.eq">Mockito.eq</API>(objectArray));
+        Assert.assertEquals(expected, target.makeList(objectArray));
+    }
+
+   @Test
+    public void testMakeList1() { // this one fails as <API label="">eq</API> is not working with varargs
+        <API label="org.mockito.Mockito.doReturn">doReturn</API>(expected).<API label="org.mockito.stubbing.Stubber.when">when</API>(target).toList1(<API label="org.mockito.Mockito.eq">Mockito.eq</API>(objectArray));
+        Assert.assertEquals(expected, target.makeList1(objectArray));
+    }
+
+   @Test
+    public void testMakeListWithAryEq() { // fails, <API label="">aryEq</API> is not working with varargs
+        <API label="org.mockito.Mockito.doReturn">doReturn</API>(expected).<API label="org.mockito.stubbing.Stubber.when">when</API>(target).toList1(<API label="org.mockito.AdditionalMatchers.aryEq">AdditionalMatchers.aryEq</API>(objectArray));
+        Assert.assertEquals(expected, target.makeList1(objectArray));
+    }
+
+   private class TestTarget {
+        public List makeList(Object[] objects) {
+            return <API label="None">toList</API>(objects);
+        }
+
+       public List makeList1(Object[] objects) {
+            return toList1(objects);
+        }
+
+       protected List <API label="">toList</API>(Object[] objs) {
+            return null;  // Not implemented "Intentionally"
+        }
+
+       protected List toList1(Object... objs) {
+            return null;  // Not implemented "Intentionally"
+        }
+    }
+}
+
+</code></pre>
+
+When I run the test cases in the class, the first test case will pass but not the other two, neither using <API label="org.mockito.Mockito.eq">eq</API> nor using <API label="org.mockito.AdditionalMatchers.aryEq">aryEq</API>. Showing the following trace:
+
+<pre><code>
+java.lang.AssertionError: expected:<[java.lang.Object@56d5e457, java.lang.Object@7482384a]> but was:
+    at <API label="">org.junit.Assert.fail</API>(Assert.java:88)
+    at org.junit.Assert.failNotEquals(Assert.java:743)
+    at org.junit.Assert.assertEquals(Assert.java:118)
+    at org.junit.Assert.assertEquals(Assert.java:144)
+    ...
+
+</code></pre>
+
+This happens because the <API label="org.mockito.Mockito.eq">eq</API> matcher is not working with varargs arrays, is there any alternative to the <API label="org.mockito.Mockito.eq">eq</API> matcher for this use case?
+
+==========
+Ok, I think the answer here requires a custom built matcher, which can be implemented in your unit test as so:
+
+<pre><code>
+private class MyVarargMatcher extends ArgumentMatcher implements VarargMatcher {
+    private Object[] expectedValues;
+
+   MyVarargMatcher(Object... expectedValues) {
+        this.expectedValues = expectedValues;
+    }
+
+   @Override
+    public boolean <API label="">matches</API>(Object varargArgument) {
+        return new <API label="org.mockito.internal.matchers.apachecommons.EqualsBuilder.EqualsBuilder">EqualsBuilder</API>()
+        .append(expectedValues, varargArgument)
+        .isEquals();
+    }
+}
+
+</code></pre>
+
+Then, in <code>testMakeList1()</code> change the first line to this:
+
+<pre><code>
+<API label="org.mockito.Mockito.doReturn">Mockito.doReturn</API>(expected).<API label="org.mockito.stubbing.Stubber.when">when</API>(target).toList1(<API label="org.mockito.Mockito.argThat">Mockito.argThat</API>(new MyVarargMatcher(objectArray)));
+
+</code></pre>
+
+Sources:
+<a href="https://stackoverflow.com/questions/2631596/how-to-properly-match-varargs-in-mockito">How to properly match varargs in Mockito</a> 
+<a href="http://maciejmadej.blogspot.com/2011/11/capturing-varargs-argument-using-custom.html" rel="nofollow noreferrer">http://maciejmadej.blogspot.com/2011/11/capturing-varargs-argument-using-custom.html</a>
+

@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/26938002
+I am using <code>guava-18.0</code> and <code>java1.6</code>
+
+Given codes below:
+
+<pre><code>
+String host = null;
+host = new URI(this.domain).<API label="None">getHost</API>();
+        Pattern p = <API label="None">Pattern.compile</API>("[a-zA-Z]");
+        Matcher m = <API label="None">p.matcher</API>(host);
+        if(<API label="None">m.find</API>()){
+            InternetDomainName domainName = <API label="com.google.common.net.InternetDomainName.from">InternetDomainName.from</API>(host);
+            this.domain = <API label="com.google.common.net.InternetDomainName.topPrivateDomain">domainName.topPrivateDomain</API>().<API label="None">name</API>();
+            <API label="None">System.out.println</API>(this.domain);
+        }
+        else
+            this.domain = host;
+
+</code></pre>
+
+When running ant to build, it gives such error message:
+
+<pre><code>
+[javac] symbol  : method <API label="None">name</API>()
+[javac] location: class com.google.common.net.InternetDomainName
+[javac]                             this.domain = <API label="com.google.common.net.InternetDomainName.topPrivateDomain">domainName.topPrivateDomain</API>().<API label="None">name</API>();
+[javac]                                                                        ^
+[javac] Note: Some input files use unchecked or unsafe operations.
+[javac] Note: Recompile with -Xlint:unchecked for details.
+[javac] 1 error
+
+</code></pre>
+
+the method <code><API label="com.google.common.net.InternetDomainName.topPrivateDomain">topPrivateDomain</API></code> returns a <code>InternetDomainName</code> object and it do has a method called <code><API label="">name</API>()</code>. What's the problem?
+
+==========
+<a href="http://docs.guava-libraries.googlecode.com/git-history/v18.0/javadoc/com/google/common/net/InternetDomainName.html" rel="nofollow"><code>InternetDomainName</code></a> does not have a <code><API label="None">name</API>()</code> method. It did up until 15.0, but it was removed in 16.0. Use <code><API label="">toString</API>()</code>.
+

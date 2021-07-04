@@ -1,0 +1,38 @@
+https://stackoverflow.com/questions/35453992
+Hi I am new to google guava collections so I need collection which will expire some time period.So I have <API label="">write</API> following code but it is not removing data after expire time.Can anyone tell me what is the issue of code.
+
+<pre><code>
+Cache cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+                .<API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API>(2, TimeUnit.MILLISECONDS)
+                .<API label="com.google.common.cache.CacheBuilder.build">build</API>();
+        Object object = new Object();            
+        <API label="com.google.common.cache.Cache.put">cache.put</API>(<API label="None">object.getId</API>(), object);
+        <API label="None">System.out.println</API>("<API label="">size</API> :" + <API label="com.google.common.cache.Cache.size">cache.size</API>());
+        Thread.sleep(50000);
+        <API label="None">System.out.println</API>("After Size :" + <API label="com.google.common.cache.Cache.size">cache.size</API>());
+
+</code></pre>
+
+I need to <API label="">add</API> objects to map and after expire time period it will <API label="">remove</API> from map.But above code after and before thread <API label="">contains</API> object in map.
+
+==========
+The javadoc of <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/cache/CacheBuilder.html#<API label="">expireAfterAccess</API>-long-java.util.concurrent.TimeUnit-" rel="nofollow noreferrer"><code><API label="com.google.common.cache.CacheBuilder.expireAfterAccess">expireAfterAccess</API></code></a> states:
+
+
+ Expired entries may be counted in <code><API label="com.google.common.cache.Cache.size">Cache.size</API>()</code>, but will never be visible to read or <API label="">write</API> operations. Expired entries are cleaned up as part of the routine maintenance described in the class javadoc.
+
+
+That means that even though the entries are counted with <code>.<API label="com.google.common.cache.Cache.size">size</API>()</code>, they won't be visible on any other operation.
+
+These invalid entries will be removed automatically. According to the javadoc, this happens at the following situations:
+
+
+The entry is accessed using <API label="com.google.common.cache.Cache.get">get</API>: The map sees the entry is outdated and removes it directly.
+On occasional cache accesses: Sometimes accessing the <code>.<API label="com.google.common.cache.Cache.get">get</API>()</code> method will trigger the internal cleanup, the javadoc doesn't define any period for this.
+Manual calls to <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/cache/Cache.html#<API label="">cleanUp</API>--" rel="nofollow noreferrer"><code><API label="com.google.common.cache.Cache.cleanUp">Cache.cleanUp</API>()</code></a>:This trigger the cleanup routine directly and removes all outdated entries.
+
+
+More information seems to be explained in the <a href="https://github.com/google/guava/wiki/CachesExplained#user-content-when-does-cleanup-happen" rel="nofollow noreferrer">Github Wiki of the cache class</a>.
+
+If you want to be notices when an entry is removed, you can use a <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/cache/RemovalListener.html" rel="nofollow noreferrer">RemovalListener</a>. You can set this listener on the cachebuilder using <a href="https://google.github.io/guava/releases/23.0/api/docs/com/google/common/cache/CacheBuilder.html#<API label="">removalListener</API>-com.google.common.cache.RemovalListener-" rel="nofollow noreferrer"><code>.<API label="com.google.common.cache.CacheBuilder.removalListener">removalListener</API>(...)</code></a>.
+

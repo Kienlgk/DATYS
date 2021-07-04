@@ -1,0 +1,52 @@
+https://stackoverflow.com/questions/58243274
+I would like to <API label="">build</API> a Guava <a href="https://guava.dev/releases/snapshot/api/docs/com/google/common/graph/ImmutableGraph.html" rel="nofollow noreferrer"><code>ImmutableGraph</code></a> given a set <API label="">of</API> <API label="">nodes</API> (starting points) and a <a href="https://guava.dev/releases/snapshot/api/docs/com/google/common/graph/SuccessorsFunction.html" rel="nofollow noreferrer"><code>SuccessorsFunction</code></a>. The graph would contain all the <API label="">nodes</API> reachable <API label="">from</API> any <API label="">of</API> the starting node and all the <API label="">edges</API> seen on the way thanks to the <code>SuccessorsFunction</code>. (E.g., given starting node <code>{a}</code> and <API label="">successors</API> <code>a → b</code> and <code>b → c</code>, the resulting graph should be <code>{(a, b), (b, c)}</code>.)
+
+I see how I can obtain a <a href="https://guava.dev/releases/snapshot/api/docs/com/google/common/graph/Traverser.html" rel="nofollow noreferrer"><code>Traverser</code></a> to explore the reachable <API label="">nodes</API> in a certain order, given starting <API label="">nodes</API> and a <code>SuccessorsFunction</code>, but it does not meet my needs as I want to obtain a graph, not just the <API label="">nodes</API>.
+
+It is not very hard to define an algorithm that does this, but it’s subtle enough to deserve trying to re-use an existing solution. I would be surprised if it didn’t exist already in the library. Does it? Or is this requirement not sensible?
+
+I didn’t find this in the related <a href="https://github.com/google/guava/wiki/GraphsExplained" rel="nofollow noreferrer">wiki</a> page.
+
+==========
+Guava doesn't have this feature built in, so you'll need a custom solution that does some sort <API label="">of</API> graph traversal (like breadth-first traversal), like the following code snippet.
+
+<pre><code>
+public static  ImmutableGraph buildGraphWithBreadthFirstTraversal(
+    Iterable startingNodes, SuccessorsFunction successorsFunction) {
+  ImmutableGraph.Builder builder = <API label="None">GraphBuilder.directed</API>().<API label="None">immutable</API>();
+  Queue nodesRemaining = <API label="None">Queues.newArrayDeque</API>(startingNodes);
+  Set visited = <API label="None">Sets.newHashSet</API>(startingNodes);
+  while (!<API label="None">nodesRemaining.isEmpty</API>()) {
+    N next = <API label="None">nodesRemaining.remove</API>();
+    for (N successor : <API label="None">successorsFunction.successors</API>(next)) {
+      if (!<API label="None">visited.contains</API>(successor)) {
+        <API label="None">nodesRemaining.add</API>(successor);
+        <API label="None">visited.add</API>(successor);
+        <API label="None">builder.putEdge</API>(next, successor);
+      }
+    }
+  }
+  return <API label="None">builder.build</API>();
+}
+
+</code></pre>
+
+Here is a basic JUnit 5 unit test that confirms the code works when given a starting node and a <code>successorsFunction</code> that together form a <API label="">cycle</API> <API label="">of</API> <code>1 -> 2 -> 4 -> 1</code>.
+
+<pre><code>
+@Test
+void succeedsOnTraversalWithCycle() {
+  ImmutableGraph graph =
+      buildGraphWithBreadthFirstTraversal(
+          <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(1),
+          node -> node <= 2 ? <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(node * 2) : <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(1));
+
+ <API label="None">assertThat</API>(<API label="None">graph.nodes</API>()).<API label="None">containsExactlyInAnyOrder</API>(1, 2, 4);
+  <API label="None">assertThat</API>(<API label="None">graph.edges</API>())
+      .<API label="None">containsExactlyInAnyOrder</API>(
+          <API label="com.google.common.graph.EndpointPair.ordered">EndpointPair.ordered</API>(1, 2),
+          <API label="com.google.common.graph.EndpointPair.ordered">EndpointPair.ordered</API>(2, 4));
+}
+
+</code></pre>
+

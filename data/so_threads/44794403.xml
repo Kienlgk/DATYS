@@ -1,0 +1,182 @@
+https://stackoverflow.com/questions/44794403
+I am new in mockito framework, and I have a very basic question regarding this, why exactly we are using MockitoJunitRunner class in our junit test class. Also I found the following two points related to this but couldn't <API label="">get</API> it, can any one explains following two points in detail 
+
+The automatic validation of framework usage is actually worth having. It gives you better reporting if you make one of these mistakes.
+
+
+You call <API label="org.mockito.Mockito.verify">verify</API> on a <API label="">mock</API>, but forget to provide the method call that
+you are trying to <API label="">verify</API>.
+You call one of the <API label="">when</API> methods (either the static one, or the one
+<API label="">after</API> doReturn, doThrow or doAnswer) and pass a <API label="">mock</API>, but forget to
+provide the method that you are trying to stub.
+
+
+==========
+Using <code>MockitoJunitRunner</code> rather than <code>JunitRunner</code> is really optional.
+
+
+ The automatic validation of framework usage is actually worth having.
+  It gives you better reporting if you make one of these mistakes.
+
+
+The main advantage provided by <code>MockitoJunitRunner</code> is relieving you to explicitly invoke <code><API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(Object)</code> <API label="">when</API> you use the <code>@Mock</code> way to create your mocks.
+
+But you could also <API label="">get</API> a few more misuse reports of the Mockito framework by using this runner that may be missing without using it.
+
+The javadoc of the <code>Mockito 1.10.19</code> version states :
+
+
+ Compatible with JUnit 4.4 and higher, this runner adds following
+  behavior:
+  
+  
+  Initializes mocks annotated with Mock, so that explicit usage of
+  <code><API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(Object)</code> is not necessary. Mocks are
+  initialized before each test method.
+  validates framework usage <API label="">after</API> each test method. See javadoc for
+  <API label="org.mockito.Mockito.validateMockitoUsage">Mockito.validateMockitoUsage</API>().
+  
+
+
+And the most important part :
+
+
+ Runner is completely optional - there are other ways you can <API label="">get</API> @Mock
+  working, for example by writing a base class. Explicitly validating
+  framework usage is also optional because it is triggered automatically
+  by Mockito every time you use the framework. See javadoc for
+  <code><API label="org.mockito.Mockito.validateMockitoUsage">Mockito.validateMockitoUsage</API>()</code>.
+
+
+Example of incorrect uses that may be caught out of the box without using the <code>MockitoJunitRunner</code> :
+
+<pre><code>
+ //Oops, <API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>() part is missing:
+ <API label="org.mockito.Mockito.when">when</API>(<API label="">mock</API>.<API label="None">get</API>());
+
+//Oops, verified method call is inside <API label="">verify</API>() where it should be on the outside:
+ <API label="org.mockito.Mockito.verify">verify</API>(<API label="">mock</API>.<API label="None">execute</API>());
+
+//Oops, missing method to <API label="">verify</API>:
+ <API label="org.mockito.Mockito.verify">verify</API>(<API label="">mock</API>);
+
+</code></pre>
+
+But these could not be caught in all cases.
+
+The <code><API label="org.mockito.Mockito.validateMockitoUsage">Mockito.validateMockitoUsage</API>()</code> method that is invoked by the runner and the framework itself gives more explanations about it but in fact it is not complete.
+
+
+ <code><API label="org.mockito.Mockito.validateMockitoUsage">validateMockitoUsage</API>()</code> explicitly validates the framework state to
+  detect invalid use of Mockito. However, this feature is optional
+  because Mockito validates the usage all the time... but there is a
+  gotcha so read on.
+
+
+Ok. Go on.
+
+
+ Mockito throws exceptions if you misuse it so that you know if your
+  tests are written correctly. The gotcha is that Mockito does the
+  validation next time you use the framework (e.g. next time you <API label="">verify</API>,
+  stub, call <API label="org.mockito.Mockito.mock">mock</API> etc.). But even though the exception might be thrown
+  in the next test, the exception message contains a navigable stack
+  trace element with location of the defect. Hence you can click and
+  find the place where Mockito was misused.
+
+
+So, the framework does the validation the next time you use the framework (<API label="">verify</API>, stub, call <API label="org.mockito.Mockito.mock">mock</API>,etc..).
+In fact it is true but not always.
+
+For example this misuse will be caught by the framework :
+
+<pre><code>
+@Test
+public void testBadUseWhen() throws Exception {
+   Address <API label="">mock</API> = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Address.class);
+   <API label="org.mockito.Mockito.verify">Mockito.verify</API>(<API label="">mock</API>.getAddressLine());
+}
+
+</code></pre>
+
+
+ org.mockito.exceptions.misusing.NullInsteadOfMockException: Argument
+  passed to <API label="org.mockito.Mockito.verify">verify</API>() should be a <API label="">mock</API> but is null!
+
+
+But this misuse will not be caught :
+
+<pre><code>
+@Test
+public void testBadUseWhen() throws Exception {
+  Address <API label="">mock</API> = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Address.class);
+  <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="">mock</API>.getAddressLine());
+}
+
+</code></pre>
+
+While if I add a new use of Mockito <API label="">after</API> this uncaught misuse, this time we will <API label="">get</API> a validation exception :
+
+<pre><code>
+@Test
+public void testBadUseWhen() throws Exception {
+    Address <API label="">mock</API> = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(Address.class); 
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="">mock</API>.getAddressLine());
+    <API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="">mock</API>.getAddressLine());
+}
+
+</code></pre>
+
+
+ org.mockito.exceptions.misusing.UnfinishedStubbingException:
+  Unfinished stubbing detected here
+
+
+It will be raised for the second <code><API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="">mock</API>.getAddressLine());</code> statement invoked but the exception will reference the  first <code><API label="org.mockito.Mockito.when">Mockito.when</API>(<API label="">mock</API>.getAddressLine());</code> statement invoked.
+
+It means that for some bad uses of the framework, you could lose the report information if the last mockito method you are used is incorrectly used.
+
+The javadoc states then :
+
+
+ Sometimes though, you might want to validate the framework usage
+  explicitly. For example, one of the users wanted to put
+  <API label="org.mockito.Mockito.validateMockitoUsage">validateMockitoUsage</API>() in his @After method so that he knows
+  immediately <API label="">when</API> he misused Mockito. Without it, he would have known
+  about it not sooner than next time he used the framework. One more
+  benefit of having <API label="org.mockito.Mockito.validateMockitoUsage">validateMockitoUsage</API>() in @After is that jUnit
+  runner and rule will always fail in the test method with defect
+  whereas ordinary 'next-time' validation might fail the next test
+  method. But even though JUnit might report next test as red, don't
+  worry about it and just click at navigable stack trace element in the
+  exception message to instantly locate the place where you misused
+  mockito.
+
+
+So, to not loosing a potentially misuse for the last one Mockito method invoked during a test class, you can explicitly invoke <code><API label="org.mockito.Mockito.validateMockitoUsage">Mockito.validateMockitoUsage</API>()</code> <API label="">after</API> each tested method.
+
+So this will do the trick :
+
+<pre><code>
+@After
+public void <API label="">after</API>() {
+    <API label="org.mockito.Mockito.validateMockitoUsage">Mockito.validateMockitoUsage</API>();
+}
+
+</code></pre>
+
+The alternative is using the <code>MockitoJUnitRunner</code> that under the hood invokes  <code><API label="org.mockito.Mockito.validateMockitoUsage">Mockito.validateMockitoUsage</API>()</code> <API label="">after</API> each executed test : 
+
+<pre><code>
+@Override
+public void <API label="">testFinished</API>(Description description) throws Exception {
+    <API label="None">super.testFinished</API>(description);
+    try {
+        <API label="org.mockito.Mockito.validateMockitoUsage">Mockito.validateMockitoUsage</API>();
+    } catch(Throwable t) {
+        notifier.fireTestFailure(new Failure(description, t));
+    }
+}
+
+</code></pre>
+

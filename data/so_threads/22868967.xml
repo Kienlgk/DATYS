@@ -1,0 +1,61 @@
+https://stackoverflow.com/questions/22868967
+I use guava and apache commons to convert temporary image that have been loaded from the server but the conversion result is a corrupted file. the problem that "sampleFile" is corrupted and I don't know why until I have no error.
+
+<pre><code>
+import com.google.common.io.Files;
+import org.apache.commons.codec.binary.Base64;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.UUID;
+
+
+public class imageDecoder {
+
+
+   public static void <API label="None">main</API>(String[] args) {
+        byte[] data = null;
+        final File input = new File("C:\\Users\\xxx\\AppData\\Local\\Temp\\multipartBody2180016028702918119asTemporaryFile");
+        try {
+            data = <API label="None">Base64.decodeBase64</API>(<API label="com.google.common.io.Files.toByteArray">Files.toByteArray</API>(input));
+        } catch (Exception ex) {
+                <API label="None">System.out.print</API>("problem");
+        }
+        final File f = new File(<API label="None">String.format</API>("sampleFile_%s.jpg", UUID.randomUUID()));
+
+       try {
+            if (!<API label="None">f.exists</API>())
+                f.createNewFile();
+            final FileOutputStream fos = new FileOutputStream(f);
+            <API label="None">fos.write</API>(data);
+            <API label="None">fos.flush</API>();
+            <API label="None">fos.close</API>();
+        } catch (FileNotFoundException e) {
+            <API label="None">System.out.print</API>("file not found");
+        } catch (IOException e) {
+            <API label="None">System.out.print</API>("exception");
+        }
+    }
+}
+
+</code></pre>
+
+==========
+Based on your comment, it sounds like the the original file (<code>input</code>) contains the actual bytes of the image. But for some reason, you're then reading those bytes in as if they are the Base 64 encoded ASCII representation of the image. Clearly they aren't, so why are you doing this? If you <API label="">skip</API> the <code><API label="">Base64.decodeBase64</API></code> step, I'm guessing things will work as expected.
+
+Of course, in that case what you're doing is simply copying the bytes of <code>input</code> to <code>f</code>, which is simpler and more efficient to do as:
+
+<pre><code>
+<API label="None">Files.copy</API>(input, f);
+
+</code></pre>
+
+Or if you have no need to leave the temporary file where it is, moving the file is even better:
+
+<pre><code>
+<API label="None">Files.move</API>(input, f);
+
+</code></pre>
+

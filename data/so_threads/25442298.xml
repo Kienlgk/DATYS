@@ -1,0 +1,45 @@
+https://stackoverflow.com/questions/25442298
+I'm using Guava Cache lib ,and i wanna check the statistics of the cache here is my code :
+
+<pre><code>
+refreshCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+           .<API label="com.google.common.cache.CacheBuilder.refreshAfterWrite">refreshAfterWrite</API>(1, TimeUnit.MINUTES)
+           .<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(5)
+           .<API label="com.google.common.cache.CacheBuilder.recordStats">recordStats</API>()
+           .<API label="com.google.common.cache.CacheBuilder.build">build</API>(
+               new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+                 public Map <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) throws Exception {
+                     loader();
+                 }
+               });
+        <API label="">stats</API> = <API label="com.google.common.cache.Cache.stats">refreshCache.stats</API>();
+        delta = <API label="com.google.common.cache.Cache.stats">refreshCache.stats</API>()
+                .<API label="com.google.common.cache.CacheStats.minus">minus</API>(<API label="">stats</API>);
+
+}
+
+<API label="None">logger.info</API>("Stats:{}",<API label="">stats</API>);
+ <API label="None">logger.info</API>("delta:{}",delta);
+
+</code></pre>
+
+i've called <code>recordeStats()</code> to active the Stats , but when i print the <API label="">stats</API> , it's all 0 .
+
+==========
+According to JavaDoc:
+
+Cache statistics are incremented according to the following rules:
+
+
+When a cache lookup encounters an existing cache entry <API label="om.google.common.cache.CacheStats.hitCount">hitCount</API> is incremented.
+When a cache lookup first encounters a missing cache entry, a new entry is loaded.
+After successfully loading an entry missCount and <API label="com.google.common.cache.CacheStats.loadSuccessCount">loadSuccessCount</API> are incremented, and the total loading time, in nanoseconds, is added to <API label="com.google.common.cache.CacheStats.totalLoadTime">totalLoadTime</API>.
+When an exception is thrown while loading an entry, missCount and <API label="com.google.common.cache.CacheStats.loadExceptionCount">loadExceptionCount</API> are incremented, and the total loading time, in nanoseconds, is added to <API label="com.google.common.cache.CacheStats.totalLoadTime">totalLoadTime</API>.
+Cache lookups that encounter a missing cache entry that is still loading will wait for loading to complete (whether successful or not) and then <API label="">increment</API> missCount.--
+When an entry is evicted from the cache, <API label="com.google.common.cache.CacheStats.evictionCount">evictionCount</API> is incremented.
+No <API label="">stats</API> are modified when a cache entry is invalidated or manually removed.
+No <API label="">stats</API> are modified by operations invoked on the asMap view of the cache.
+
+
+A lookup is specifically defined as an invocation of one of the methods <API label="com.google.common.cache.LoadingCache.get">LoadingCache.get</API>(Object), <API label="com.google.common.cache.LoadingCache.getUnchecked">LoadingCache.getUnchecked</API>(Object), <API label="com.google.common.cache.Cache.get">Cache.get</API>(Object, Callable), or <API label="com.google.common.cache.LoadingCache.getAll">LoadingCache.getAll</API>(Iterable).
+

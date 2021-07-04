@@ -1,0 +1,77 @@
+https://stackoverflow.com/questions/40742572
+I have pluged up require dependency
+
+<pre><code>
+testCompile 'org.mockito:mockito-core:1.10.19'
+
+</code></pre>
+
+Then I put my test code to <code>/src/test/java/</code> directory 
+
+then I have tried launch such test
+
+<pre><code>
+import org.junit.Test;
+import static <API label="">org.hamcrest.CoreMatchers.is</API>;
+import static <API label="">org.hamcrest.MatcherAssert.assertThat</API>;
+
+public class PresenterActivityAcceptNotAcceptTest {
+
+@Test
+public void emailValidator_CorrectEmailSimple_ReturnsTrue() {
+    boolean dd = true;
+    <API label="None">assertThat</API>(dd, <API label="org.hamcrest.CoreMatchers.is">is</API>(true));
+} 
+
+</code></pre>
+
+it works properly, but if I add <API label="">anything</API> witch associated with <code>Mock</code> lib 
+
+for example <code>@RunWith</code>
+
+<pre><code>
+    import org.junit.Test;
+    import org.junit.runner.RunWith;
+    import org.mockito.runners.MockitoJUnitRunner;
+
+   import static <API label="">org.hamcrest.CoreMatchers.is</API>;
+    import static <API label="">org.hamcrest.MatcherAssert.assertThat</API>;
+
+@RunWith(MockitoJUnitRunner.class)
+public class PresenterActivityAcceptNotAcceptTest {
+
+
+   @Test
+    public void emailValidator_CorrectEmailSimple_ReturnsTrue() {
+        boolean dd = true;
+        <API label="None">assertThat</API>(dd, <API label="org.hamcrest.CoreMatchers.is">is</API>(true));
+    }
+
+</code></pre>
+
+I got such error
+
+<pre><code>
+Error:Execution failed for task   ':Application:compileDebugJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
+Error:(10, 10) error: cannot find symbol class MockitoJUnitRunner
+Error:(5, 27) error: package org.mockito.runners does <API label="">not</API> exist
+/home/aleksey/Downloads/NTZ/FittingRoom/Application/src/test/java/com/fittingroom/newtimezone/presenters/PresenterActivityAcceptNotAcceptTest.java
+
+</code></pre>
+
+What am I doing wrong? 
+
+If I forger about something feel free to ask
+
+Thanks in advance!
+
+==========
+It looks like Gradle <API label="">is</API> <API label="">not</API> doing it's job.
+Manually adding the jars may fixed the problem.
+<a href="https://github.com/junit-team/junit4/wiki/Download-and-Install" rel="nofollow noreferrer">How to Download and Install jar go here .</a>
+
+and for download mockito use this link
+
+<a href="https://mvnrepository.com/artifact/org.mockito/mockito-core/1.10.19" rel="nofollow noreferrer">https://mvnrepository.com/artifact/org.mockito/mockito-core/1.10.19</a>
+

@@ -1,0 +1,62 @@
+https://stackoverflow.com/questions/40230987
+I have a <code>TreeMultimap</code>, which includes duplicate <API label="">keys</API> also. 
+
+
+ I want to get the <API label="">count</API> of <API label="">values</API> which lies within a specific key
+  range, that too with O(logN) time complexity.
+
+
+I tried by first converting the <code>TreeMultimap</code> to a <code>SortedMap</code> by using its method <code><API label="None">asMap</API>()</code> and then creating a <code>submap</code> in the required range and fetching its <API label="">size</API>.
+
+<pre><code>
+SortedMap sortedMap = mapList.getTmm().<API label="None">asMap</API>();
+return <API label="None">sortedMap.subMap</API>(beg,end).<API label="None">size</API>();
+
+</code></pre>
+
+Is it having complexity O(logN)?
+
+Also, I faced a problem here. When a <code>TreeMultimap</code> is converted to <code>SortedMap</code>, the <API label="">values</API> are objects of <code>Collection</code> class. i.e. The key-value pair having duplicate <API label="">keys</API> in <code>TreeMultimap</code> is included in a single <code>Collection</code> class.
+So the method <code><API label="">size</API>()</code> returns wrong value. 
+
+Is there any other way I an achieve this?
+Any help is appreciated.
+
+==========
+You can try <a href="http://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/SortedMultiset.html" rel="nofollow"><code>SortedMultiset</code></a>, which has a method for ranged query:
+
+<a href="http://google.github.io/guava/releases/snapshot/api/docs/src-html/com/google/common/collect/SortedMultiset.html#line.136" rel="nofollow"><code><API label="com.google.common.collect.SortedMultiset.subMultiset">subMultiset</API></code></a>:
+
+
+ Returns a view of this multiset restricted to the range between lowerBound and upperBound.
+
+
+Sample code:
+
+<pre><code>
+import com.google.common.collect.*;
+
+public class GuavaMultiMap {
+    public static void <API label="None">main</API>(String [] args) {
+        Multimap map = <API label="com.google.common.collect.TreeMultimap.create">TreeMultimap.create</API>();
+        <API label="None">map.put</API>(0, "-1");
+        <API label="None">map.put</API>(1, "a");
+        <API label="None">map.put</API>(1, "b");
+        <API label="None">map.put</API>(2, "c");
+        <API label="None">map.put</API>(2, "d");
+        <API label="None">map.put</API>(3, "e");
+
+       SortedMultiset <API label="com.google.common.collect.TreeMultiset.create">keys</API> = <API label="">TreeMultiset.create</API>();
+        <API label="None">keys</API>.<API label="None">addAll</API>(<API label="None">map.keys</API>());
+
+       SortedMultiset range = <API label="None">keys</API>.<API label="com.google.common.collect.SortedMultiset.subMultiset">subMultiset</API>(1, BoundType.CLOSED, 3, BoundType.OPEN);
+        <API label="None">System.out.println</API>(<API label="None">range.size</API>());
+    }
+}
+
+</code></pre>
+
+Output: <code>4</code>
+
+The above code does not operate in <code>O(<API label="">log</API>(N))</code> time because this line <code><API label="None">keys</API>.<API label="None">addAll</API>(...);</code> is <code>O(n)</code>. However, if you keep a <code>SortedMultiset</code> updated together with the <code>Multimap</code>, you should be able to trade space for time.
+

@@ -1,0 +1,60 @@
+https://stackoverflow.com/questions/34227748
+<pre><code>package com.restfb.types;
+
+import static com.restfb.util.StringUtils.isBlank;
+
+import com.restfb.Facebook;
+import com.restfb.util.ReflectionUtils;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Base class which encapsulates behavior and properties common to most
+ * <a href="http://developers.facebook.com/docs/reference/api/">Graph API types</a>.
+ * 
+ * @author <a href="http://restfb.com">Mark Allen</a>
+ * @since 1.5
+ */
+public class FacebookType implements Serializable {
+
+ /**
+   * This object's unique Facebook ID.
+   * 
+   * @return This object's unique Facebook ID.
+   */
+  @Getter
+  @Setter
+  @Facebook
+  private String id;
+
+}
+
+</code></pre>
+
+This is a restfb code and I am not able to find how to replace annotation @Getter or @Setter with code inside them.I am using eclipse ide and i already installed lombok in my eclipse.
+
+==========
+The <API label="">process</API> you are interested in is called "delombok". I am not aware of an Eclipse plugin that does that (There is one for Intellij). But you can still use the command line tool for that from project Lombok. Details are <a href="https://projectlombok.org/features/delombok.html" rel="nofollow">here</a>. In summary, you can ran from the command line 
+
+<pre><code>
+java -jar lombok.jar delombok -p FacebookType.java
+
+</code></pre>
+
+You need to set the correct path for <code>lombok.jar</code> and your file that I assume is named <code>FacebookType.java</code>. You can also perform that for all files in your src folder :
+
+<pre><code>
+java -jar lombok.jar delombok src -d src-delomboked
+
+</code></pre>
+
+<code>src</code> being the folder with source files that use Lombok annotations and <code>src-delomboked</code> the output folder.
+
+There also seems to be a <a href="https://github.com/awhitford/lombok.maven" rel="nofollow">maven plugin</a> that you can potentially user for that purpose.
+

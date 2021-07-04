@@ -1,0 +1,73 @@
+https://stackoverflow.com/questions/30668168
+I cannot easily <API label="org.mockito.Mockito.verify">verify</API> 2 individual and unique call of a sub type class to a method which takes a supertype 
+
+I have a scenario that acts like this...
+
+Both B and C extend abstract type A
+
+With
+
+<pre><code>
+public class X {
+    public String doSomething(A a){
+        return "";
+    }
+}
+
+</code></pre>
+
+Test
+
+<pre><code>
+@Test
+public void testExtensionVerify(){
+ X x = <API label="org.mockito.Mockito.mock">mock</API>(X.class);
+ B b = new B();
+ C c = new C();
+ x.doSomething(b);
+ x.doSomething(c);
+
+<API label="org.mockito.Mockito.verify">verify</API>(x, <API label="org.mockito.Mockito.times">times</API>(1)).doSomething(<API label="org.mockito.Matchers.any">any</API>(B.class));  //fails.  
+}
+
+</code></pre>
+
+<API label="org.mockito.Mockito.verify">verify</API> <API label="org.mockito.Mockito.times">times</API>(1) fails... It sees 2 calls instead of 1 probably because B's reference in the method signature is the super type A. 
+
+The problem is that I cannot <API label="org.mockito.Mockito.verify">verify</API> each call uniquely  
+
+I know that I can swtich to <API label="org.mockito.Matchers.eq">eq</API>(b) and <API label="org.mockito.Matchers.eq">eq</API>(c) instead of <API label="org.mockito.Matchers.any">any</API>() but I have no handle to them in my real case as they are created in the Object under test.  Another option might be to do a ArgumentCaptor and test the instance but its annoying.
+
+Any other solutions?
+
+==========
+You can use <a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/Matchers.html#<API label="">isA</API>(java.lang.Class)" rel="nofollow"><code><API label="org.mockito.Matchers.isA">isA</API></code></a>:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(x, <API label="org.mockito.Mockito.times">times</API>(1)).doSomething(<API label="org.mockito.Matchers.isA">isA</API>(B.class)); 
+
+</code></pre>
+
+
+ <a href="http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/Matchers.html" rel="nofollow">http://docs.mockito.googlecode.com/hg/1.9.5/org/mockito/Matchers.html</a> 
+  
+  The <API label="org.mockito.Matchers.any">any</API> family methods don't do <API label="">any</API> type checks, those are only here to avoid casting in your code. If you want to perform type checks use the <API label="org.mockito.Matchers.isA">isA</API>(Class) method. This might however change (type checks could be added) in a future major release.
+
+
+<pre><code>
+public class XTest {
+  @Test
+  public void testExtensionVerify(){
+    X x = <API label="org.mockito.Mockito.mock">mock</API>(X.class);
+    B b = new B();
+    C c = new C();
+    x.doSomething(b);
+    x.doSomething(c);
+
+   <API label="org.mockito.Mockito.verify">verify</API>(x, <API label="org.mockito.Mockito.times">times</API>(1)).doSomething(<API label="org.mockito.Matchers.isA">isA</API>(B.class));
+    <API label="org.mockito.Mockito.verify">verify</API>(x, <API label="org.mockito.Mockito.times">times</API>(1)).doSomething(<API label="org.mockito.Matchers.isA">isA</API>(C.class));
+  }
+}
+
+</code></pre>
+

@@ -1,0 +1,89 @@
+https://stackoverflow.com/questions/40462418
+With below code am trying to connect and index to Elastic Search:
+
+<pre><code>
+package elasticSearchTest;
+
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import java.net.InetAddress;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.testng.annotations.Test;
+
+public class ES_Test_Class {
+  @Test
+  public void f() {
+  try{
+      Client client = <API label="None">TransportClient.builder</API>().<API label="None">build</API>()
+               .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
+
+
+     IndexResponse response = client.prepareIndex("twitter", "tweet", "1")
+                .setSource(jsonBuilder()
+                            .<API label="None">startObject</API>()
+                                .<API label="None">field</API>("user", "kimchy")
+                                .<API label="None">field</API>("postDate", "18/May/2011:01:48:10")
+                                .<API label="None">field</API>("message", "trying out Elasticsearch")
+                            .<API label="None">endObject</API>()
+                          )
+                .<API label="None">get</API>();
+    // Document ID (generated or not)
+      String _id = <API label="None">response.getId</API>();
+    // Version (if it's the first time you index this document, you will <API label="">get</API>: 1)
+    long _version = response.getVersion();
+
+   <API label="None">System.out.println</API>("Document id is: "+_id);
+
+   <API label="None">System.out.println</API>("Document version is: "+_version);
+      }
+      catch (Exception e){
+          e.printStackTrace();
+      }
+
+ }
+}
+
+</code></pre>
+
+With below dependencies:
+
+
+List item
+
+
+<a href="https://i.stack.imgur.com/fzPdf.jpg" rel="nofollow noreferrer"></a>
+
+However I keep getting below error:
+
+
+ com.google.common.util.concurrent.ExecutionError: java.lang.NoClassDefFoundError: org/jboss/netty/channel/socket/nio/WorkerPool
+      at <API label="">com.google.common.cache.LocalCache$Segment.get</API>(LocalCache.java:2201)
+      at <API label="">com.google.common.cache.LocalCache.get</API>(LocalCache.java:3937)
+      at <API label="">com.google.common.cache.LocalCache.getOrLoad</API>(LocalCache.java:3941)
+      at <API label="">com.google.common.cache.LocalCache$LocalLoadingCache.get</API>(LocalCache.java:4824)
+      at <API label="">org.elasticsearch.common.inject.internal.FailableCache.get</API>(FailableCache.java:51)
+      at <API label="">org.elasticsearch.common.inject.ConstructorInjectorStore.get</API>(ConstructorInjectorStore.java:51)
+      at <API label="">org.elasticsearch.common.inject.ConstructorBindingImpl.initialize</API>(ConstructorBindingImpl.java:50)
+      at org.elasticsearch.common.inject.InjectorImpl.initializeBinding(InjectorImpl.java:405)
+      at org.elasticsearch.common.inject.InjectorImpl.createJustInTimeBinding(InjectorImpl.java:680)
+
+
+I have tried by changing the order <API label="">of</API> the JAR files and different versions <API label="">of</API> JARS lowering and changing to <API label="">higher</API> version by few <API label="">of</API> the suggestions as mentioned <a href="https://stackoverflow.com/questions/9222665/nosuchmethod-error-getting-a-gdata-service">here</a> but issue is not resolved
+
+Error after updating "netty" to "netty-4.0.0.Alpha8" and guava to "guava-20.0-hal":
+
+
+ com.google.common.util.concurrent.ExecutionError: java.lang.NoClassDefFoundError: org/jboss/netty/channel/ReceiveBufferSizePredictorFactory
+      at <API label="">com.google.common.cache.LocalCache$Segment.get</API>(LocalCache.java:2212)
+      at <API label="">com.google.common.cache.LocalCache.get</API>(LocalCache.java:4054)
+      at <API label="">com.google.common.cache.LocalCache.getOrLoad</API>(LocalCache.java:4058)
+      at <API label="">com.google.common.cache.LocalCache$LocalLoadingCache.get</API>(LocalCache.java:4985)
+      at <API label="">org.elasticsearch.common.inject.internal.FailableCache.get</API>(FailableCache.java:51)
+      at <API label="">org.elasticsearch.common.inject.ConstructorInjectorStore.get</API>(ConstructorInjectorStore.java:51)
+
+
+==========
+The <code>WorkerPool</code> class is comming with netty since version <code>3.5</code> I guess. So you need to update your netty version to at <API label="">least</API> 3.5+.
+

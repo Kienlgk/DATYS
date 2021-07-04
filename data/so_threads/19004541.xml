@@ -1,0 +1,106 @@
+https://stackoverflow.com/questions/19004541
+I got my objects of called Values, it looks like this:
+
+<pre><code>
+class Values{
+    private String name;
+    private String type;
+    private String value;
+
+public Values(String name, String type, String value)
+    {this.name = name; this.type = type; this.value = value;}
+public String <API label="">getName</API>()
+    {return name;}
+public String <API label="">getType</API>()
+    {return type;}
+public String <API label="">getValue</API>()
+   {return value;}
+  }
+
+</code></pre>
+
+My Datamodel looks like this. MY Input is a XML-File. A package contains some classes and every class got Attributes with a name, a type and a value. The class Values above should represent one attribute.
+
+I use Multimaps to save this information. The desired output is like this, for example.
+
+<pre><code>
+[PackageName:[ObjectName1, Values1],
+             [ObjectName1, Values2],
+             [ObjectName2, Values1]]
+
+</code></pre>
+
+My code to process the input XML-File is like this. The For-loops are to iterate through the datastructure of the input file.
+
+<pre><code>
+        SAXBuilder builder = new SAXBuilder();
+        org.jdom2.Document doc = <API label="None">builder.build</API>(input);
+        Element rootNode = doc.getRootElement();
+        List listPackages = rootNode.getChildren();
+
+
+       for(Element packages : listPackages)
+        {   
+                List objectInstanceList = packages.getChildren();
+
+               for(Element objects : objectInstanceList) 
+                {
+                    Map valuesMap = new HashMap();
+
+                   List listObjectClasses = objects.getChildren();
+                    bdbID = <API label="None">objects.getName</API>();
+                    if (objects.getAttributes().<API label="None">size</API>() == 0)
+                    {   
+                    for(Element classes : listObjectClasses) 
+                      {     
+                    List listObjectAttributes = classes.getChildren();
+
+                       for(Element objectAttributes : listObjectAttributes)
+                        {
+
+                           Multimap mm = <API label="com.google.common.collect.HashMultimap.create">HashMultimap.create</API>();
+                            String name = objectAttributes.getAttributeValue("name");
+                            String type = objectAttributes.getAttributeValue("type");
+                            String value = objectAttributes.getAttributeValue("value"); 
+                            Values v = new Values(name, type, value);                   
+                            <API label="com.google.common.collect.HashMultimap.put">mm.put</API>(<API label="None">classes.getName</API>(), v);
+                                         <API label="None">System.out.println</API>(name +":" + type + ":" + value);
+                            <API label="None">System.out.println</API>(v);
+                        }
+                        <API label="None">valuesMap.put</API>(bdbID, mm);
+                     }
+                   }
+             }
+     }
+
+</code></pre>
+
+The 2 prints at the end are for test purposes and here comes my question. Regading the output of both prints.
+
+Output 1: 
+
+<pre><code>
+Bandwidth:KiloBitPerSecond:50   //Name:Type:Value
+
+</code></pre>
+
+Output 2:
+
+<pre><code>
+Dataprocessing.Values@7d5b6e   // Dataprocessing = Java-Package which contains the class.
+
+</code></pre>
+
+The question is, why do I get this weird Output? Is it wrong to use a class like Values for this purpose? If somebody knows a better Idea to do this, I am open for everything.
+
+==========
+You're seeing the <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/Object.html#toString%28%29" rel="nofollow"><code>Object#toString</code></a> representation of <code>Values</code>. You need to override <code><API label="">toString</API></code> in that class to provide formatted output
+
+<pre><code>
+@Override
+public String <API label="">toString</API>() {
+    return "Values [name=" + name + ", type=" + type + ", value=" + value + "]";
+}
+
+</code></pre>
+

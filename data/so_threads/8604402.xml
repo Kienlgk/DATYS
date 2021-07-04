@@ -1,0 +1,20 @@
+https://stackoverflow.com/questions/8604402
+In the following example (mockito 1.10.19):
+<pre><code>
+    MyClass myClass = <API label="org.mockito.Mockito.mock">Mockito.mock</API>(MyClass .class, RETURNS_DEFAULTS);
+    String s = <API label="None">myClass.getName</API>();
+
+</code></pre>
+Why does this result in <code>s == null</code> rather than an empty String?
+It indeed promised <code>null</code> for a String in <a href="https://static.javadoc.io/org.mockito/mockito-core/1.10.19/org/mockito/internal/stubbing/defaultanswers/ReturnsEmptyValues.html" rel="nofollow noreferrer">ReturnsEmptyValues</a>. But it seems so obvious to return <code>""</code> that I'm wondering if there is a reason for it not to.
+EDIT: updated version to 1.10.19 from 1.8, because no documentation is available anymore for 1.8.
+
+==========
+It wasn't thought of at design time and now for stability reason, this behavior didn't change.
+
+There's an non exposed <API label="">answer</API> called <a href="https://static.javadoc.io/org.mockito/mockito-core/1.10.19/org/mockito/internal/stubbing/defaultanswers/ReturnsMoreEmptyValues.html" rel="nofollow noreferrer">ReturnsMoreEmptyValues</a> that returns as the type <API label="">name</API> suggests more empty <API label="">values</API>.
+
+You could also take a look at the <a href="https://static.javadoc.io/org.mockito/mockito-core/1.10.19/org/mockito/Mockito.html#RETURNS_SMART_NULLS" rel="nofollow noreferrer">Mockito.RETURNS_SMART_NULLS</a> <API label="">answer</API> that use ReturnsMoreEmptyValues internally and features more interesting debug informations.
+
+Note this links to 1.10.19 version javadoc, however this behavior remains unchanged in version 2.x at the time of this writing.
+

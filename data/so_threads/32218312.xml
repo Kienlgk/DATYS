@@ -1,0 +1,166 @@
+https://stackoverflow.com/questions/32218312
+Class I want to <API label="">test</API>:
+
+<pre><code>
+import com.google.common.cache.CacheBuilder;
+import <API label="">com.google.common.cache.CacheLoader</API>;
+import com.google.common.cache.LoadingCache;
+
+public class Subject {
+
+   private <API label="">CacheLoader</API> cacheLoader = new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+        @Override
+        public String <API label="com.google.common.cache.CacheLoader.load">load</API>(String key)
+                throws Exception {
+            return retrieveValue(key);
+        }
+    };
+
+   private LoadingCache cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+            .<API label="com.google.common.cache.CacheBuilder.build">build</API>(cacheLoader);
+
+   public String <API label="">getValue</API>(String key) {
+        return <API label="com.google.common.cache.LoadingCache.getUnchecked">cache.getUnchecked</API>(key);
+    }
+
+   String retrieveValue(String key) {
+        <API label="None">System.out.println</API>("I should not be called!");
+        return "bad";
+    }
+}
+
+</code></pre>
+
+Here's my <API label="">test</API> case
+
+<pre><code>
+import static org.junit.Assert.assertEquals;
+import static <API label="">org.mockito.Matchers.anyString</API>;
+import static <API label="">org.mockito.Mockito.doReturn</API>;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
+
+@RunWith(MockitoJUnitRunner.class)
+public class SubjectTest {
+
+   String good = "good";
+
+   @Spy
+    @InjectMocks
+    private Subject subject;
+
+   @Test
+    public void <API label="">test</API>() {
+        <API label="org.mockito.Mockito.doReturn">doReturn</API>(good).<API label="org.mockito.Mockito.when">when</API>(subject).retrieveValue(<API label="org.mockito.Mockito.anyString">anyString</API>());
+        assertEquals(good, <API label="None">subject.getValue</API>("a"));
+    }
+}
+
+</code></pre>
+
+I got 
+
+<pre><code>
+org.junit.ComparisonFailure: 
+Expected :good
+Actual   :bad
+
+</code></pre>
+
+==========
+Mark Peters did a great job diagnosing and explaining the root cause. I can think of a couple workarounds:
+
+
+Move cache (re)initialization into a separate method.
+
+By calling <code>new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API></code> from within the spy, the anonymous inner class is created with a reference to the spy as the <API label="">parent</API> instance. Depending on your actual system under <API label="">test</API>, you may also benefit from getting the cache creation out of the constructor path, especially if there's any heavy initialization or loading involved.
+
+<pre><code>
+public class Subject {
+
+ public Subject() {
+    initializeCache();
+  }
+
+ private LoadingCache cache;
+
+ @VisibleForTesting
+  void initializeCache() {
+    cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.build">build</API>(new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+      @Override
+      public String <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) throws Exception {
+        return retrieveValue(key);
+      }
+    });
+  }
+
+ /* ... */
+}
+
+@Test
+public void <API label="">test</API>() {
+  subject.initializeCache();
+  <API label="org.mockito.Mockito.doReturn">doReturn</API>(good).<API label="org.mockito.Mockito.when">when</API>(subject).retrieveValue(<API label="org.mockito.Mockito.anyString">anyString</API>());
+  assertEquals(good, <API label="None">subject.getValue</API>("a"));
+}
+
+</code></pre>
+Make a manual override.
+
+The root cause of your trouble is that the spy instance is different from the original instance. By overriding a single instance in your <API label="">test</API>, you can change behavior without dealing with the mismatch.
+
+<pre><code>
+@Test
+public void <API label="">test</API>() {
+  Subject subject = new Subject() {
+    @Override public String <API label="None">getValue</API>() { return "good"; }
+  }
+}
+
+</code></pre>
+Refactor.
+
+Though you can go for full DI, you may be able to just add a testing seam to the value function:
+
+<pre><code>
+public class Subject {
+
+ private <API label="">CacheLoader</API> cacheLoader = new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+    @Override
+    public String <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) throws Exception {
+      return <API label="com.google.common.base.Function.apply">valueRetriever.apply</API>(key);
+    }
+  };
+
+ private LoadingCache cache =
+      <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.build">build</API>(cacheLoader);
+
+ Function valueRetriever = new Function() {
+    @Override
+    public String <API label="com.google.common.base.Function.apply">apply</API>(String t) {
+      <API label="None">System.out.println</API>("I should not be called!");
+      return "bad";
+    }
+  };
+
+ public String <API label="">getValue</API>(String key) {
+    return <API label="com.google.common.cache.LoadingCache.getUnchecked">cache.getUnchecked</API>(key);
+  }
+}
+
+@Test
+public void <API label="">test</API>() {
+  subject = new Subject();
+  subject.valueRetriever = (x -> good);
+  assertEquals(good, <API label="None">subject.getValue</API>("a"));
+}
+
+</code></pre>
+
+Naturally, depending on your needs, <code>valueRetriever</code> could be an entirely separate class, or you could accept an entire <code><API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API></code> as a parameter.
+
+

@@ -1,0 +1,330 @@
+https://stackoverflow.com/questions/41243018
+I have used <code>Lombok</code> in my code to automatically generate <code>Getter</code> and <code>Setter</code> code. I want to add other personal <code>Annotations</code> and use it.
+For example I want to add an <code>@Exist</code> method which verifies the existence <API label="">of</API> a key in a list:
+<pre><code>
+@Getter    @Setter
+public class User {
+
+   private String name;
+    private List keys;
+
+   public boolean existKeys(Integer key) {
+        boolean exist = <API label="None">keys.contains</API>(key);
+        return exist;
+    }
+}
+
+</code></pre>
+after creating the Annotation I will have just to do something like:
+<pre><code>
+@Getter    @Setter
+public class User {
+
+   private String name;
+    @Exist
+    private List keys;
+} 
+
+</code></pre>
+
+==========
+General Considerations
+If you are already using Lombok, you can add custom Lombok transformation annotation and handler.
+
+Define Exists annotation with <code>@Target(FIELD)</code> and <code>@Retention(SOURCE)</code>
+
+Create a <a href="https://projectlombok.org/api/lombok/javac/JavacAnnotationHandler.html" rel="noreferrer">handler</a>
+<pre><code>
+@ProviderFor(JavacAnnotationHandler.class)
+public class HandleExists extends JavacAnnotationHandler{ ...` 
+
+</code></pre>
+to <API label="">process</API> your annotation. Handler class package must start with the <code>lombok.</code> prefix. If you need to support Eclipse, etc. in addition to javac, you'll need to write more handlers extending appropriate framework classes.
+
+In the handler override/implement the <code><API label="">handle</API>()</code> method to generate the required code through AST manipulation.
+
+
+
+You can take as a sample the <a href="https://projectlombok.org/features/GetterSetter.html" rel="noreferrer">@Getter</a> implementation:
+Annotation:
+<a href="https://github.com/rzwitserloot/lombok/blob/master/src/core/lombok/Getter.java" rel="noreferrer">Getter.java</a>
+Handler:
+<a href="https://github.com/rzwitserloot/lombok/blob/master/src/core/lombok/javac/handlers/HandleGetter.java" rel="noreferrer">HandleGetter.java</a>
+You can also look into <a href="https://github.com/rzwitserloot/lombok/tree/master/src/core/lombok" rel="noreferrer">sources</a> <API label="">of</API> other annotations and <a href="https://github.com/rzwitserloot/lombok/tree/master/src/core/lombok/javac" rel="noreferrer">handlers</a> to see how to generate particular code.
+You'll need to add dependencies on lombok, JDK tools.jar.
+
+Some resources:
+
+The <a href="https://github.com/peichhorn/lombok-pg" rel="noreferrer">lombok-pg</a> project with a source for a bunch <API label="">of</API> custom lombok annotations, in particular <a href="https://github.com/peichhorn/lombok-pg/blob/master/src/core/lombok/FluentSetter.java" rel="noreferrer">FluentSetter.java</a>, <a href="https://github.com/peichhorn/lombok-pg/blob/master/src/javac/lombok/javac/handlers/HandleFluentSetter.java" rel="noreferrer">HandleFluentSetter.java</a> / <a href="https://github.com/peichhorn/lombok-pg/blob/master/src/core/lombok/core/handlers/FluentSetterHandler.java" rel="noreferrer">FluentSetterHandler.java</a>
+
+An overview <API label="">of</API> a <a href="http://notatube.blogspot.co.il/2010/12/project-lombok-creating-custom.html" rel="noreferrer">custom transformation</a>
+
+Simple <a href="https://binkley.blogspot.co.il/2014/12/writing-your-own-lombok-annotation.html" rel="noreferrer">annotation example</a> with explanations.
+
+
+
+Note, there are some points to consider here
+
+This is a bunch <API label="">of</API> non-trivial code to write and maintain. If you plan to use annotation 5-6 times it is just not worth it.
+You may need to change your annotation processor implementation with lombok upgrades.
+The hole in compiler that lombok relies on also may be closed (then the whole Lombok project will change dramatically or cease to exist; in this case you'll have a more serious problem anyway if you use Lombok extensively, even if just for @Getter).
+
+A more complex alternative without Lombok is to use standard <a href="https://www.javacodegeeks.com/2015/01/how-to-<API label="">process</API>-java-annotations.html" rel="noreferrer">annotation processing</a> for <a href="https://deors.wordpress.com/2011/10/08/annotation-processors/" rel="noreferrer">code generation</a> but, AFAIK, you can't change original classes and must generate/use classes that extend them (unless you'll <a href="http://notatube.blogspot.co.il/2010/11/project-lombok-trick-explained.html" rel="noreferrer">exploit the same back-door</a> as Lombok or resort to a code manipulation like CGLib or ASM).
+
+Lombok Example
+Below is some working code to create custom Lombok annotation that I've called @Contains.
+It is javac implementation only, no Eclipse, etc. I guess it will be not hard to create a similar handler for Eclipse or other IDE.
+It will generate fieldNameContains() member method which is delegated to the <API label="">fieldName.contains</API>().
+Note, the code is just quick and dirty (but working) sample. For production grade annotation, you will need to <API label="">handle</API> many boundary conditions, check correct types, <API label="">handle</API> Lombok configuration and so on, as it can be observed in lombok or lombok-pg library sources.
+
+Sample usage
+
+SomeEnity.java
+<pre><code>
+@Getter
+@Setter
+public class SomeEntity {
+
+   @NonNull
+    @Contains
+    private Collection fieldOne = new ArrayList<>();
+
+   @NonNull
+    @Contains
+    private Collection fieldTwo = new ArrayList<>();
+
+}
+
+</code></pre>
+SomeEntityTest.java
+<pre><code>
+public class SomeEntityTest {
+
+   @Test
+    public void <API label="None">test</API>() {
+        SomeEntity entity = new SomeEntity();
+
+       Collection test1 = <API label="None">Arrays.asList</API>(new String[] { "1", "2" });
+        entity.setFieldOne(test1);
+        <API label="">assertSame</API>(test1, entity.getFieldOne());
+
+       Collection test2 = new HashSet(<API label="None">Arrays.asList</API>(new String[] { "3", "4" }));
+        entity.setFieldTwo(test2);
+        <API label="None">assertSame</API>(test2, entity.getFieldTwo());
+
+       assertTrue(entity.fieldOneContains("1"));
+        assertTrue(entity.fieldOneContains("2"));
+        assertFalse(entity.fieldOneContains("3"));
+        assertFalse(entity.fieldOneContains("4"));
+
+       assertFalse(entity.fieldTwoContains("1"));
+        assertFalse(entity.fieldTwoContains("2"));
+        assertTrue(entity.fieldTwoContains("3"));
+        assertTrue(entity.fieldTwoContains("4"));
+
+       try {
+            entity.setFieldOne(null);
+            <API label="">fail</API>("exception expected");
+        } catch (Exception ex) {
+        }
+
+       try {
+            entity.setFieldTwo(null);
+            <API label="">fail</API>("exception expected");
+        } catch (Exception ex) {
+        }
+
+   }
+}
+
+</code></pre>
+
+Annotation Implementaiton
+
+Contains.java
+<pre><code>
+@Target({ElementType.FIELD})
+@Retention(RetentionPolicy.SOURCE)
+public @interface Contains {
+    Class[] types() default {};
+    Class[] <API label="">excludes</API>() default {};
+}
+
+</code></pre>
+HandleContains.java
+<pre><code>
+@ProviderFor(JavacAnnotationHandler.class) 
+@HandlerPriority(65536) 
+@ResolutionResetNeeded 
+public class HandleContains extends JavacAnnotationHandler {
+    
+    @Override 
+    public void <API label="None">handle</API>(AnnotationValues annotation, JCAnnotation ast, JavacNode annotationNode) {
+        
+        try {
+            JavacNode node = annotationNode.up();
+            if (node.getKind() != Kind.FIELD) {
+                annotationNode.addError("@Contains is allowed only on fields");
+                return;
+            }
+            Name delegateName = annotationNode.toName(<API label=""None>node.getName</API>());
+            JavacResolution reso = new JavacResolution(<API label="None">annotationNode.getContext</API>());
+            JCTree member = <API label="">node.get</API>();
+            if (member.type == null) {
+                reso.resolveClassMember(node);
+            }
+            Type delegateType = member.type;
+            if (delegateType instanceof ClassType) {
+                ClassType ct = (ClassType) delegateType;
+                //TODO validate that this field is a collection type
+                // if(!Collection)
+                //   annotationNode.addError("@Contains can only be used on collections");
+                final String methodName = "<API label="None">contains</API>";
+                MethodSig methodSig = getMethodBinding(methodName, ct, annotationNode.getTypesUtil());
+                if (methodSig == null) throw new Exception("no method " + methodName + " in " + ct.tsym.name);
+                JCMethodDecl methodDecl = createDelegateMethod(methodSig, annotationNode, delegateName);
+                injectMethod(node.up(), methodDecl);
+            } else {
+                annotationNode.addError("@Contains can only use concrete class types");
+                return;
+            }
+        } catch (Exception ex) {
+            //ex.printStackTrace();
+            annotationNode.addError("@Contains unexpected error: " + <API label="">ex.getMessage</API>());
+        }
+        
+    }
+    
+    public JCMethodDecl createDelegateMethod(MethodSig sig, JavacNode annotation, Name delegateName) throws TypeNotConvertibleException {
+        
+        JavacTreeMaker maker = annotation.getTreeMaker();
+        
+        com.sun.tools.javac.util.List annotations;
+        if (sig.isDeprecated) {
+            annotations = <API label="">com.sun.tools.javac.util.List.of</API>(maker.Annotation(genJavaLangTypeRef(annotation, "Deprecated"), com.sun.tools.javac.util.List.nil()));
+        } else {
+            annotations = com.sun.tools.javac.util.List.nil();
+        }
+        
+        JCModifiers mods = maker.Modifiers(PUBLIC, annotations);
+        JCExpression returnType = JavacResolution.typeToJCTree((Type) <API label="">sig.type.getReturnType</API>(), annotation.getAst(), true);
+        boolean useReturn = <API label="">sig.type.getReturnType</API>().getKind() != TypeKind.VOID;
+        ListBuffer params = <API label="">sig.type.getParameterTypes</API>().<API label="">isEmpty</API>() ? null : new ListBuffer();
+        ListBuffer args = <API label="">sig.type.getParameterTypes</API>().<API label="">isEmpty</API>() ? null : new ListBuffer();
+        ListBuffer thrown = sig.type.getThrownTypes().<API label="">isEmpty</API>() ? null : new ListBuffer();
+        ListBuffer typeParams = <API label="">sig.type.getTypeVariables</API>().<API label="">isEmpty</API>() ? null : new ListBuffer();
+        ListBuffer typeArgs = <API label="">sig.type.getTypeVariables</API>().<API label="">isEmpty</API>() ? null : new ListBuffer();
+        Types types = <API label="">Types.instance</API>(<API label="">annotation.getContext</API>());
+        
+        for (TypeMirror param : <API label="">sig.type.getTypeVariables</API>()) {
+            Name name = ((TypeVar) param).tsym.name;
+            
+            ListBuffer bounds = new ListBuffer();
+            for (Type type : <API label="">types.getBounds</API>((TypeVar) param)) {
+                <API label="">bounds.append</API>(JavacResolution.typeToJCTree(type, annotation.getAst(), true));
+            }
+            
+            <API label="">typeParams.append</API>(<API label="">maker.TypeParameter</API>(name, <API label="">bounds.toList</API>()));
+            <API label="">typeArgs.append</API>(maker.Ident(name));
+        }
+        
+        for (TypeMirror ex : sig.type.getThrownTypes()) {
+            <API label="">thrown.append</API>(JavacResolution.typeToJCTree((Type) ex, annotation.getAst(), true));
+        }
+        
+        int idx = 0;
+        String[] paramNames = sig.getParameterNames();
+        boolean varargs = <API label="">sig.elem.isVarArgs</API>();
+        for (TypeMirror param : <API label="">sig.type.getParameterTypes</API>()) {
+            long <API label="">flags</API> = JavacHandlerUtil.addFinalIfNeeded(Flags.PARAMETER, <API label="">annotation.getContext</API>());
+            JCModifiers paramMods = maker.Modifiers(<API label="">flags</API>);
+            Name name = annotation.toName(paramNames[idx++]);
+            if (varargs && idx == <API label="">paramNames.length</API>) {
+                <API label="">paramMods.flags</API> |= VARARGS;
+            }
+            <API label="">params.append</API>(maker.VarDef(paramMods, name, JavacResolution.typeToJCTree((Type) param, annotation.getAst(), true), null));
+            <API label="">args.append</API>(maker.Ident(name));
+        }
+        
+        JCExpression accessor = maker.Select(maker.Ident(annotation.toName("this")), delegateName);
+        
+        JCExpression delegateCall = maker.Apply(<API label="">toList</API>(typeArgs), maker.Select(accessor, sig.name), <API label="">toList</API>(args));
+        JCStatement body = useReturn ? maker.Return(delegateCall) : maker.Exec(delegateCall);
+        JCBlock bodyBlock = <API label="">maker.Block</API>(0, <API label="">com.sun.tools.javac.util.List.of</API>(body));
+        StringBuilder generatedMethodName = new StringBuilder(delegateName);
+        <API label="">generatedMethodName.append</API>(<API label="">sig.name.toString</API>());
+        generatedMethodName.setCharAt(<API label="">delegateName.length</API>(), <API label="">Character.toUpperCase</API>(<API label="">generatedMethodName.charAt</API>(<API label="">delegateName.length</API>())));
+        return recursiveSetGeneratedBy(maker.MethodDef(mods, annotation.toName(<API label="">generatedMethodName.toString</API>()), returnType, <API label="">toList</API>(typeParams), <API label="">toList</API>(params), <API label="">toList</API>(thrown), bodyBlock, null), <API label="">annotation.get</API>(), <API label="">annotation.getContext</API>());
+    }
+    
+    public static  com.sun.tools.javac.util.List <API label="">toList</API>(ListBuffer collection) {
+        return collection == null ? com.sun.tools.javac.util.List.nil() : <API label="">collection.toList</API>();
+    }
+    
+    public static class MethodSig {
+        final Name name;
+        final ExecutableType type;
+        final boolean isDeprecated;
+        final ExecutableElement elem;
+        
+        MethodSig(Name name, ExecutableType type, boolean isDeprecated, ExecutableElement elem) {
+            this.name = name;
+            this.type = type;
+            this.isDeprecated = isDeprecated;
+            this.elem = elem;
+        }
+        
+        String[] getParameterNames() {
+            List paramList = <API label="">elem.getParameters</API>();
+            String[] paramNames = new String[<API label="">paramList.size</API>()];
+            for (int i = 0; i < <API label="">paramNames.length</API>; i++) {
+                paramNames[i] = <API label="">paramList.get</API>(i).<API label="">getSimpleName</API>().<API label="">toString</API>();
+            }
+            return paramNames;
+        }
+        
+        @Override public String <API label="">toString</API>() {
+            return (isDeprecated ? "@Deprecated " : "") + name + " " + type;
+        }
+    }
+    
+    public MethodSig getMethodBinding(String name, ClassType ct, JavacTypes types) {
+        MethodSig result = null;
+        TypeSymbol tsym = ct.asElement();
+        if (tsym == null) throw new IllegalArgumentException("no class");
+        
+        for (Symbol member : tsym.getEnclosedElements()) {
+            if (member.getKind() != ElementKind.METHOD || !<API label="">name.equals</API>(<API label="">member.name.toString</API>())) {
+                continue;
+            }
+            if (<API label="">member.isStatic</API>()) continue;
+            if (<API label="">member.isConstructor</API>()) continue;
+            ExecutableElement exElem = (ExecutableElement) member;
+            if (!<API label="">exElem.getModifiers</API>().<API label="">contains</API>(Modifier.PUBLIC)) continue;
+            ExecutableType methodType = (ExecutableType) types.asMemberOf(ct, member);
+            boolean isDeprecated = (<API label="">member.flags</API>() & DEPRECATED) != 0;
+            result = new MethodSig(member.name, methodType, isDeprecated, exElem);
+        }
+        if (result == null) {
+            if (ct.supertype_field instanceof ClassType) {
+                result = getMethodBinding(name, (ClassType) ct.supertype_field, types);
+            }
+            if (result == null) {
+                if (ct.interfaces_field != null) {
+                    for (Type iface : ct.interfaces_field) {
+                        if (iface instanceof ClassType) {
+                            result = getMethodBinding(name, (ClassType) iface, types);
+                            if (result != null) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+}
+
+</code></pre>
+

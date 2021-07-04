@@ -1,0 +1,31 @@
+https://stackoverflow.com/questions/16560635
+Current I am using following piece of code  to create a filter, in a map to match and give a filtered list of resultset.
+
+<pre><code>
+final Map filteredMap = <API label="com.google.common.collect.Maps.filterKeys">Maps.filterKeys</API>(mymap, <API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>("^Xyz"));
+
+</code></pre>
+
+However Guava <API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API> does case-sensitive matching.
+
+How should I use <API label="com.google.common.base.Predicates.containsPattern">containsPattern</API> for doing case-Insensitive matching.
+
+==========
+Use 
+
+<pre><code>
+<API label="com.google.common.base.Predicates.contains">Predicates.contains</API>(<API label="None">Pattern.compile</API>("^Xyz", Pattern.CASE_INSENSITIVE))
+
+</code></pre>
+
+as predicate instead. See core Java <a href="http://docs.oracle.com/javase/6/docs/api/java/util/regex/Pattern.html#CASE_INSENSITIVE" rel="nofollow noreferrer"><code>Pattern</code></a> and <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/Predicates.html#<API label="">contains</API>-java.util.regex.Pattern-" rel="nofollow noreferrer"><code><API label="com.google.common.base.Predicates.contains">Predicates.contains</API></code></a>.
+
+EDIT (after OP's comment): yes, you can write:
+
+<pre><code>
+<API label="com.google.common.base.Predicates.containsPattern">Predicates.containsPattern</API>("(?i)^Xyz"))
+
+</code></pre>
+
+(see Pattern's documentation: Case-insensitive matching can also be enabled via the embedded flag expression (?i).) but it's IMO less self-explaining, <API label="">plus</API> compiled <code>Pattern</code> from first example can be cached to some private static final constant when used in a loop, which can improve performance.
+

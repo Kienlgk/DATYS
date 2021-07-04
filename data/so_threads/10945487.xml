@@ -1,0 +1,132 @@
+https://stackoverflow.com/questions/10945487
+I've written an utility <API label="">method</API> in Java:
+
+<pre><code>
+public static final ImmutableSortedSet REVERSED_TIMEUNITS = <API label="com.google.common.collect.ImmutableSortedSet.copyOf">ImmutableSortedSet.copyOf</API>(
+        <API label="None">Collections.reverseOrder</API>(),
+        <API label="None">EnumSet.allOf</API>(TimeUnit.class)
+);
+
+
+/**
+ * Get the number of ..., minutes, seconds and milliseconds
+ *
+ * You can specify a max unit so that you don't get days for exemple
+ * and can get more than 24 hours if you want to display the result in hours
+ *
+ * The lowest unit is milliseconds
+ * @param millies
+ * @param maxTimeUnit
+ * @return the result map with the higher unit first
+ */
+public static Map getCascadingDateDiff(long millies,TimeUnit maxTimeUnit) {
+    if ( maxTimeUnit == null ) {
+        maxTimeUnit = TimeUnit.DAYS;
+    }
+    Map map = new TreeMap(<API label="None">Collections.reverseOrder</API>());
+    long restInMillies = millies;
+    Iterable forUnits = <API label="com.google.common.collect.ImmutableSortedSet.subSet">REVERSED_TIMEUNITS.subSet</API>(maxTimeUnit,TimeUnit.MICROSECONDS); // micros not included
+    // compute the number of days, then number of hours, then minutes...
+    for ( TimeUnit timeUnit : forUnits ) {
+        long numberForUnit = <API label="None">timeUnit.convert</API>(restInMillies,TimeUnit.MILLISECONDS);
+        <API label="None">map.put</API>(timeUnit,numberForUnit);
+        restInMillies = restInMillies - timeUnit.toMillis(numberForUnit);
+    }
+    return map;
+}
+
+</code></pre>
+
+It works with:
+
+<pre><code>
+    Map map = new TreeMap(<API label="None">Collections.reverseOrder</API>());
+
+</code></pre>
+
+But I first tried with
+
+<pre><code>
+    Map map = <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>(<API label="None">Collections.reverseOrder</API>());
+
+</code></pre>
+
+My IntelliJ doesn't say anything, while my compiler says:
+
+
+ DateUtils.java:[302,48] incompatible types; no <API label="">instance</API>(s) of type
+  variable(s) K,V exist so that java.util.TreeMap conforms to
+  java.util.Map [ERROR]
+  found   : java.util.TreeMap [ERROR] required:
+  java.util.Map
+
+
+It works fine without the comparator:
+
+<pre><code>
+   Map map = <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>();
+
+</code></pre>
+
+But I tried with:
+
+<pre><code>
+Map map = <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>(<API label="None">Collections.reverseOrder</API>());
+
+</code></pre>
+
+And with:
+
+<pre><code>
+Map map = <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>(new Comparator() {
+    @Override
+    public int <API label="None">compare</API>(TimeUnit timeUnit, TimeUnit timeUnit1) {
+        return 0; 
+    }
+});
+
+</code></pre>
+
+And i got the same error.
+So it seems each time i'm using a comparator in the TreeMap, type inference doesn't work anymore.
+Why?
+
+
+
+The signature of the Guava <API label="">method</API> is:
+
+<pre><code>
+  public static  TreeMap <API label="com.google.common.collect.Maps.newTreeMap">newTreeMap</API>(Comparator comparator)
+
+</code></pre>
+
+The expected return type is of type  so without a comparator, Java is able to infer that K = TimeUnit and V = Long.
+
+With a comparator of type TimeUnit, Java knows that C is TimeUnit. It also knows that the expected return type is of type  so K = TimeUnit and V = Long.
+K extends C is respected since TimeUnit extends TimeUnit (anyway I tried also with an Object comparator if you think it's wrong...)
+
+So i just wonder why type inference doesn't work in this case?
+
+==========
+Like Michael Laffargue suggested, it is an OpenJDK6 type inference bug:
+
+<a href="https://bugs.openjdk.java.net/show_bug.cgi?id=100167" rel="nofollow noreferrer">https://bugs.openjdk.java.net/show_bug.cgi?id=100167</a>
+
+<a href="http://code.google.com/p/guava-libraries/issues/detail?id=635" rel="nofollow noreferrer">http://code.google.com/p/guava-libraries/issues/detail?id=635</a>
+
+It works fine in my IntelliJ, and with a OpenJDK in version 7, and with others JDK in version 6.
+
+
+
+The following suggestion of kutschkem works:
+
+<pre><code>
+    Map map = <API label="com.google.common.collect.Maps.newTreeMap">Maps.newTreeMap</API>(<API label="None">Collections.reverseOrder</API>());
+
+</code></pre>
+
+Notice the <code></code> which permits to force the typed parameters explicitly.
+Check this related topic: <a href="https://stackoverflow.com/questions/10945616/whats-this-generics-usage-in-java">What's this generics usage in Java? <API label="">X.method</API>()</a>
+
+Thanks all
+

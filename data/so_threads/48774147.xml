@@ -1,0 +1,62 @@
+https://stackoverflow.com/questions/48774147
+Does AssertJ (or JUnit) have a way to chain, in a single (fluent) expression, several assertions on the same unit under test where one of the assertions may throw an exception.  Essentially, I'm trying to assert that: 
+
+
+ If a unit under test (X) doesn't result in a particular exception, which it
+  may, then assert that a particular property on the unit under test doesn't hold.  Otherwise assert the exception is of a certain type.
+
+
+For example, is there a way to express the assertion that the following erroneous code could EITHER result in an Exception or in a situation where <API label="None">strings.size</API>() != 10000:
+
+<pre><code>
+@Test/*(expected=ArrayIndexOutOfBoundsException.class)*/
+public void raceConditions() throws Exception {
+
+
+   List strings = new ArrayList<>(); //not thread-safe
+
+   Stream.iterate("+", s -> s+"+")
+    .parallel()
+    .<API label="None">limit</API>(10000)
+    //.<API label="None">peek</API>(e -> <API label="None">System.out.println</API>(e+" is processed by "+ Thread.currentThread().<API label="None">getName</API>()))
+    .<API label="None">forEach</API>(e -> <API label="None">strings.add</API>(e));
+
+   <API label="None">System.out.println</API>("# of elems: "+<API label="None">strings.size</API>());
+} 
+
+</code></pre>
+
+AssertJ has a concept of <a href="http://joel-costigliola.github.io/assertj/core/api/org/assertj/core/api/SoftAssertions.html" rel="nofollow noreferrer">soft assertions</a>, are those to be used in the scenarios like that?  I'd appreciate some code samples if so.  
+
+Or perhaps there are better frameworks specifically design for this type of scenarios?
+
+Thanks.
+
+==========
+I'm not sure if that is what you are really looking for but you can try using  assumptions.
+After executing the code under test, perform an assumption on the result, the following code/assertions will only be executed if the assumptions were correct.
+
+Since 3.9.0 AssertJ provides <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/Assumptions.html" rel="nofollow noreferrer">assumptions</a> out of the box, example:
+
+<pre><code>
+List strings = new ArrayList<>(); // not thread-safe
+
+int requestedSize = 10_000;
+
+Throwable thrown = <API label="None">catchThrowable</API>(() -> {
+  Stream.iterate("+", s -> s + "+")
+        .parallel()
+        .<API label="None">limit</API>(requestedSize)
+        .<API label="None">forEach</API>(strings::<API label="">add</API>);
+});
+
+// thrown is null if there was no exception raised
+<API label="org.assertj.core.api.Assumptions.assumeThat">assumeThat</API>(thrown).<API label="org.assertj.core.api.IterableAssert.isNotNull">isNotNull</API>();
+
+// only executed if thrown was not null otherwise the test is skipped.
+<API label="None">assertThat</API>(thrown).<API label="None">isInstanceOf</API>(ArrayIndexOutOfBoundsException.class);
+
+</code></pre>
+
+You should also have a look at <a href="https://github.com/awaitility/awaitility" rel="nofollow noreferrer">https://github.com/awaitility/awaitility</a> if you are testing asynchronous code.
+

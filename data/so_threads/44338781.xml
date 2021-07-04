@@ -1,0 +1,52 @@
+https://stackoverflow.com/questions/44338781
+I have a stream of timestamped stats coming for every minute(arbitrary number of stats for each <API label="">min</API>). It's just an ongoing stream of stats and no change in previous is allowed. Also there is no concurrency issue here. So the appropriate data structure is a <code>map</code>. However this map only needs to keep data for last 30 mins so it should also kick out the first element and write the new <API label="">one</API>(circular buffer). I've been told Guava HashMultimap is a good candidate to use. But I can't figure out how I can use it and find the first and last elements of map and how to delete the last element. When I look at <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/LinkedHashMultiset.html" rel="nofollow noreferrer">LinkedHashMultiMap</a> I don't see any method for finding first or last elements. I appreciate any help.
+
+==========
+There are a couple of approaches you can take. I will explain and show examples of both. I will not address synchronization, if that is necessary let me know and I can add details to ensure the Multimap code is threadsafe. This involves correctly synchronizing on the multimap when accessing its views and wrapping it in a synchronized wrapper. More details can also be found <a href="http://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Multimaps.html#synchronizedListMultimap-com.google.common.collect.ListMultimap-" rel="nofollow noreferrer">here</a>.
+
+
+Use a Multimap
+Use Guava's <a href="https://github.com/google/guava/wiki/CachesExplained" rel="nofollow noreferrer">Cache</a>
+
+
+For the Multimap approach, I would recommend you use the <a href="http://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/LinkedListMultimap.html" rel="nofollow noreferrer">LinkedListMultimap</a>. It will ensure your <API label="">keys</API> are ordered and your <API label="">values</API> are ordered (since you originally stated <code>Map</code>. A LinkedHashMultimap will preserve the order but it will <API label="">remove</API> duplicate stats. If this isn't a concern, then you could use LinkedHashMultimap.
+
+To <API label="">get</API> the first key value, you can use the <API label="None">iterator</API> or use Guava's <a href="http://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Iterables.html" rel="nofollow noreferrer">Iterables</a> <API label="com.google.common.collect.Iterables.getFirst">getFirst</API>(Iteratable, defaultValue) utility method. To <API label="">get</API> the last key value, you can Iterables <API label="com.google.common.collect.Iterables.getLast">getLast</API>(Iteratable, defaultValue) method.
+If your goal is just to <API label="">remove</API> the <API label="">values</API> older than 30 minutes, you could ignore Iterables and just use the <API label="None">iterator</API> of they Multimap's <API label="">keys</API>.
+
+<pre><code>
+LinkedHashMultimap stats = <API label="com.google.common.collect.LinkedListMultimap.create">LinkedHashMultimap.create</API>();
+
+//Every minute
+<API label="com.google.common.collect.LinkedListMultimap.putAll">stats.putAll</API>(new Date(), newStats);
+
+//To <API label="">get</API> the first key inserted into the map
+Date first = <API label="com.google.common.collect.Iterables.getFirst">Iterables.getFirst</API>(<API label="com.google.common.collect.LinkedListMultimap.keys">stats.keys</API>(), null);
+//Remove the first entry
+<API label="com.google.common.collect.LinkedListMultimap.remove">stats.remove</API>(first);
+
+//To <API label="">get</API> the last key inserted into the map
+Date last = <API label="com.google.common.collect.Iterables.getLast">Iterables.getLast</API>(<API label="com.google.common.collect.LinkedListMultimap.keys">stats.keys</API>(), null);
+//Remove the last entry
+<API label="">stats.remove</API>(last);
+
+//Without using Iterables.
+Set <API label="">keys</API> = <API label="com.google.common.collect.LinkedListMultimap.keys">stats.keys</API>();
+if (!<API label="">keys</API>.<API label="None">isEmpty</API>()) {
+    <API label="">keys</API>.<API label="None">iterator</API>().<API label="None">next</API>().<API label="None">remove</API>();
+}
+
+</code></pre>
+
+The Multimap approach requires you to manually manage removing old stats. A slightly simpler approach in this regard would be to use Guava's Cache. Note, however, that this does not maintain order of any kind and would be more difficult to <API label="">get</API> the <API label="">values</API> for a time, since you would not have the exact timestamp of when the stats were inserted. You would need to <API label="">create</API> your own custom Date class with a <code>.<API label="None">hashCode</API>()</code> and <code>.<API label="None">equals</API>(Object)</code> method that would work for your needs. This may be more work than it is worth.
+
+<pre><code>
+Cache cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+        .<API label="com.google.common.cache.CacheBuilder.expireAfterWrite">expireAfterWrite</API>(30, TimeUnit.MINUTES)
+        .<API label="com.google.common.cache.CacheBuilder.build">build</API>();
+
+<API label="com.google.common.cache.Cache.put">cache.put</API>(new CustomDate(), stats);
+List statsForTime = <API label="com.google.common.cache.Cache.get">cache.get</API>(new CustomDate(/*appropriate initialization*/));
+
+</code></pre>
+

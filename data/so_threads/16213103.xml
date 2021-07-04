@@ -1,0 +1,43 @@
+https://stackoverflow.com/questions/16213103
+I need to implement several comparators in Java.
+
+I have a lot <API label="">of</API> known classes, <code>A1</code>, <code>A2</code>, <code>A3</code>, ..., <code>An</code>, which all extends class <code>A</code>. What I want to to is a comparator class based on Guava <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Ordering.html#immutableSortedCopy%28java.lang.Iterable%29" rel="nofollow"><code>Ordering</code></a>, like the following:
+
+<pre><code>
+Ordering<a> sorterType1 = new Ordering<a>() {
+        // Here, provide a Set or something similar that keeps in memory
+        // the class types and the associated priority. 
+
+       @Override
+        public int <API label="com.google.common.collect.Ordering.compare">compare</API>(A left, A right) {
+           // return -1 if class <API label="">of</API> left has an <API label="">higher</API> priority wrt class <API label="">of</API> right; 
+           // return  0 if class <API label="">of</API> left has the same priority wrt class <API label="">of</API> right; 
+           // return  1, otherwise.
+        }
+
+</code></pre>
+
+Since I need to develop a lot <API label="">of</API> different comparators, I don't want to put the priority inside the class type, since there are several priorities differentiated for each comparator.
+What I'm missing are the parts with comments.
+
+What is the most effective and efficient implementation <API label="">of</API> the parts with comments?
+
+==========
+Don't write <API label="com.google.common.collect.Ordering.compare">compare</API> implementation by yourself, use <code>Ordering</code> super powers (<a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/collect/Ordering.html#<API label="">explicit</API>%28java.util.List%29" rel="nofollow"><code>Ordering#<API label="com.google.common.collect.Ordering.explicit">explicit</API>(List)</code></a> to be exact):
+
+<pre><code>
+List myOrder = <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(
+    A1.class, A4.class, A3.class, A2.class);
+Ordering<a> explicitByClassOrdering = <API label="com.google.common.collect.Ordering.explicit">Ordering.explicit</API>(myOrder)
+    .<API label="com.google.common.collect.Ordering.onResultOf">onResultOf</API>(new Function() {
+      @Override public Class <API label="None">apply</API>(A a) {
+        return <API label="None">a.getClass</API>();
+      }
+    });
+
+<API label="None">System.out.println</API>(<API label="com.google.common.collect.Ordering.sortedCopy">explicitByClassOrdering.sortedCopy</API>(
+    <API label="com.google.common.collect.ImmutableList.of">ImmutableList.of</API>(new A3(), new A2(), new A3(), new A1(), new A4())));
+// [Test$A1, Test$A4, Test$A3, Test$A3, Test$A2]
+
+</code></pre>
+

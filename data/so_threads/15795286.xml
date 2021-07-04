@@ -1,0 +1,87 @@
+https://stackoverflow.com/questions/15795286
+I am having an issue running tests using tycho due to an incorrect dependency resolution that, somehow, is placing the the old Google Collections .jar on the classpath and not the Guava one, despite the fact that at no point in any of my poms do I specify a dependency on collections (only guava).
+
+My unit tests fail due to things like NoSuchMethodError (ImmutableList.copyOf), NoClassDefFoundError (Joiner), which I pretty much narrowed down to 'finding the wrong jar'. These same tests pass when ran manually in Eclipse.
+
+Here is the relevant part of the pom:
+
+<pre><code>
+
+   
+        com.google.guava
+        guava
+        14.0.1
+    
+  ...
+
+
+</code></pre>
+
+The phrase 'google collections' appears no where. The only other repository I specify is:
+
+<pre><code>
+
+   
+        helios
+        p2
+        http://download.eclipse.org/releases/helios
+    
+
+
+</code></pre>
+
+My plugin imports 'com.google.common.base' and 'com.google.common.collect' as imported packages. I have my own bundled version of Guava 14 in my workspace for debugging, but in the POM I elect to not use my local module.
+
+I followed Sean Patrick Floyd's answer on this question (<a href="https://stackoverflow.com/questions/12041111/junit-throws-java-lang-nosuchmethoderror-for-com-google-common-collect-iterables">JUnit throws java.lang.NoSuchMethodError For com.google.common.collect.Iterables.tryFind</a>), and had my test throw an exception with the location of the .jar that the Iterables class was loaded from. It spat back out:
+
+<pre><code>
+java.lang.IllegalArgumentException: file:/C:/Documents and Settings/Erika Redmark/.m2/repository/p2/osgi/bundle/com.google.collect/0.8.0.v201102150722/com.google.collect-0.8.0.v201102150722.jar
+
+</code></pre>
+
+This is where I am now stuck. This google-collections jar is coming seemingly out of no where, and I don't know how to stop it. As long as it is being resolved, my unit tests will fail. How can I stop Tycho from trying to get the old Google Collections?
+
+Just to clarify, this has not stopped building and deployment; the plugin update site is on an CI platform and we have been able to install the plugin on different Eclipse IDEs, so this issue is only affecting the tests.
+
+Please let me know if additional information is needed.
+
+==========
+The plug-in com.google.collect 0.8.0.v201102150722 is part of the Helios p2 repository that you have configured in your POM. This means that this plug-in is part of the <a href="http://wiki.eclipse.org/Tycho/Target_Platform" rel="nofollow">target platform</a> and so may be used to resolve dependencies.
+
+If you want to ensure that the bundle is not used, make sure that it is not part of the target platform. In your case, the easiest way to do this is to explicitly <a href="http://wiki.eclipse.org/Tycho/Target_Platform#Filtering" rel="nofollow"><API label="">remove</API> the plug-in from the target platform</a>:
+
+<pre><code>
+
+  org.eclipse.tycho
+   target-platform-configuration
+   ${tycho-version}
+   
+      
+         
+            eclipse-plugin
+            com.google.collect
+            
+         
+      
+   
+
+
+</code></pre>
+
+Next, you need to make sure that the guava plug-in is part of the target platform. You can <a href="http://wiki.eclipse.org/Tycho/Target_Platform#POM_Dependencies" rel="nofollow">add an artifact from a Maven repository to the target platform</a> in the following way:
+
+
+Declare a Maven dependency to the artifact in the <code>dependencies</code> section of the POM. You already have done this correctly.
+Set the configuration parameter <code></code> to <code>consider</code> on Tycho's <code>target-platform-configuration</code> plug-in.
+
+
+Note that this will generally only work if the referenced artifact is already an OSGi bundle. This is the case here: <code>com.google.guava:guava:14.0.1</code> seems to have all manifest headers needed by OSGi.
+
+This should give you the result you wanted: In the test runtime, guava should now be used to match your <code>com.google.common.*</code> package imports.
+
+
+
+And another general remark on declaring dependencies in Tycho: In Tycho, you can only declare dependencies in the PDE source files <code>META-INF/MANIFEST.MF</code>, <code>feature.xml</code>, etc.
+
+The normal Maven-style dependencies declared in the POM do not add dependencies to the project. As explained above, the POM dependencies may only add artifacts to the target platform, i.e. the set of artifacts that may be used by Tycho to resolve the dependencies declared in the PDE source files. So in the end, the POM dependency may become part of the resolved dependencies, but only if the dependency resolver picks it for matching one of the declared dependencies.
+

@@ -1,0 +1,50 @@
+https://stackoverflow.com/questions/35250020
+Is it ok to use a Guava Cache of maximum <API label="">size</API> 1?
+
+I'm reading that sometimes there can be evictions even before that maximum <API label="">size</API> is reached.
+
+However, I only need one cache entry. So I'm wondering what value to set for maximum <API label="">size</API> that would be safe, but not excessive.
+
+==========
+You should be able to use <a href="http://google.github.io/guava/releases/11.0.1/api/docs/com/google/common/cache/Cache.html#<API label="">cleanUp</API>()" rel="nofollow"><code><API label="com.google.common.cache.Cache.cleanUp">Cache.cleanUp</API>()</code></a> as explained in <a href="https://github.com/google/guava/wiki/CachesExplained#when-does-cleanup-happen" rel="nofollow">When Does Cleanup Happen?</a> and test whether a maximum <API label="">size</API> of 1 suites your needs or not.
+
+e.g. The following shows that using a <code>LoadingCache</code> with maximum <API label="">size</API> of 1 will not evict an existing entry until a different entry is loaded to take its place:
+
+<pre><code>
+final LoadingCache loadingCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+        .<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(1)
+        .<API label="com.google.common.cache.CacheBuilder.build">build</API>(new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+            private final AtomicInteger loadInvocationCount = new AtomicInteger();
+
+           @Override
+            public Integer <API label="com.google.common.cache.CacheLoader.load">load</API>(Object key) throws Exception {
+                return <API label="None">loadInvocationCount.getAndIncrement</API>();
+            }
+        });
+assert <API label="None">loadingCache.size</API>() == 0;
+
+assert <API label="com.google.common.cache.LoadingCache.getUnchecked">loadingCache.getUnchecked</API>('a') == 0;
+assert <API label="None">loadingCache.size</API>() == 1;
+
+<API label="None">loadingCache.cleanUp</API>();
+assert <API label="None">loadingCache.size</API>() == 1;
+
+assert <API label="com.google.common.cache.LoadingCache.getUnchecked">loadingCache.getUnchecked</API>('a') == 0;
+assert <API label="None">loadingCache.size</API>() == 1;
+
+assert <API label="com.google.common.cache.LoadingCache.getUnchecked">loadingCache.getUnchecked</API>('b') == 1;
+assert <API label="None">loadingCache.size</API>() == 1;
+
+<API label="None">loadingCache.cleanUp</API>();
+assert <API label="None">loadingCache.size</API>() == 1;
+
+assert <API label="com.google.common.cache.LoadingCache.getUnchecked">loadingCache.getUnchecked</API>('a') == 2;
+assert <API label="None">loadingCache.size</API>() == 1;
+
+<API label="com.google.common.cache.LoadingCache.getUnchecked">loadingCache.cleanUp</API>();
+assert <API label="None">loadingCache.size</API>() == 1;
+
+</code></pre>
+
+Note that this may be specific to the type of <code>LoadingCache</code> being built so you will need to test whatever configuration you plan to use.
+

@@ -1,0 +1,32 @@
+https://stackoverflow.com/questions/59381882
+I have a problem understanding how to use <code><API label="com.google.common.collect.ImmutableSortedMap.toImmutableSortedMap">ImmutableSortedMap.toImmutableSortedMap</API>()</code>, when I want to create a <API label="">frequency</API> map. I know about <code>Multiset</code> (<a href="https://stackoverflow.com/questions/59348128/how-to-use-guavas-multisets-tomultiset-when-collecting-a-stream">asked about that previously and got excellent help</a>), but I don't want to use it this time, because it will require me to write a custom serializer to create a json representation that works for the consumers <API label="">of</API> said json. 
+
+The below code works, i.e. it creates the desired <API label="">frequency</API> map, sorted on key in ascending order, but it uses a temporary map, which I then use to create the <code>ImmutableSortedMap</code>. I would like to <API label="">get</API> rid <API label="">of</API> the temporary map. My attempts to use <code><API label="com.google.common.collect.ImmutableSortedMap.toImmutableSortedMap">toImmutableSortedMap</API>()</code> collector method for this scenario failed to produce code that even compiled...
+
+I am using Java 8 and Guava version 28.1
+
+<pre><code>
+@Test
+public void <API label="">test</API>() {
+    Map intermediateMap = <API label="None">Stream.of</API>("b", "a", "c", "b")
+            .collect(Collectors.groupingBy(<API label="None">Function.identity</API>(), Collectors.counting()));
+    ImmutableSortedMap desiredMap = <API label="com.google.common.collect.ImmutableSortedMap.copyOf">ImmutableSortedMap.copyOf</API>(intermediateMap);
+
+   <API label="None">System.out.println</API>(desiredMap); // Outputs {a=1, b=2, c=1}, which is the desired state
+}
+
+</code></pre>
+
+==========
+<pre><code>
+ Map result =
+        <API label="None">Stream.of</API>("b", "a", "c", "b")
+              .collect(<API label="com.google.common.collect.ImmutableSortedMap.toImmutableSortedMap">ImmutableSortedMap.toImmutableSortedMap</API>(
+                  <API label="None">Comparator.naturalOrder</API>(),
+                  <API label="None">Function.identity</API>(),
+                  x -> 1L,
+                  Long::sum
+              ));
+
+</code></pre>
+

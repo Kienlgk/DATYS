@@ -1,0 +1,186 @@
+https://stackoverflow.com/questions/43019566
+I have controller with the following structure: 
+
+<pre><code>
+@RequestMapping(<API label="">value</API> = "${foo.controller.requestMappingUrl.login}", method = RequestMethod.POST)
+    public ResponseMessage loginUser(
+            @RequestParam("username") String username, HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse) {
+
+   try {
+
+      return fooService.login(username); // can mock test
+
+   } catch (UserNotFoundException e) {
+            //CANNOT MOCK TEST THIS BLOCK
+            String errorMsg = LoggerUtil.printStackTrace(e);
+            <API label="None">LOG.error</API>("[RequestId: {}] UserNotFoundException: {}, Stack: {}", requestId, <API label="None">e.getMessage</API>(), errorMsg);
+            httpServletResponse.setStatus(<API label="None">HttpStatus.NOT_ACCEPTABLE.value</API>());
+            statusCode = <API label="None">StatusCode.UserNotFound.value</API>();
+            responseMessage.buildResponseMessage(StringUtils.EMPTY, HttpStatus.NOT_ACCEPTABLE, statusCode,
+                    messageByLocaleService.getMessageResponse(statusCode, null, locale));
+    }
+}
+
+</code></pre>
+
+When I mock to throw the exception UserNotFoundException, I get only NestedServletException. Even though I tried adding expected = NestedServletException.class. The corbetura reports indicate that the code block <API label="">is</API> not covered in testing. Do you have <API label="">any</API> suggestion to help test the code inside the catch block. 
+
+The test code as requested:
+
+<pre><code>
+@SuppressWarnings("unchecked")
+@Test(expected = UserNotFoundException.class)
+    public void testControllerUserNotFoundException() throws Exception {
+        Response resp = new Response();
+        resp.setStatusCode(StatusCode.UserNotFoundErrorCode);
+        <API label="org.mockito.Mockito.when">when</API>(fooService.login(<API label="org.mockito.Mockito.any">any</API>(String.class)).<API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(UserNotFoundException.class);
+
+       mockMvc.perform(<API label="None">post</API>("/service-user/1.0/auth/login?&username=test")
+                        .contentType(contentType)).andExpect(status().isNotAcceptable())
+                .andExpect(jsonPath("$.statusCode", <API label="org.hamcrest.core.Is.is">is</API>("ERRORCODE144")));
+
+   }
+
+</code></pre>
+
+And the stack trace
+
+
+ java.lang.Exception: Unexpected exception,
+  expected
+  but was  at
+  <API label="">org.junit.internal.runners.statements.ExpectException.evaluate</API>(ExpectException.java:28)
+    at
+  <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+    at
+  <API label="">org.springframework.test.context.junit4.statements.RunBeforeTestMethodCallbacks.evaluate</API>(RunBeforeTestMethodCallbacks.java:75)
+    at
+  <API label="">org.springframework.test.context.junit4.statements.RunAfterTestMethodCallbacks.evaluate</API>(RunAfterTestMethodCallbacks.java:86)
+    at
+  <API label="">org.springframework.test.context.junit4.statements.SpringRepeat.evaluate</API>(SpringRepeat.java:84)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)    at
+  org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:252)
+    at
+  org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:94)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)  at
+  <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)   at
+  org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)     at
+  org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)   at
+  <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)  at
+  <API label="">org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate</API>(RunBeforeTestClassCallbacks.java:61)
+    at
+  <API label="">org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate</API>(RunAfterTestClassCallbacks.java:70)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)    at
+  <API label="">org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run</API>(SpringJUnit4ClassRunner.java:191)
+    at
+  <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:50)
+    at
+  <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at
+  org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+    at
+  org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+    at
+  <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+    at
+  <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:197)
+  Caused by: org.springframework.web.util.NestedServletException:
+  Request processing failed; nested exception <API label="">is</API>
+  com.atlassian.crowd.exception.runtime.UserNotFoundException   at
+  org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:982)
+    at
+  org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:872)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:648)     at
+  org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:846)
+    at
+  org.springframework.test.web.servlet.TestDispatcherServlet.service(TestDispatcherServlet.java:65)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:729)     at
+  org.springframework.mock.web.MockFilterChain$ServletFilterProxy.doFilter(MockFilterChain.java:167)
+    at
+  org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:134)
+    at
+  org.springframework.test.web.servlet.MockMvc.perform(MockMvc.java:155)
+    at
+  id.co.allianz.microservice.cop.app.auth.controller.AuthControllerTest.testControllerUserNotFoundException(AuthControllerTest.java:105)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)  at
+  <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:62)
+    at
+  <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:498)     at
+  org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at
+  <API label="">org.junit.internal.runners.model.ReflectiveCallable.run</API>(ReflectiveCallable.java:12)
+    at
+  org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at
+  <API label="">org.junit.internal.runners.statements.InvokeMethod.evaluate</API>(InvokeMethod.java:17)
+    at
+  <API label="">org.junit.internal.runners.statements.ExpectException.evaluate</API>(ExpectException.java:19)
+    ... 22 more Caused by:
+  com.atlassian.crowd.exception.runtime.UserNotFoundException
+
+
+==========
+You can't expect <code>UserNotFoundException</code> exception out of the controller method because you are suppressing it by simply logging and returning the response with <code>ERRORCODE144</code>.
+
+The best practice here <API label="">is</API> to configure the <code>ControllerAdvice</code> so that all of the exceptions can be handled globally and your controller looks clean as shown below, I suggest you also look <a href="https://spring.io/blog/2013/11/01/exception-handling-in-spring-mvc" rel="nofollow noreferrer">here</a> on spring controllers exception handling.
+
+ExceptionControllerAdvice class:
+
+<pre><code>
+@ControllerAdvice
+public class ExceptionControllerAdvice {
+
+   @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity handleUnexpectedException(UnexpectedException 
+                     unExpectedExe) {
+
+       //log and send the response back to the client here
+    }
+}
+
+</code></pre>
+
+Controller method:
+
+<pre><code>
+@RequestMapping(<API label="">value</API> = "${foo.controller.requestMappingUrl.login}",
+                                 method = RequestMethod.POST)
+public ResponseMessage loginUser(
+            @RequestParam("username") String username,
+               HttpServletRequest httpServletRequest,
+               HttpServletResponse httpServletResponse) {
+
+      return fooService.login(username);
+}
+
+</code></pre>
+
+JUnit setup & test methods:
+
+<pre><code>
+@Before
+    public void setUp() throws Exception {
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    mockMvc = MockMvcBuilders.standaloneSetup(projectController)
+                .setMessageConverters(new MappingJackson2HttpMessageConverter())
+                .setControllerAdvice(new ExceptionControllerAdvice()).<API label="None">build</API>();
+}
+
+
+@SuppressWarnings("unchecked")
+@Test
+    public void testControllerUserNotFoundException() throws Exception {
+        Response resp = new Response();
+        resp.setStatusCode(StatusCode.UserNotFoundErrorCode);
+        <API label="org.mockito.Mockito.when">when</API>(fooService.login(<API label="org.mockito.Mockito.any">any</API>(String.class)).
+        <API label="org.mockito.stubbing.OngoingStubbing.thenThrow">thenThrow</API>(UserNotFoundException.class);
+        mockMvc.perform(<API label="None">post</API>("/service-user/1.0/auth/login?&username=test")
+                        .contentType(contentType)).
+     andExpect(status().isNotAcceptable())
+                .andExpect(jsonPath("$.statusCode", <API label="org.hamcrest.core.Is.is">is</API>("ERRORCODE144")));
+}
+
+</code></pre>
+

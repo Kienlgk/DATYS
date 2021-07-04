@@ -1,0 +1,66 @@
+https://stackoverflow.com/questions/36266134
+I am trying to <API label="">initialize</API> Guava <API label="com.google.common.collect.Queues.synchronizedQueue">synchronizedQueue</API> in Scala for performence benchmarking.
+
+<pre><code>
+class TestSynchronizedQueueJavaPTS {
+  private var assignedQForTest : java.util.Queue[Int] = null;
+  private var syncQueue   : java.util.Queue[Int] = null;
+
+ def <API label="">create</API>(DS_Type : String) : java.util.concurrent.ConcurrentLinkedQueue[Int] ={
+     DS_Type match{
+       case "syncQueue" =>
+         syncQueue = <API label="com.google.common.collect.Queues.synchronizedQueue">com.google.common.collect.Queues.synchronizedQueue</API>(com.google.common.collect.MinMaxPriorityQueue.[Int]<API label="com.google.common.collect.MinMaxPriorityQueue.create">create</API>());
+         assignedQForTest = syncQueue;
+     }   
+     assignedQForTest
+  }
+}
+
+</code></pre>
+
+But I am getting this error:
+
+
+ <API label="">identifier</API> expected but '[' found.
+
+
+Source of error: .[Int] part.
+
+I have the equivalent Java Code which is working perfectly fine without any error:
+
+<pre><code>
+import java.util.Queue;
+import com.google.common.collect.MinMaxPriorityQueue;
+import com.google.common.collect.Queues;
+
+public class test {
+    public static void <API label="">main</API>(String[] args) {
+        Queue queue = <API label="com.google.common.collect.Queues.synchronizedQueue">Queues.synchronizedQueue</API>(<API label="com.google.common.collect.MinMaxPriorityQueue.create">MinMaxPriorityQueue.create</API>());
+        <API label="None">queue.add</API>(15);
+        <API label="None">queue.add</API>(63);
+        <API label="None">queue.add</API>(20);
+        System.out.println (<API label="None">queue.poll</API>());
+        System.out.println (<API label="None">queue.poll</API>());
+    }
+}
+
+</code></pre>
+
+==========
+The type param should go after the method name like below. Then, there is another compilation error since Scala's <code>Int</code> is not <code>Comparable</code>. I changed it to <code>Integer</code> to get around that, but maybe you will prefer a different way of resolving that particular issue.
+
+<pre><code>
+  private var assignedQForTest : java.util.Queue[Integer] = null;
+  private var syncQueue   : java.util.Queue[Integer] = null;
+
+ def <API label="">create</API>(DS_Type : String) : java.util.Queue[Integer] ={
+     DS_Type match{
+       case "syncQueue" =>
+         syncQueue = <API label="com.google.common.collect.Queues.synchronizedQueue">com.google.common.collect.Queues.synchronizedQueue</API>(<API label="com.google.common.collect.MinMaxPriorityQueue.create">com.google.common.collect.MinMaxPriorityQueue.create</API>[Integer]());
+         assignedQForTest = syncQueue;
+     }   
+     assignedQForTest
+  }
+
+</code></pre>
+

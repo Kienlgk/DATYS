@@ -1,0 +1,30 @@
+https://stackoverflow.com/questions/5719833
+Is there a smart way to get all Values from a Map given some Keys?
+
+I would like a method like this:
+
+<pre><code>
+public static  Collection <API label="None">getAll</API>(Map map, Collection keys)
+
+</code></pre>
+
+or is already a guava way?
+
+==========
+This depends on how you want the method to work. For example, should elements <API label="">in</API> <code>keys</code> that aren't <API label="">in</API> <code>map</code> A) just be ignored or should they B) be represented as <code>null</code> <API label="">in</API> the returned values collection or should that C) be an error? Also consider whether you want a live view or a separate collection containing the values.
+
+For A, my preference would be:
+
+<pre><code>
+Collection values = <API label="com.google.common.collect.Collections2.transform">Collections2.transform</API>(
+    <API label="com.google.common.collect.Collections2.filter">Collections2.filter</API>(keys, <API label="">Predicates.in</API>(<API label="None">map.keySet</API>()),
+    <API label="com.google.common.base.Functions.forMap">Functions.forMap</API>(map));
+
+</code></pre>
+
+This limits the result to values for keys that are actually <API label="">in</API> the map and should be relatively efficient as well, even if the map is much larger than the set of keys you want. Of course, you may want to copy that result <API label="">in</API> to another collection depending on what you want to do with it.
+
+For B, you'd use @Michael Brewer-Davis's solution except with <code><API label="com.google.common.base.Functions.forMap">Functions.forMap</API>(map, null)</code>.
+
+For C, you'd first want to check that <code><API label="None">map.keySet</API>().<API label="None">containsAll</API>(keys)</code> and throw an error if <code>false</code>, then use @Michael Brewer-Davis's solution... but be aware that unless you then copied the result <API label="">in</API> to another collection, removing an entry from <code>map</code> could cause an <code>IllegalArgumentException</code> for code using the returned collection at some point.
+

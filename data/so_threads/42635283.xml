@@ -1,0 +1,46 @@
+https://stackoverflow.com/questions/42635283
+I am trying to create a cache for a set of Strings with LRU eviction policy in this way.
+
+<pre><code>
+private static final Boolean PLACEHOLDER = true;
+LoadingCache scannedIDsCache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>()
+        .<API label="com.google.common.cache.CacheBuilder.build">build</API>(new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {
+            @Override
+            public Boolean <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) throws Exception {
+                return PLACEHOLDER;
+            }
+        });
+
+</code></pre>
+
+I think I am saving space using only one object as the value for all the elements, am I correct? Do you know any other space efficient way of doing this? Thanks.
+
+==========
+No, you are not saving space.
+
+When a JVM* <a href="https://docs.oracle.com/javase/tutorial/java/data/autoboxing.html" rel="noreferrer">autoboxes</a> a <code>boolean</code> it calls <a href="https://docs.oracle.com/javase/7/docs/api/java/lang/Boolean.html#<API label="">valueOf</API>(boolean)" rel="noreferrer"><code><API label="None">Boolean.valueOf</API>(boolean)</code></a> which returns either <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Boolean.html#TRUE" rel="noreferrer"><code>Boolean.TRUE</code></a> or <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Boolean.html#FALSE" rel="noreferrer"><code>Boolean.FALSE</code></a> which are <code>static final Boolean</code> fields. It does not create a new <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Boolean.html" rel="noreferrer"><code>Boolean</code></a> instance. As such, the <code>PLACEHOLDER</code> you've defined is in fact a reference to <code>Boolean.TRUE</code> and is redundant.
+
+Furthermore, I would not use Guava's <code>Cache</code> for an LRU unless I am willing to accept the fact that "the cache may evict an entry because it hasn't been used recently or very often" (<a href="https://google.github.io/guava/releases/21.0/api/docs/com/google/common/cache/CacheBuilder.html#<API label="">maximumSize</API>-long-" rel="noreferrer"><API label="com.google.common.cache.CacheBuilder.maximumSize">CacheBuilder.maximumSize</API>(long)</a>, emphasis added).
+
+If you want a straight-up LRU you can use <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Collections.html#<API label="">newSetFromMap</API>(java.util.Map)" rel="noreferrer"><code><API label="None">Collections.newSetFromMap</API>(Map)</code></a> with <a href="https://docs.oracle.com/javase/8/docs/api/java/util/LinkedHashMap.html" rel="noreferrer"><code>LinkedHashMap</code></a>:
+
+<pre><code>
+Set cache = <API label="None">Collections.newSetFromMap</API>(new LinkedHashMap() {
+    @Override
+    protected boolean removeEldestEntry(Map.Entry eldest) {
+        return <API label="None">size</API>() > MAX_ENTRIES;
+    }
+});
+
+</code></pre>
+
+Where you define <code>MAX_ENTRIES</code>.
+
+
+
+*Note: Theoretically there could be some JVM implementation(s) out there that don't call <code><API label="None">Boolean.valueOf</API>(boolean)</code> (or something similar) at runtime when autoboxing <code>boolean</code> primitives but if such an implementation exists I am fairly confident you are not using it and that very few if any individuals are. From <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Boolean.html#Boolean(boolean)" rel="noreferrer"><code>Boolean(boolean)</code></a>:
+
+
+ Note: It is rarely appropriate to use this constructor. Unless a new instance is required, the static factory <a href="https://docs.oracle.com/javase/7/docs/api/java/lang/Boolean.html#<API label="">valueOf</API>(boolean)" rel="noreferrer"><code><API label="None">valueOf</API>(boolean)</code></a> is generally a better choice. It is likely to yield significantly better space and time performance.
+
+

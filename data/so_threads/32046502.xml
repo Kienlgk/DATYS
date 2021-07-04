@@ -1,0 +1,16 @@
+https://stackoverflow.com/questions/32046502
+From the documentation of <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/AtomicLongMap.html" rel="nofollow">AtomicLongMap</a>: 
+
+
+ Note: If your values are always positive and less than 2^31, you may wish to use a Multiset such as ConcurrentHashMultiset instead. Warning: Unlike Multiset, entries whose values are zero are not automatically removed from the map. Instead they must be removed manually with <API label="com.google.common.util.concurrent.AtomicLongMap.removeAllZeros">removeAllZeros</API>().
+
+
+It states that you may wish to use a Multiset. My question is, what are the benefits of a Multiset over an AtomicLongMap? What considerations should I use when choosing a map containing only positive values? Is the only reason to use a Multiset, the fact that I don't need to call <code><API label="com.google.common.util.concurrent.AtomicLongMap.removeAllZeros">removeAllZeros</API>()</code> manually?
+
+==========
+The <a href="https://code.google.com/p/guava-libraries/wiki/NewCollectionTypesExplained#Multiset" rel="nofollow">Multiset</a> is conceptually different. First, it's a <code>Collection</code>, so it can be used as collection, while <code>AtomicLongMap</code> is not a collection (and not a map either). The multiset represents a set of possibly repeating elements and to perform math operations with their counts, you <API label="">add</API> or <API label="">remove</API> elements. The <code>AtomicLongMap</code> method names more consistent with <code>AtomicLong</code> class and explicitly assume that you are performing math operations on the values. Some operations can be unsupported by one implementation or another. For example, there are <code><API label="com.google.common.util.concurrent.AtomicLongMap.addAndGet">addAndGet</API></code> and <code><API label="com.google.common.util.concurrent.AtomicLongMap.getAndAdd">getAndAdd</API></code> ops in <code>AtomicLongMap</code>, but <code>Multiset</code> has only <code><API label="com.google.common.collect.Multiset.add">add</API></code> method which works like <code><API label="com.google.common.util.concurrent.AtomicLongMap.getAndAdd">getAndAdd</API></code>.
+
+So while in many cases these classes are interchangeable, use <code>ConcurrentHashMultiset</code> if you think of your data as of collection of possibly repeating elements. Use <code>AtomicLongMap</code> if you think of your data as of mapping between the key and the <code>long</code> value.
+
+Note that since Java-8, these classes can be easily replaced with standard JDK <code>ConcurrentHashMap</code>. For example, you may use <code><API label="None">map.merge</API>(key, 1L, Long::<API label="None">sum</API>);</code> to <API label="">increment</API> the mapped value.
+

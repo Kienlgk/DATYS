@@ -1,0 +1,70 @@
+https://stackoverflow.com/questions/7524423
+Being impressed by Guava's <a href="http://guava-libraries.googlecode.com/svn/trunk/javadoc/com/google/common/collect/MapMaker.html#makeComputingMap%28com.google.common.base.Function%29" rel="nofollow noreferrer">computing map feature</a>, I'm searching for a sort of "computing reference" - a lazy loading reference implementation that parallel's Guava's ease of use, by which I mean it handles all locking, loading, and exception handling under the hood, only exposing a <code><API label="">get</API>()</code> method.
+
+After a brief search turned up nothing, I quickly rolled my own as a proof of concept:
+
+<pre><code>
+public abstract class ComputingRef implements Callable {
+
+  private volatile T referent = null;
+   private Lock <API label="">lock</API> = new ReentrantLock();
+
+  public T <API label="">get</API>() {
+      T temp = referent;
+      if (temp == null) {
+         <API label="None">lock.lock</API>();
+         try {
+            temp = referent;
+            if (temp == null) {
+               try {
+                  referent = temp = <API label="None">call</API>();
+               }
+               catch (Exception e) {
+                  if (e instanceof RuntimeException) {
+                     throw (RuntimeException)e;
+                  }
+                  else {
+                     throw new RuntimeException(e);
+                  }
+               }
+            }
+         }
+         finally {
+            <API label="">lock</API>.<API label="None">unlock</API>();
+         }
+      }
+      return temp;
+   }
+}
+
+</code></pre>
+
+This <code>ComputingRef</code> could be anonymously extended to implement <code><API label="None">call</API>()</code>, which functions as the factory method:
+
+<pre><code>
+ComputingRef lazySingletonRef = new ComputingRef() {
+   @Override
+   public MyObject <API label="None">call</API>() {
+      //fetch MyObject from database and return
+   }
+};
+
+</code></pre>
+
+I'm not satisfied that this implementation is optimal, but it demonstrates what I'm after.
+
+I later found <a href="http://www.java2s.com/Code/Java/Collections-Data-Structure/LazyLoadingReference.htm" rel="nofollow noreferrer">this example from the T2 Framework</a>, which appears to be more complex.
+
+Now my questions are:
+
+
+How can my above code be improved?
+How does it compare to the T2 example, and what advantages are offered by that example's greater complexity?
+Are there other implementations of a lazy loading reference that I've missed in my search?
+
+
+EDIT: Updated my implementation to use a local variable as suggested by <a href="https://stackoverflow.com/questions/7524423/lazy-loading-reference-implementation/7524565#7524565">@irreputable's answer</a> - please upvote it if you find the above example useful.
+
+==========
+See <a href="http://google.github.io/guava/releases/20.0/api/docs/com/google/common/base/Suppliers.html#<API label="">memoize</API>-com.google.common.base.Supplier-" rel="nofollow noreferrer"><code><API label="com.google.common.base.Suppliers.memoize">Suppliers.memoize</API>(Supplier)</code></a> to lazily <API label="">initialize</API> a value.
+

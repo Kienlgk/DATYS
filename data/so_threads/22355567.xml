@@ -1,0 +1,72 @@
+https://stackoverflow.com/questions/22355567
+I am new to Guava cache and looking for some advice.
+
+I would like to cache "functions" - classes responsible for some calculation. Each class has 3 double attributes: start, max, <API label="">increment</API>
+
+What is the best way to create a key for storing in cache? How about complex object?
+
+I was thinking about using Hasher but for complex objects same hash does not mean same object. So the key-> value will not be unique.
+
+Also, how does Cache look up for key? 
+I noticed that if I use 2 objects for key which pass <API label="None">equals</API>, Cache considers it to be unique keys. Does it work based <API label="">on</API> key1 == key2? 
+
+<pre><code>
+public static void testGuavaCache() {
+    Cache CACHE = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>().<API label="com.google.common.cache.CacheBuilder.weakValues">weakValues</API>().<API label="com.google.common.cache.CacheBuilder.build">build</API>();
+
+   for (int i = 0; i < 2; i++) {
+        Joiner joiner = <API label="com.google.common.base.Joiner.on">Joiner.on</API>('|');
+        String key1 = <API label="com.google.common.base.Joiner.join">joiner.join</API>(i, i, i, i, i, i, i);
+
+       for (int j = 0; j < 2; j++) {
+            String key = <API label="com.google.common.base.Joiner.join">joiner.join</API>(i, i, i, i, i, i, i);
+            <API label="None">System.out.println</API>(<API label="">key1.equals</API>(key));
+            <API label="None">System.out.println</API>(key1 == key);
+            try {
+                String m = <API label="com.google.common.cache.Cache.get">CACHE.get</API>(key, new Callable() {
+                    @Override
+                    public String <API label="None">call</API>() throws Exception {
+                        return "test";
+                    }
+                });
+
+               <API label="None">System.out.println</API>("Size = " + <API label="com.google.common.cache.Cache.size">CACHE.size</API>());
+
+           } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+
+</code></pre>
+
+Output is:
+
+<pre><code>
+true
+false
+Size = 1
+true
+false
+Size = 2
+true
+false
+Size = 3
+true
+false
+Size = 4
+
+</code></pre>
+
+Removing <API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API>() solves the problem. Is this expected?
+
+==========
+Read the docs for <code><API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API></code>:
+
+
+ Warning: when this method is used, the resulting cache will use identity (==) comparison to determine equality of keys.
+
+
+So yes, you should stop using <code><API label="com.google.common.cache.CacheBuilder.weakKeys">weakKeys</API></code>, and you're also probably better off having a proper value object instead of <API label="">concatenating</API> things together into a <code>String</code>.
+

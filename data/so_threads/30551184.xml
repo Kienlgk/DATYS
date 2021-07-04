@@ -1,0 +1,225 @@
+https://stackoverflow.com/questions/30551184
+I have the following test class and I'm using Mockito's spy. By running my unit test using Eclipse (right click->Run as unit test) all tests pass which means that eclipse build <API label="">process</API> using m2e and AJDT works fine. 
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class SampleTest {
+
+@Mock
+private AnotherClazz mockedClazz;
+
+@Spy
+@InjectMocks
+private SampleImpl sampleService = new SampleImpl() {
+
+   @Override
+    public void someMethod() {
+       ...
+    }
+};
+
+
+@Test
+public void someTest() throws Exception {
+    sampleService.methodUnderTest();
+}
+
+</code></pre>
+
+However when I use maven to <API label="">run</API> the tests I get the following exception.   
+
+<pre><code>
+Tests <API label="">run</API>: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.183 sec <     FAILURE!
+    org.sample.SampleTest  Time elapsed: 0.182 sec  < ERROR!
+    org.mockito.exceptions.base.MockitoException: Problems initiating spied field     sampleService
+    at     org.mockito.internal.runners.JUnit45AndHigherRunnerImpl$1.withBefores(JUnit45AndHigherRunnerImpl.java:27)
+    at org.junit.runners.BlockJUnit4ClassRunner.methodBlock(BlockJUnit4ClassRunner.java:254)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:238)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:63)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:229)
+    at <API label="">org.junit.internal.runners.statements.RunBefores.evaluate</API>(RunBefores.java:26)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:309)
+    at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+    at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+    at <API label="">org.apache.maven.surefire.junit4.JUnit4Provider.execute</API>(JUnit4Provider.java:252)
+    at org.apache.maven.surefire.junit4.JUnit4Provider.executeTestSet(JUnit4Provider.java:141)
+    at <API label="">org.apache.maven.surefire.junit4.JUnit4Provider.invoke</API>(JUnit4Provider.java:112)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at org.apache.maven.surefire.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:189)
+    at <API label="">org.apache.maven.surefire.booter.ProviderFactory$ProviderProxy.invoke</API>(ProviderFactory.java:165)
+    at org.apache.maven.surefire.booter.ProviderFactory.invokeProvider(ProviderFactory.java:85)
+    at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:115)
+    at <API label="">org.apache.maven.surefire.booter.ForkedBooter.main</API>(ForkedBooter.java:75)
+Caused by: org.mockito.exceptions.base.MockitoException: 
+Mockito cannot <API label="">mock</API> this class: class org.sample.SamplelTest$1
+Mockito can only <API label="">mock</API> visible & non-final classes.
+If you're not sure why you're getting this error, please report to the mailing list.
+    ... 25 more
+Caused by: org.mockito.cglib.core.CodeGenerationException: java.lang.reflect.InvocationTargetException-->null
+    at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:238)
+    at org.mockito.cglib.proxy.Enhancer.createHelper(Enhancer.java:378)
+    at <API label="">org.mockito.cglib.proxy.Enhancer.createClass</API>(Enhancer.java:318)
+    at <API label="">org.mockito.internal.creation.cglib.ClassImposterizer.createProxyClass</API>(ClassImposterizer.java:123)
+    at <API label="">org.mockito.internal.creation.cglib.ClassImposterizer.imposterise</API>(ClassImposterizer.java:57)
+    at <API label="">org.mockito.internal.creation.cglib.ClassImposterizer.imposterise</API>(ClassImposterizer.java:49)
+    at <API label="">org.mockito.internal.creation.cglib.CglibMockMaker.createMock</API>(CglibMockMaker.java:24)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:33)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:59)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1285)
+    at <API label="">org.mockito.internal.configuration.injection.SpyOnInjectedFieldsHandler.processInjection</API>(SpyOnInjectedFieldsHandler.java:43)
+    at <API label="">org.mockito.internal.configuration.injection.MockInjectionStrategy.process</API>(MockInjectionStrategy.java:68)
+    at org.mockito.internal.configuration.injection.MockInjectionStrategy.relayProcessToNextStrategy(MockInjectionStrategy.java:89)
+    at <API label="">org.mockito.internal.configuration.injection.MockInjectionStrategy.process</API>(MockInjectionStrategy.java:71)
+    at <API label="">org.mockito.internal.configuration.injection.MockInjection$OngoingMockInjection.apply</API>(MockInjection.java:93)
+    at <API label="">org.mockito.internal.configuration.DefaultInjectionEngine.injectMocksOnFields</API>(DefaultInjectionEngine.java:20)
+    at <API label="">org.mockito.internal.configuration.InjectingAnnotationEngine.injectMocks</API>(InjectingAnnotationEngine.java:100)
+    at org.mockito.internal.configuration.InjectingAnnotationEngine.processInjectMocks(InjectingAnnotationEngine.java:62)
+    at <API label="">org.mockito.internal.configuration.InjectingAnnotationEngine.process</API>(InjectingAnnotationEngine.java:56)
+    at <API label="">org.mockito.MockitoAnnotations.initMocks</API>(MockitoAnnotations.java:108)
+    ... 25 more
+Caused by: java.lang.reflect.InvocationTargetException
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at <API label="">sun.reflect.NativeMethodAccessorImpl.invoke</API>(NativeMethodAccessorImpl.java:57)
+    at <API label="">sun.reflect.DelegatingMethodAccessorImpl.invoke</API>(DelegatingMethodAccessorImpl.java:43)
+    at <API label="">java.lang.reflect.Method.invoke</API>(Method.java:606)
+    at <API label="">org.mockito.cglib.core.ReflectUtils.defineClass</API>(ReflectUtils.java:385)
+    at <API label="">org.mockito.cglib.core.AbstractClassGenerator.create</API>(AbstractClassGenerator.java:220)
+    ... 44 more
+Caused by: java.lang.VerifyError: Cannot inherit from final class
+    at java.lang.ClassLoader.defineClass1(Native Method)
+    at <API label="">java.lang.ClassLoader.defineClass</API>(ClassLoader.java:800)
+    ... 50 more
+
+</code></pre>
+
+What is here the difference between the AJC compiler used in Eclipse with AJDT  and my AspectJ maven plugin configuration? Which configuration or phase am I missing here?
+
+Here is my pom.xml:
+
+<pre><code>
+
+       org.aspectj
+        aspectjrt
+        1.6.11
+
+
+   
+        
+            org.codehaus.mojo
+            aspectj-maven-plugin
+            1.4
+            
+                1.6
+                1.6
+            
+            
+                
+                    process-sources
+                    
+                        compile
+                        test-compile
+                    
+                
+            
+        
+    
+
+
+</code></pre>
+
+Update: I haven't found a solution yet but I know why is this happening. The problem actually lies here on overriding the someMethod(). Removing the method override or commenting out the aspectj maven plugin solves the problem as a workaround. I cannot let AspectJ out of my project so I have to <API label="">mock</API> the someMethod() as well without overriding it (e.g. using Mockito itself). It looks like a bug for me but I'm not quite sure does it come from AspectJ or Mockito.
+
+==========
+
+ What is here the difference between the AJC compiler used in Eclipse with AJDT and my AspectJ maven plugin configuration?
+
+
+Well, you use a very old AspectJ compiler and runtime from 2011 in Maven, but your AJDT probably uses a much more recent version. BTW, does your code really have to be compliant to Java 6? Anyway, that should not be a problem, but I recommend to use the current AspectJ Maven Plugin 1.7 and also the latest AspectJ version. You can still compile 1.6-compatible code with it. When I tried to recreate your situation with the old AspectJ version, the code would not even compile, but you have not provided a real <a href="http://sscce.org/" rel="nofollow">SSCCE</a>, so I have no idea about your JDK version, Mockito version, JUnit version etc.
+
+Try this Maven configuration in your POM:
+
+<pre><code>
+
+   UTF-8
+    1.6
+    1.8.6
+
+
+
+   
+        
+            maven-compiler-plugin
+            3.3
+            
+                ${java.version}
+                ${java.version}
+                
+                false
+            
+        
+        
+            org.codehaus.mojo
+            aspectj-maven-plugin
+            1.7
+            
+                true
+                ${java.version}
+                ${java.version}
+                ignore
+                ${java.version}
+                UTF-8
+                true
+            
+            
+                
+                    
+                    process-sources
+                    
+                        compile
+                        test-compile
+                    
+                
+            
+            
+                
+                    org.aspectj
+                    aspectjtools
+                    ${aspectj.version}
+                
+            
+        
+    
+
+
+
+   
+        org.aspectj
+        aspectjrt
+        ${aspectj.version}
+        runtime
+    
+    
+        junit
+        junit
+        4.11
+        test
+    
+    
+        org.mockito
+        mockito-core
+        1.9.5
+        test
+    
+
+
+</code></pre>
+
+This works for me. BTW, please note the <code></code> in addition to <code></code> and <code></code>.
+

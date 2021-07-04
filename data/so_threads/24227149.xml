@@ -1,0 +1,26 @@
+https://stackoverflow.com/questions/24227149
+What is the purpose of <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/Verify.html" rel="nofollow"><code>com.google.common.base.Verify</code></a> when we have <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/Preconditions.html" rel="nofollow"><code>com.google.common.base.Preconditions</code></a>?
+
+The <code>Verify</code> class looks nice but it has an <code>@Beta</code> annotation, should I use it?
+
+==========
+The <API label="">difference</API> is semantic.  Verify is used to ensure that invariants don't change, that Code which has been engineered to do a certain thing is actually doing that thing.  In spirit:
+
+<pre><code>
+int x = <API label="None">divide</API>(10, 5);
+<API label="com.google.common.base.Verify.verify">Verify.verify</API>(x == 2, "X should be 2");
+
+</code></pre>
+
+Preconditions, on the other hand, are expected to fail when bad input is passed to a certain portion of the program, usually either from the user to the code, or from client code to code within another library.  In spirit:
+
+<pre><code>
+public int <API label="None">divide</API>(int x, int y) {
+  <API label="com.google.common.base.Preconditions.checkArgument">Preconditions.checkArgument</API>(y != 0, "Can't <API label="">divide</API> by 0!");
+  return x / y;
+}
+
+</code></pre>
+
+As to whether you should use a @Beta class, that entirely depends on the scope and foreseeable lifetime of the application you are building, and, asked alone, would probably be flagged as a "Primarily Opinion-Based" question.
+

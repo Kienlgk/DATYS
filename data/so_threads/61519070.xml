@@ -1,0 +1,206 @@
+https://stackoverflow.com/questions/61519070
+I am new to test cases and trying to learn mokito 2 with JUnit 5 and spring boot 2.
+I am getting 
+
+<pre><code>
+No tests found in StudentServiceTest
+Is the method annotated with @Test?
+Is the method public?
+
+</code></pre>
+
+I googled a lot. but could not find any working solution.
+
+build.gradle
+
+<pre><code>
+    plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.2.6.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+}
+
+group 'com.demo.mockito'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.2.0')
+    testCompile('org.junit.jupiter:junit-jupiter-params:5.2.0')
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.2.0')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile 'org.mockito:mockito-core:2.21.0'
+    testCompile 'org.mockito:mockito-junit-jupiter:2.23.0'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    test {
+        useJUnitPlatform()
+    }
+}
+
+</code></pre>
+
+Test case
+
+<pre><code>
+import com.demo.mockito.entity.StudentEntity;
+import com.demo.mockito.repo.StudentRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static <API label="org.mockito.Mockito.when">org.mockito.Mockito.when</API>;
+import org.mockito.Mock;
+import org.mockito.Mock;
+@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Spring boot 2 mockito2 Junit5 example")
+public class StudentServiceTest {
+    @InjectMocks // it will mock and inject all the required dependency
+    private StudentService studentService;
+    @Mock // mock because we don't want to call actual repo class
+    private StudentRepository studentRepository;
+    public StudentServiceTest() {
+    }
+    @BeforeEach
+    void setMockOutput() {
+//        because we are mocking repo, we need to define how repo will work in case <API label="">of</API> call
+        List collect = <API label="None">Stream.of</API>(
+                new StudentEntity("shrikant", new Date()), new StudentEntity("sharma", new Date())).collect(<API label="None">Collectors.toList</API>());
+        <API label="org.mockito.Mockito.when">when</API>(studentRepository.findAll()).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(collect);
+    }
+    @Test
+  public   void findAll() {
+        assertEquals(2, studentService.findAll().<API label="None">size</API>());
+    }
+
+</code></pre>
+
+Repository
+
+<pre><code>
+import com.demo.mockito.entity.StudentEntity;
+import org.springframework.data.jpa.repository.JpaRepository;    
+public interface StudentRepository extends JpaRepository {
+}
+
+</code></pre>
+
+service
+
+<pre><code>
+package com.demo.mockito.service;
+import com.demo.mockito.entity.StudentEntity;
+import com.demo.mockito.model.Student;
+import com.demo.mockito.repo.StudentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
+@Service
+public class StudentService {
+    Logger logger = <API label="None">Logger.getLogger</API>(<API label="None">this.getClass</API>().<API label="None">getName</API>());
+    @Autowired
+    private StudentRepository studentRepository;
+    public List findAll() {
+        List students = new ArrayList<>();
+        List all = studentRepository.findAll();
+        <API label="None">all.forEach</API>(studentEntity -> <API label="None">students.add</API>(new Student(studentEntity.getRollNo(), <API label="None">studentEntity.getName</API>(), <API label="None">studentEntity.getDate</API>())));
+        <API label="None">logger.info</API>("StudentService.findAll " + students);
+        return students;
+    }
+}
+
+</code></pre>
+
+what am I doing wrong?
+and just to make it work I copied a lot <API label="">of</API> extra code from lot <API label="">of</API> different tutorials. so please let me know if something is redundant or not the correct way <API label="">of</API> doing it.
+
+==========
+Your <code>build.gradle</code> could be a bit rearranged
+
+
+Please move 
+
+
+<pre><code>
+test {
+    useJUnitPlatform()
+}
+
+</code></pre>
+
+out <API label="">of</API> dependencies to root. 
+
+
+You have two times dependency to <code>'org.springframework.boot:spring-boot-starter-test'</code>. Please <API label="">remove</API> the one without exclusion
+Please <API label="">remove</API> dependency to <code>mockito-core</code> as it comes in transitively
+Please <API label="">remove</API> version <API label="">of</API> dependency <code>org.mockito:mockito-junit-jupiter</code>
+You could resort dependencies, such that test-dependencies go last
+You could unify use <API label="">of</API> <code>implementation</code> and <code>compile</code>
+
+
+In the <API label="">end</API> it should look similar to:
+
+<pre><code>
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.2.6.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+}
+
+group 'com.demo.mockito'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    runtimeOnly 'com.h2database:h2'
+
+   testImplementation('org.junit.jupiter:junit-jupiter-api:5.2.0')
+    testCompile('org.junit.jupiter:junit-jupiter-params:5.2.0')
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.2.0')
+    testCompile 'org.mockito:mockito-junit-jupiter'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+</code></pre>
+
+After Junit4 has gone from your classpath you will have to change some parts <API label="">of</API> your code (e.g. <code>@Runwith</code>)
+
+In addition I do not see a <code>@Repository</code> annotation at your repository.
+

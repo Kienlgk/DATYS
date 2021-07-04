@@ -1,0 +1,45 @@
+https://stackoverflow.com/questions/5462096
+There is a generic method that takes a class as parameter and I have problems stubbing it with Mockito. The method looks like this:
+
+<pre><code>
+public  & Error, T extends ServiceResponse T <API label="">validate</API>(
+    Object target, Validator validator, Class responseClass,
+    Class errorEnum);
+
+</code></pre>
+
+It's god awful, at least to me... I could imagine living without it, but the rest of the code base happily uses it...
+
+I was going to, in my unit test, stub this method to return a new empty object. But how do I do this with mockito? I tried:
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">serviceValidatorStub.validate</API>(
+    <API label="org.mockito.Matchers.any">any</API>(), 
+    <API label="org.mockito.Matchers.isA">isA</API>(UserCommentRequestValidator.class), 
+    UserCommentResponse.class, 
+    UserCommentError.class)
+).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new UserCommentResponse());
+
+</code></pre>
+
+but since I am mixing and matching matchers and raw values, I get "org.mockito.exceptions.misusing.InvalidUseOfMatchersException: Invalid use of argument matchers!"
+
+==========
+The problem is, you cannot mix argument matchers and real arguments in a mocked call. So, rather do this: 
+
+<pre><code>
+<API label="org.mockito.Mockito.when">when</API>(<API label="None">serviceValidatorStub.validate</API>(
+    <API label="org.mockito.Matchers.any">any</API>(),
+    <API label="org.mockito.Matchers.isA">isA</API>(UserCommentRequestValidator.class),
+    <API label="org.mockito.Matchers.eq">eq</API>(UserCommentResponse.class),
+    <API label="org.mockito.Matchers.eq">eq</API>(UserCommentError.class))
+).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(new UserCommentResponse());
+
+</code></pre>
+
+Notice the use of the <code><API label="org.mockito.Matchers.eq">eq</API>()</code> argument matcher for matching equality.
+
+see: <a href="https://static.javadoc.io/org.mockito/mockito-core/1.10.19/org/mockito/Matchers.html#eq(T)" rel="noreferrer">https://static.javadoc.io/org.mockito/mockito-core/1.10.19/org/mockito/Matchers.html#eq(T)</a>
+
+Also, you could use the <code><API label="">same</API>()</code> argument matcher for <code>Class</code> types - this <API label="">matches</API> <API label="">same</API> identity, like the <code>==</code> Java operator.
+

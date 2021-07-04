@@ -1,0 +1,125 @@
+https://stackoverflow.com/questions/51720864
+I can't copy the exact code here but I will put a sample class that explains the problem I am facing.
+
+<pre><code>
+public XYZ implements ContainerRequestFilter{
+
+   @Context
+    HttpServletRequest httpServletRequest;
+
+   @Override
+    public void <API label="">filter</API>(ContainerRequestContext abc){
+        //rest of the code below where httpServletRequest is used inside 
+    }
+}
+
+</code></pre>
+
+So <API label="">when</API> I write a write test code using <code>@InjectMocks</code>, the <code>HttpServletRequest</code> instance is not injected and is null.
+
+Can anyone help me here what I am misssing. 
+
+I have even used the following in <code>@Before</code> method but still no resolution.
+
+<pre><code>
+<API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+
+</code></pre>
+
+==========
+I can <API label="">verify</API> that it works fine. See below example, where I mock the <code>HttpServletRequest</code> and provide a remote address <API label="">when</API> <code>getRemoteAddr()</code> is called. I use that mocked value to set a property in the <code>ContainerRequestContext</code>. I then use <code>ArgumentCaptor</code>s to <API label="org.mockito.ArgumentCaptor.capture">capture</API> the value to test.
+
+<pre><code>
+import java.io.IOException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.Context;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import static <API label="org.assertj.core.api.Assertions.assertThat">org.assertj.core.api.Assertions.assertThat</API>;
+
+public class MockitoInjectMocksTest {
+
+   @Mock
+    private HttpServletRequest request;
+
+   @Mock
+    private ContainerRequestContext requestContext;
+
+   /**
+     * With the @InjectMocks annotation, Mockito will
+     * inject the <API label="">filter</API> with the mock HttpServletRequest
+     */
+    @InjectMocks
+    private Filter <API label="">filter</API> = new Filter();
+
+   @Before
+    public void setUp() {
+        // Handle all the mock creation and injection.
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+
+       // Mock the HttpServletRequest#getRemoteAddr()
+        // method to return a dummy IP address.
+        <API label="org.mockito.Mockito.when">Mockito.when</API>(request.getRemoteAddr())
+                .<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>("122.21.32.233");
+    }
+
+   /**
+     * See the `Filter` class below. The `<API label="None">filter</API>()` method doesn't
+     * do much. It just grabs the remote IP address from the
+     * `HttpServletRequest` and uses it to set a property on
+     * the `ContainerRequestContext`. This test asserts that
+     * the arguments passed to the `setProperty()` method
+     * method are the correct arguments. We do that with the
+     * help of Mockito's `ArgumentCaptor`,
+     */
+    @Test
+    public void testIpPropertySet() throws Exception {
+        // Call the `<API label="c">filter</API>()` method that we are testing,
+        // passing in the mock `ContainerRequestContext`.
+        // We use a mock so that we can later <API label="org.mockito.Mockito.verify">verify</API> methods
+        // on it are called
+        <API label="None">filter.filter</API>(requestContext);
+
+       // We create argument captors to <API label="org.mockito.ArgumentCaptor.capture">capture</API> the args of call to
+        // `ContainerRequestContext#setProperty(String, String)`
+        ArgumentCaptor propNameArg = <API label="org.mockito.ArgumentCaptor.forClass">ArgumentCaptor.forClass</API>(String.class);
+        ArgumentCaptor propValArg = <API label="org.mockito.ArgumentCaptor.forClass">ArgumentCaptor.forClass</API>(String.class);
+
+       // Verify the `ContainerRequestContext#setProperty()`
+        // is called. We use the `ArgumentCaptors` to <API label="org.mockito.ArgumentCaptor.capture">capture</API>
+        // the arguments that are passed <API label="">when</API> `setProperty()`
+        // is called.
+        <API label="org.mockito.Mockito.verify">Mockito.verify</API>(requestContext)
+               .setProperty(<API label="org.mockito.ArgumentCaptor.capture">propNameArg.capture</API>(), <API label="org.mockito.ArgumentCaptor.capture">propValArg.capture</API>());
+
+       // Test that the arguments passed in the call to
+        // `ContainerRequestContext#setProperty()` are correct.
+        <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="None">propNameArg.getValue</API>()).<API label="None">isEqualTo</API>("RemoteAddress");
+        <API label="org.assertj.core.api.Assertions.assertThat">assertThat</API>(<API label="None">propValArg.getValue</API>()).<API label="None">isEqualTo</API>("122.21.32.233");
+    }
+
+   public static class Filter implements ContainerRequestFilter {
+
+       @Context
+        private HttpServletRequest request;
+
+       @Override
+        public void <API label="">filter</API>(ContainerRequestContext requestContext) throws IOException {
+            <API label="None">System.out.println</API>(request.getRemoteAddr());
+            requestContext.setProperty("RemoteAddress", request.getRemoteAddr());
+        }
+    }
+}
+
+</code></pre>
+

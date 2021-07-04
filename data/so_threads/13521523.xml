@@ -1,0 +1,96 @@
+https://stackoverflow.com/questions/13521523
+I'm getting results that I don't really understand while using Guava Caches.
+
+I am implementing a single key cache that I want to refresh asynchronously.
+
+I hit the cache every second and I have set <API label="com.google.common.cache.CacheBuilder.refreshAfterWrite">refreshAfterWrite</API> to 20 seconds. 
+My <API label="com.google.common.cache.CacheLoader.load">load</API>/<API label="com.google.common.cache.CacheLoader.reload">reload</API> function takes 5 seconds.
+
+If I print out at the start of the <API label="com.google.common.cache.CacheLoader.load">load</API>/<API label="com.google.common.cache.CacheLoader.reload">reload</API> method the current time - I would expect some results like this:  
+
+
+ <API label="com.google.common.cache.CacheLoader.load">load</API> <API label="">call</API> started   at 00:00:00
+    <API label="com.google.common.cache.CacheLoader.reload">reload</API> <API label="">call</API> started at 00:00:25
+    <API label="com.google.common.cache.CacheLoader.reload">reload</API> <API label="">call</API> started at 00:00:50
+
+
+So the <API label="com.google.common.cache.CacheLoader.load">load</API> would take 5 seconds and the next write would trigger 20 seconds after that (5+20=25). That write would occur at 50 seconds (25 + 5 + 20 = 50) seconds after that.. etc       
+
+Instead I <API label="">get</API>: 
+
+
+ <API label="com.google.common.cache.CacheLoader.load">load</API> <API label="">call</API> started   at 00:00:00
+    <API label="com.google.common.cache.CacheLoader.reload">reload</API> <API label="">call</API> started at 00:00:25
+    <API label="com.google.common.cache.CacheLoader.reload">reload</API> <API label="">call</API> started at 00:00:30
+
+
+This suggests that the second <API label="com.google.common.cache.CacheLoader.reload">reload</API> occurs straight after the first <API label="com.google.common.cache.CacheLoader.reload">reload</API> has finished processing.
+
+I thought that the write would occur after the future has been processed and so the next <API label="com.google.common.cache.CacheLoader.reload">reload</API> would be scheduled for 20 seconds after that? 
+
+Have I found a bug or do I have a fundamental misunderstanding of how <API label="com.google.common.cache.CacheBuilder.refreshAfterWrite">refreshAfterWrite</API> works?   
+
+Sample code is below:
+
+<pre><code>
+private static SimpleDateFormat <API label="">format</API> = new SimpleDateFormat("hh:mm:ss");
+
+   public static void <API label="">main</API>(String[] args) throws ExecutionException, InterruptedException {
+
+       final ExecutorService executor = Executors.newFixedThreadPool(3);
+
+       final LoadingCache cache = <API label="com.google.common.cache.CacheBuilder.newBuilder">CacheBuilder.newBuilder</API>().<API label="com.google.common.cache.CacheBuilder.maximumSize">maximumSize</API>(1) //
+                .<API label="com.google.common.cache.CacheBuilder.refreshAfterWrite">refreshAfterWrite</API>(20, TimeUnit.SECONDS)//
+                .<API label="com.google.common.cache.CacheBuilder.build">build</API>(new <API label="com.google.common.cache.CacheLoader.CacheLoader">CacheLoader</API>() {//
+                    public Long <API label="com.google.common.cache.CacheLoader.load">load</API>(String key) {
+                        return getLongRunningProcess("<API label="">load</API>", key);
+                    }
+
+                   public ListenableFuture <API label="com.google.common.cache.CacheLoader.reload">reload</API>(final String key, Long prevGraph) {
+                        ListenableFutureTask task = <API label="com.google.common.util.concurrent.ListenableFutureTask.create">ListenableFutureTask.create</API>(new Callable() {
+                            public Long <API label="None">call</API>() {
+                                return getLongRunningProcess("<API label="">reload</API>", key);
+                            }
+                        });
+                        <API label="None">executor.execute</API>(task);
+                        return task;
+                    }
+                });
+
+       while (true) {
+            Thread.sleep(1000L);
+            <API label="com.google.common.cache.LoadingCache.get">cache.get</API>(CACHE_KEY);
+        }
+    }
+
+   private static Long getLongRunningProcess(String callType, String key) {
+        System.out.printf("%s <API label="">call</API> started at %s\n", callType, <API label="None">format.format</API>(new Date()));
+        try {
+            Thread.sleep(5000L);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return <API label="None">counter.getAndIncrement</API>();
+    }
+
+}
+
+</code></pre>
+
+==========
+I think you've found a legit bug.  (I help maintain <code>common.cache</code>.)
+
+If I'm following things correctly, I believe the chain of events is as follows:
+
+Let's say <API label="">get</API> A is the first <code><API label="">get</API></code> that causes a refresh, and <API label="">get</API> B is the first <code><API label="">get</API></code> after that.
+
+
+Get A calls <code>scheduleRefresh</code>, which starts the <code>refresh</code> task in the executor.  The entry value reference is replaced with a <code>LoadingValueReference</code>, and <code>loadAsync</code> adds a listener waiting for the <API label="com.google.common.cache.CacheLoader.reload">reload</API> to complete.
+The forked task for the Get A <API label="com.google.common.cache.CacheLoader.reload">reload</API> completes and acquires the lock.
+Get B calls <code>scheduleRefresh</code>.  The access time has not been updated yet, so it proceeds, and goes into <code>insertLoadingValueReference</code>.
+The forked task for the Get A <API label="com.google.common.cache.CacheLoader.reload">reload</API> updates the write time, and replaces the value reference with a <code>StrongValueReference</code>, since the <API label="com.google.common.cache.CacheLoader.load">load</API> is complete.  The lock is released.
+Get B determines that the value isn't still in the process of loading, so it proceeds to start up a new <API label="com.google.common.cache.CacheLoader.reload">reload</API>.
+
+
+(Update: filed <a href="https://code.google.com/p/guava-libraries/issues/detail?id=1211" rel="noreferrer">https://code.google.com/p/guava-libraries/issues/detail?id=1211</a>.)
+

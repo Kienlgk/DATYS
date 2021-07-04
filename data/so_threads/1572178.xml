@@ -1,0 +1,37 @@
+https://stackoverflow.com/questions/1572178
+I don't understand why I get a ConcurrentModificationException when I iterate through this <code>multimap</code>.
+I read the following <a href="http://google-collections.googlecode.com/svn/trunk/javadoc/com/google/common/collect/Multimaps.html#<API label="">synchronizedMultimap</API>%28com.google.common.collect.Multimap%29" rel="noreferrer">entry</a>, but I am not sure if I understood the whole thing. 
+I tried to add a synchronized block. But my doubt is what to synchronize with, and when. 
+
+The <code>multimap</code> is a field and created like this : 
+
+<pre><code>
+private Multimap eventMultiMap =   
+   <API label="com.google.common.collect.Multimaps.synchronizedMultimap">Multimaps.synchronizedMultimap</API>(HashMultimap. <API label="com.google.common.collect.HashMultimap.create">create</API>());
+
+</code></pre>
+
+and used like this : 
+
+<pre><code>
+<API label="com.google.common.collect.Multimap.put">eventMultiMap.put</API>(event, command);
+
+</code></pre>
+
+and like this ( I tried to synchronize this part on the map, but without success )
+
+<pre><code>
+for (Entry entry : <API label="com.google.common.collect.Multimap.entries">eventMultiMap.entries</API>()) {
+    if (<API label="None">entry.getValue</API>().<API label="None">equals</API>(command)) {
+        <API label="com.google.common.collect.Multimap.remove">eventMultiMap.remove</API>(<API label="None">entry.getKey</API>(), <API label="None">entry.getValue</API>());
+        nbRemoved++;
+    }
+}
+
+</code></pre>
+
+==========
+In java8 you can also use a lambda approach:
+
+<code><API label="com.google.common.collect.Multimap.entries">eventMultiMap.entries</API>().<API label="None">removeIf</API>(genericEventCommandEntry -> <API label="None">genericEventCommandEntry.getValue</API>().<API label="None">equals</API>(command));</code>
+

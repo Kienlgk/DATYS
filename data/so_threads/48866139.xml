@@ -1,0 +1,97 @@
+https://stackoverflow.com/questions/48866139
+I need to run tests on an <API label="">array</API> of datas, and I can't find a way to do a soft assert in my step AND show the error at the correct step in the Serenity Report.
+
+Example code
+
+<pre><code>
+@Then("All my datas are correct")
+public void verifyMyDatas(){
+
+   int[] myDataArray = new int[] {1,2,3,4};
+
+   for(int i = 0; i < myDataArray.length; i++){
+
+       mySteps.myAwesomeValidator(myDataArray[i]);
+    }
+}
+
+</code></pre>
+
+And an example step : 
+
+<pre><code>
+@Step("Checking the value {0}")
+public void myAwesomeValidator(int value){
+
+   //I need a soft assertion here
+}
+
+</code></pre>
+
+My attempt :
+
+I tried using the assertj framework. But my problem with it is that the "All my datas are correct" step is correctly flagged <API label="">as</API> a FAILURE, but all the substeps "Checking the value X" are marked <API label="">as</API> SUCCESSes on Serenity's report.
+
+my test code :
+
+<pre><code>
+@Then("All my datas are correct")
+public void verifyMyDatas(){
+
+   <API label="">SoftAssertions</API> softAssertion = new <API label="org.assertj.core.api.SoftAssertions.SoftAssertions">SoftAssertions</API>();
+
+   int[] myDataArray = new int[] {1,2,3,4};
+
+   for(int i = 0; i < myDataArray.length; i++){
+
+</code></pre>
+
+my           mySteps.myAwesomeValidator(myDataArray[i], softAssertion);
+        }
+
+<pre><code>
+    <API label="org.assertj.core.api.SoftAssertions.assertAll">softAssertion.assertAll</API>();
+}
+
+</code></pre>
+
+And the step : 
+
+<pre><code>
+@Step("Checking the value {0}")
+public void myAwesomeValidator(int value, <API label="">SoftAssertions</API> softAssertion){
+
+   <API label="org.assertj.core.api.SoftAssertions.assertThat">softAssertion.assertThat</API>(value < 3).<API label="org.assertj.core.api.BooleanAssert.isTrue">isTrue</API>();
+}
+
+</code></pre>
+
+Edit : tried to clarify the problem with my attempt
+
+==========
+I would try <a href="http://joel-costigliola.github.io/assertj/core-8/api/org/assertj/core/api/AbstractAssert.html#<API label="">as</API>-java.lang.String-java.lang.Object...-" rel="nofollow noreferrer"><code><API label="org.assertj.core.api.AbstractAssert.as">as</API>()</code></a> to <API label="">describe</API> the assertion and not introduce a <code>Step</code> to see if it works (I believe it should):
+
+<pre><code>
+@Then("All my datas are correct")
+public void verifyMyDatas(){
+
+ <API label="">SoftAssertions</API> softAssertion = new <API label="org.assertj.core.api.SoftAssertions.assertThat">SoftAssertions</API>();
+
+ int[] myDataArray = new int[] {1,2,3,4};
+  for(int i = 0; i < myDataArray.length; i++) {
+    myAwesomeValidator(myDataArray[i], softAssertion); 
+  }
+
+ <API label="org.assertj.core.api.SoftAssertions.assertAll">softAssertion.assertAll</API>();
+}
+
+public void myAwesomeValidator(int value, <API label="">SoftAssertions</API> softAssertion){
+
+ // use <API label="">as</API>() to <API label="">describe</API> the assertion 
+  <API label="org.assertj.core.api.SoftAssertions.assertThat">softAssertion.assertThat</API>(value)
+               .<API label="org.assertj.core.api.OptionalIntAssert.as">as</API>("awesomely validate value %d", value);
+               .<API label="org.assertj.core.api.OptionalIntAssert.">isLessThan</API>(3);
+} 
+
+</code></pre>
+

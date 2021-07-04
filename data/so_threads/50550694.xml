@@ -1,0 +1,60 @@
+https://stackoverflow.com/questions/50550694
+My Mockito version isn't the newest -version 1.10.19
+
+I have a method in my DAO class I want to test, for example
+
+<pre><code>
+public void updateMe(String commaSeparatedAttributes)
+
+</code></pre>
+
+It get a string as argument with comma separated list as 2,5,3
+
+The problem is that the order of the list isn't guaranteed.
+
+I found this <a href="https://stackoverflow.com/questions/40883990/matching-list-in-any-order-when-mocking-method-behavior-with-mockito">solution</a> with Hamcrest <code>containsInAnyOrder</code>, but this doesn't help me because the argument is a String, I tried several options (including sending ArrayList) as:
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(dao).updateMe(<API label="org.mockito.Mockito.argThat">argThat</API>(Matchers.containsInAnyOrder("2","5,"3")));
+
+</code></pre>
+
+This isn't compiling with error:
+
+<pre><code>
+Type mismatch: cannot convert from Iterable to String
+
+</code></pre>
+
+EDIT
+
+Also the following return NullPointerException in test 
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(dao).updateMe(<API label="org.mockito.Mockito.argThat">argThat</API>( 
+new <API label="org.mockito.ArgumentMatcher.ArgumentMatcher">ArgumentMatcher</API>() { 
+@Override 
+public boolean <API label="">matches</API>(Object argument) { 
+List inputs = <API label="None">Arrays.asList</API>(((String)argument).<API label="None">split</API>(",")); 
+return <API label="None">inputs.containsAll</API>(<API label="None">Arrays.asList</API>("2", "5", "3")); 
+} 
+} 
+));
+
+</code></pre>
+
+==========
+Your <code>updateMe</code> method takes a <code>String</code>. The matcher used in your <API label="org.mockito.Mockito.verify">verify</API> expects a <code>Collection</code>. You may be better off writing a custom matcher.
+
+You'll first need to break your comma separated <code>String</code> into a <code>List</code> of <code>String</code>s.
+
+Then use <code>List::<API label="None">containsAll</API></code> with your expectations passed in.
+
+<pre><code>
+<API label="org.mockito.Mockito.verify">verify</API>(dao).updateMe(<API label="org.mockito.Mockito.argThat">argThat</API>(t -> {
+    List inputs = <API label="None">Arrays.asList</API>(<API label="None">t.split</API>(","));
+    return <API label="None">inputs.containsAll</API>(<API label="None">Arrays.asList</API>("2", "5", "3"));
+}));
+
+</code></pre>
+

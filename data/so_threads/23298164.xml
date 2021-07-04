@@ -1,0 +1,52 @@
+https://stackoverflow.com/questions/23298164
+I'm migrating a load of code to stop passing byte[]s, InputStreams and InputSuppliers around and just use ByteSource.
+
+The code currently calculates and ETag for the data by use <API label="None">Arrays.hashCode</API> on the raw byte[], which translates to this with a ByteSource:
+
+<pre><code>
+<API label="None">Arrays.hashCode</API>(<API label="None">dataSource.read</API>());
+
+</code></pre>
+
+The problem with this is that <code><API label="None">dataSource.read</API>()</code> on a ByteArrayInputSource clones the underlying byte[], which is worse than what's currently there.
+
+I'd like to use <code><API label="None">dataSource.hash</API>(HashFunction)</code> but I want to make sure I don't bust the ETags generated through the <API label="None">hashCode</API>, as this will cause a load of cache invalidations.
+
+Anyone know of a HashFunction that do the job for me?
+
+==========
+I don't know of any already available <code>HashFunction</code> that'll do what you want, but it should be pretty easy to <API label="">write</API> it yourself. Something like:
+
+<pre><code>
+public final class ByteArrayHashFunction extends AbstractStreamingHashFunction {
+
+ @Override
+  public Hasher <API label="None">newHasher</API>() {
+    return new ByteArrayHasher();
+  }
+
+ @Override
+  public int <API label="">bits</API>() {
+    return 32;
+  }
+
+ private static final class ByteArrayHasher extends AbstractByteHasher {
+
+   private int <API label="None">hash</API> = 1;
+
+   @Override
+    protected void <API label="None">update</API>(byte b) {
+      <API label="">hash</API> = 31 * <API label="None">hash</API> + b;
+    }
+
+   @Override
+    public HashCode <API label="None">hash</API>() {
+      return <API label="com.google.common.hash.HashCode.fromInt">HashCode.fromInt</API>(<API label="">hash</API>);
+    }
+  }
+}
+
+</code></pre>
+
+You would need to <API label="">copy</API> a few of the abstract classes from <code><API label="">common.hash</API></code> into your own package though.
+

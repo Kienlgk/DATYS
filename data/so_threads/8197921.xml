@@ -1,0 +1,140 @@
+https://stackoverflow.com/questions/8197921
+I've the following class:
+
+<pre><code>
+public class Plugin {
+
+   private DistributionManager manager;
+
+   public void <API label="">init</API>(){
+          ApplicationContext context = 
+                new ClassPathXmlApplicationContext("applicationContext.xml");
+        manager = <API label="None">context.getBean</API>(DistributionManager.class);
+    }
+
+   public String doSomething(){
+        String s =  manager.doSomething();
+            return doSomethingElse(s);
+    }
+
+</code></pre>
+
+<code>DistributionManager</code> class itself has a lot of autowired dependencies and marked as <code>@Component</code>
+
+now I would like to <API label="">run</API> some unit Test for all this code:
+
+<pre><code>
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations={"/applicationContext.xml"})
+public class PluginTestCase extends  AbstractJUnit4SpringContextTests{
+
+   @Resource
+    DistributionManager manager;
+
+   @Test
+    public void testDoSomething(){
+             Plugin plugin = <API label="org.mockito.Mockito.mock">mock</API>(Plugin.class);
+
+            //how can I inject DistributionMamanger bean to plugin using mockito?
+             assertEquals("MyResult", plugin.doSomething());
+    }
+
+}
+
+</code></pre>
+
+I have never used mockito before. Can you please help me to <API label="org.mockito.Mockito.mock">mock</API> plugin and complete this Unit test?
+
+Update: 
+
+I'm trying the following test according to suggestion:
+
+<pre><code>
+@RunWith(MockitoJUnitRunner.class)
+public class PluginTestCase {
+
+   @Mock
+    DistributionManager manager;
+
+   @InjectMocks 
+    Plugin testedPlugin;
+
+   @Before
+    public void setUp(){
+        <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>(this);
+    }
+
+   @Test
+    public void testDao(){
+        <API label="None">testedPlugin.init</API>();
+        testedPlugin.doSomething();
+    }
+}
+
+</code></pre>
+
+but, I'm having the following exception:
+
+<pre><code>
+org.mockito.exceptions.base.MockitoException: Field 'testedPlugin' annotated with @InjectMocks is null.
+Please make sure the instance is created *before* <API label="org.mockito.MockitoAnnotations.initMocks">MockitoAnnotations.initMocks</API>();
+Example of correct usage:
+   class SomeTest {
+      @InjectMocks private Foo foo = new Foo();
+
+     @Before public void setUp() {
+         MockitoAnnotations.initMock(this);
+
+   at org.mockito.internal.runners.JUnit45AndHigherRunnerImpl$1.withBefores(JUnit45AndHigherRunnerImpl.java:27)
+    at org.junit.runners.BlockJUnit4ClassRunner.methodBlock(BlockJUnit4ClassRunner.java:261)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:76)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:193)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:52)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:191)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:42)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:184)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:236)
+    at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+    at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:49)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:390)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:197)
+
+</code></pre>
+
+==========
+Don't <API label="org.mockito.Mockito.mock">mock</API> <code>Plugin</code> if it's the class you want to Unit test. It's the opposite! Also for a unit test I would definitely avoid creating a spring context, instead you should only do that for integration testing or some very rare / specific case.
+
+Anyway I suppose you want to test the interactions between the plugin and the manager. So you should definitely read the Mockito documentation but here's a first start that get a mocked manager injected in the plugin.
+
+<pre><code>
+@RunWith(MockitoJUinitRunner.class)
+public class PluginTest {
+    @Mock DistributionManager mockedManager;
+    @InjectMocks Plugin testedPlugin = new Plugin(); // initialization not need when using Mockito 1.9.x
+
+   @Test public void plugin_should_call_the_the_manager_on_doSomething() {
+        // given
+        // when
+        // then
+    }
+
+   // other scenarios
+}
+
+</code></pre>
+
+Please note, that you only need to use eihter the JUnit runner <code>MockitoJUinitRunner.class</code> or the utility class and method <code><API label="None">MockitoAnnotations.init</API>()</code>, but not both!
+
+Other remarks:
+
+
+As you are using JUnit 4.x you don't need to make your test method name begin by test, as those are annotated by <code>@Test</code> you can name them as whatever you want that is readable and expressive on the intent of the test.
+Same goes for set up and tear down methods, as they are respectively annotated by <code>@Before</code> and <code>@After</code> you can <API label="">describe</API> what your setting up or tearing down.
+And finally, don't name your test class <code>PluginTestCase</code>, the suffix <code>TestCase</code> was only used for abstract classes that would be extended by an actual test suffixed by <code>Test</code> such as <code>MyClassTest</code>. And anyway Maven Surefire will look for classes named <code>*Test</code>.
+
+

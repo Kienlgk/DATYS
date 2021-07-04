@@ -1,0 +1,251 @@
+https://stackoverflow.com/questions/42518713
+I need a multikey map with <code>AtomicLong</code> value. So something which is like <a href="https://google.github.io/guava/releases/19.0/api/docs/index.html?com/google/common/util/concurrent/AtomicLongMap.html" rel="nofollow noreferrer">AtomicLongMap</a> <API label="">of</API> guava but one that supports multiple keys. So my new Map should be able to do like:
+
+<pre><code>
+MultiKeyAtomicLongMap map = ...
+
+<API label="None">map.put</API>("a", "A", 1L);
+<API label="None">map.put</API>("a", "B", 2L);
+<API label="None">map.put</API>("b", "C", 3L);
+....
+<API label="None">map.get</API>("a", "A");  // This should give me value 1L
+<API label="None">map.get</API>("a");  // This should give me both mappings ["A", 1L] and ["B", 2L]
+
+</code></pre>
+
+So the above code is just to explain the expected behavior, but not strictly what I want.
+
+Essentially what I want is thread-safe multikey map where my both keys are <code>String</code> and value is <code>long</code>.
+
+
+
+EDIT:
+I am fine with keeping the value <code>Long</code> instead <API label="">of</API> <code>AtomicLong</code> but I just want the map to be thread-safe.
+
+==========
+This answer is based on the comment by <a href="https://stackoverflow.com/users/192444/john-vint">Jon Vint</a>
+
+
+ It looks more like you need a Guava Table
+
+
+Guava table looks like it gives you what you need, but there isn't currently a thread safe implementation. Part <API label="">of</API> the difficulty is that you need to manage a Map <API label="">of</API> Maps, and expose access to a Map <API label="">of</API> values.
+
+But if you are happy to synchronize access to your own collection, I think a guava table can provide you with the functionality you want and you can <API label="">add</API> the thread safety. And <API label="">add</API> the utilities you want for inc/dec Long.
+
+This is a little more abstract than you were asking, but I think this gives what you need:
+
+<pre><code>
+import com.google.common.base.MoreObjects;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Table;
+import java.util.Map;
+import java.util.function.Function;
+import javax.annotation.concurrent.GuardedBy;
+
+/**
+ * Provide something like the {@link com.google.common.util.concurrent.AtomicLongMap} but supporting
+ * multiple keys.
+ *
+ * Should be able to <API label="">put</API> a value using two keys. And retrieve either a precise cell. Or retrieve a
+ * collection <API label="">of</API> values.
+ *
+ * Created by James on 28/02/2017.
+ */
+public class SynchronizedMultimap {
+
+   private final Object mutex = new Object();
+    @GuardedBy("mutex") // All read and write access to delegate must be protected by mutex.
+    private final Table delegate = <API label="com.google.common.collect.HashBasedTable.create">HashBasedTable.create</API>();
+
+   /**
+     * {@link Table#<API label="com.google.common.collect.Table.put">put</API>(Object, Object, Object)}
+     * Associates the specified value with the specified keys. If the table
+     * already contained a mapping for those keys, the old value is replaced with
+     * the specified value.
+     *
+     * @return The old value associated with the keys or {@code null} if no previous value existed.
+     */
+    public Value <API label="">put</API>(Row <API label="">row</API>, Column column, Value value) {
+        synchronized (mutex) {
+            return <API label="com.google.common.collect.HashBasedTable.put">delegate.put</API>(<API label="">row</API>, column, value);
+        }
+    }
+
+   /**
+     * {@link java.util.concurrent.ConcurrentMap#<API label="None">computeIfAbsent</API>(Object, Function)}
+     *
+     * Checks the existing value in the table delegate by {@link Table#<API label="com.google.common.collect.Table.get">get</API>(Object, Object)} and
+     * applies the given function, the function in this example should be able to handle a null input.
+     *
+     * @return The current value <API label="">of</API> the Table for keys, whether the function is applied or not.
+     */
+    public Value <API label="">compute</API>(Row <API label="">row</API>, Column column, Function function) {
+        synchronized (mutex) {
+            Value oldValue = <API label="com.google.common.collect.HashBasedTable.get">delegate.get</API>(<API label="">row</API>, column);
+            Value newValue = <API label="com.google.common.base.Function.apply">function.apply</API>(oldValue);
+            if (newValue != null) {
+                <API label="com.google.common.collect.HashBasedTable.put">delegate.put</API>(<API label="">row</API>, column, newValue);
+                return newValue;
+            }
+            return oldValue;
+        }
+    }
+
+   /**
+     * {@link Table#<API label="com.google.common.collect.Table.get">get</API>(Object, Object)}
+     *
+     * @return The value associated with the keys or {@code null} if no value.
+     */
+    public Value <API label="">get</API>(Row <API label="">row</API>, Column column) {
+        synchronized (mutex) {
+            return <API label="com.google.common.collect.HashBasedTable.get">delegate.get</API>(<API label="">row</API>, column);
+        }
+    }
+
+   /**
+     * {@link Table#<API label="com.google.common.collect.Table.row">row</API>(Object)}
+     *
+     * @return An immutable map view <API label="">of</API> the columns in the table.
+     */
+    public Map <API label="">get</API>(Row <API label="">row</API>) {
+        synchronized (mutex) {
+            // Since we are exposing
+            return <API label="com.google.common.collect.ImmutableMap.copyOf">ImmutableMap.copyOf</API>(<API label="com.google.common.collect.HashBasedTable.row">delegate.row</API>(row));
+        }
+    }
+
+   @Override
+    public String <API label="com.google.common.collect.HashBasedTable.toString">toString</API>() {
+        // Even <API label="com.google.common.collect.HashBasedTable.toString">toString</API> needs protection.
+        synchronized (mutex) {
+            return <API label="com.google.common.base.MoreObjects.toStringHelper">MoreObjects.toStringHelper</API>(this)
+                .<API label="None">add</API>("delegate", delegate)
+                .<API label="None">toString</API>();
+        }
+    }
+}
+
+</code></pre>
+
+And for Long specific behaviours:
+
+<pre><code>
+/**
+ * Provides support for similar behaviour as AtomicLongMap.
+ *
+ * Created by James on 28/02/2017.
+ */
+public class SynchronizedLongMultimap extends SynchronizedMultimap {
+
+   /**
+     * @return Adds delta to the current value and returns the new value. Or delta if no previous value.
+     */
+    public long <API label="">addAndGet</API>(Row <API label="">row</API>, Column column, long delta) {
+        return <API label="None">compute</API>(<API label="">row</API>, column,
+            (Long oldValue) -> (oldValue == null) ? delta : oldValue + delta);
+    }
+
+   /**
+     * @return Increments the current value and returns the new value. Or 1 if no previous value.
+     */
+    public long <API label="">increment</API>(Row <API label="">row</API>, Column column) {
+        return <API label="None">compute</API>(<API label="">row</API>, column, (Long oldValue) -> (oldValue == null) ? 1 : oldValue + 1);
+    }
+
+   /**
+     * @return Decrements the current value and returns the new value. Or -1 if no previous value.
+     */
+    public long <API label="">decrement</API>(Row <API label="">row</API>, Column column) {
+        return <API label="None">compute</API>(<API label="">row</API>, column, (Long oldValue) -> (oldValue == null) ? -1 : oldValue - 1);
+    }
+}
+
+</code></pre>
+
+Added unit tests to show the logic
+
+<pre><code>
+import static <API label="">org.hamcrest.MatcherAssert.assertThat</API>;
+import static <API label="">org.hamcrest.core.IsEqual.equalTo</API>;
+
+import com.google.common.collect.ImmutableMap;
+import org.junit.Test;
+
+/**
+ * Test simple functionality <API label="">of</API> the Map is sound.
+ *
+ * Created by James on 28/02/2017.
+ */
+public class SynchronizedLongMultimapTest {
+
+   private final SynchronizedLongMultimap map = new SynchronizedLongMultimap<>();
+
+   @Test
+    public void addAndGet_SingleCell() {
+        // <API label="">add</API> and <API label="">get</API> sets the initial value to the delta
+        <API label="None">assertThat</API>(<API label="">map.addAndGet</API>("0", "0", 1), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(1L));
+        <API label="None">assertThat</API>(<API label="">map.addAndGet</API>("0", "0", 1), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(2L));
+        <API label="None">assertThat</API>(<API label="">map.addAndGet</API>("0", "0", 0), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(2L));
+        <API label="None">assertThat</API>(<API label="">map.addAndGet</API>("0", "0", -2), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(0L));
+    }
+    @Test
+    public void addAndGet_RangeCells() {
+        // <API label="">add</API> and <API label="">get</API> sets the initial value to the delta
+        <API label="None">assertThat</API>(<API label="">map.addAndGet</API>("0", "1", 123), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(123L));
+
+       // <API label="">add</API> and <API label="">get</API> sets the initial value to the delta
+        <API label="None">assertThat</API>(<API label="">map.addAndGet</API>("1", "1", 42), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(42L));
+        // <API label="">add</API> and <API label="">get</API> adds the delta to the existing value
+        <API label="None">assertThat</API>(<API label="">map.addAndGet</API>("1", "1", -42), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(0L));
+    }
+
+   @Test
+    public void <API label="">increment</API>() {
+        // <API label="">increment</API> sets the initial value to one
+        <API label="None">assertThat</API>(<API label="">map.increment</API>("0", "0"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(1L));
+        // then adds one each time it's called
+        <API label="None">assertThat</API>(<API label="">map.increment</API>("0", "0"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(2L));
+    }
+
+   @Test
+    public void <API label="">decrement</API>(){
+        // <API label="">decrement</API> sets the initial value to -1 if no previous value
+        <API label="None">assertThat</API>(<API label="">map.decrement</API>("apples", "bananas"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(-1L));
+        // then decrements that
+        <API label="None">assertThat</API>(<API label="">map.decrement</API>("apples", "bananas"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(-2L));
+    }
+
+   @Test
+    public void get_PreviousValueIsNull() {
+        <API label="None">assertThat</API>(<API label="">map.get</API>("toast", "bananas"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(null));
+        // even if we ask again
+        <API label="None">assertThat</API>(<API label="">map.get</API>("toast", "bananas"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(null));
+    }
+
+   @Test
+    public void get_ProvidedByPut() {
+        <API label="None">assertThat</API>(<API label="">map.put</API>("toast", "corn flakes", 17L), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(null));
+        // then we <API label="">get</API> what we <API label="">put</API> in
+        <API label="None">assertThat</API>(<API label="">map.get</API>("toast", "corn flakes"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(17L));
+    }
+
+   @Test
+    public void get_ColumnMap() {
+        // Expected behaviour from MultiKeyMap question
+        <API label="None">assertThat</API>(<API label="">map.put</API>("a", "A", 1L), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(null));
+        <API label="None">assertThat</API>(<API label="">map.put</API>("a", "B", 2L), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(null));
+        <API label="None">assertThat</API>(<API label="">map.put</API>("b", "C", 3L), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(null));
+
+       // then we can <API label="">get</API> a single value
+        <API label="None">assertThat</API>(<API label="">map.get</API>("a", "A"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(1L));
+        // or a Map
+        <API label="None">assertThat</API>(<API label="">map.get</API>("a"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(<API label="com.google.common.collect.ImmutableMap.of">ImmutableMap.of</API>("A", 1L, "B", 2L)));
+        // even if that Map only has a single value
+        <API label="None">assertThat</API>(<API label="">map.get</API>("b"), <API label="org.hamcrest.core.IsEqual.equalTo">equalTo</API>(<API label="com.google.common.collect.ImmutableMap.of">ImmutableMap.of</API>("C", 3L)));
+    }
+}
+
+</code></pre>
+

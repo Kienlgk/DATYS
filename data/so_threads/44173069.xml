@@ -1,0 +1,95 @@
+https://stackoverflow.com/questions/44173069
+
+  I am using Junit 4 and i am using 2 libraries to <API label="">handle</API> mocking in junit.
+  Below is my code.
+
+
+<pre><code>
+package tutorials;
+
+import static <API label="org.mockito.Mockito.when">org.mockito.Mockito.when</API>;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+// @RunWith attaches a runner with the test class to <API label="">initialize</API> the test data
+@RunWith(MockitoJUnitRunner.class)
+public class MathApplicationTester {
+
+  //@InjectMocks <API label="">annotation</API> is used to <API label="">create</API> and inject the <API label="">mock</API> object
+   @InjectMocks 
+   MathApplication mathApplication = new MathApplication();
+
+  //@Mock <API label="">annotation</API> is used to <API label="">create</API> the <API label="">mock</API> object to be injected
+   @Mock
+   CalculatorService calcService;
+
+  @Test
+   public void testAdd(){
+      //<API label="">add</API> the behavior of calc service to <API label="">add</API> two numbers
+      <API label="org.mockito.Mockito.when">when</API>(<API label="None">calcService.add</API>(10.0,20.0)).<API label="org.mockito.stubbing.OngoingStubbing.thenReturn">thenReturn</API>(30.00);
+
+     //test the <API label="">add</API> functionality
+      Assert.assertEquals(<API label="None">mathApplication.add</API>(10.0, 20.0),30.0,0);
+   }
+}
+
+</code></pre>
+
+
+ After running the above method as JUnit test .Following error message is displayed.
+
+
+<pre><code>
+java.lang.NoClassDefFoundError: org/powermock/core/classloader/MockClassLoader
+    at <API label="">org.powermock.api.mockito.internal.mockmaker.PowerMockMaker.createMock</API>(PowerMockMaker.java:49)
+    at <API label="">org.mockito.internal.util.MockUtil.createMock</API>(MockUtil.java:33)
+    at <API label="">org.mockito.internal.MockitoCore.mock</API>(MockitoCore.java:59)
+    at <API label="">org.mockito.Mockito.mock</API>(Mockito.java:1285)
+    at <API label="">org.mockito.internal.configuration.MockAnnotationProcessor.process</API>(MockAnnotationProcessor.java:33)
+    at <API label="">org.mockito.internal.configuration.MockAnnotationProcessor.process</API>(MockAnnotationProcessor.java:16)
+    at <API label="">org.mockito.internal.configuration.DefaultAnnotationEngine.createMockFor</API>(DefaultAnnotationEngine.java:43)
+    at <API label="">org.mockito.internal.configuration.DefaultAnnotationEngine.process</API>(DefaultAnnotationEngine.java:66)
+    at org.mockito.internal.configuration.InjectingAnnotationEngine.processIndependentAnnotations(InjectingAnnotationEngine.java:71)
+    at <API label="">org.mockito.internal.configuration.InjectingAnnotationEngine.process</API>(InjectingAnnotationEngine.java:55)
+    at <API label="">org.mockito.MockitoAnnotations.initMocks</API>(MockitoAnnotations.java:108)
+    at org.mockito.internal.runners.JUnit45AndHigherRunnerImpl$1.withBefores(JUnit45AndHigherRunnerImpl.java:27)
+    at org.junit.runners.BlockJUnit4ClassRunner.methodBlock(BlockJUnit4ClassRunner.java:276)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at <API label="">org.junit.runners.ParentRunner$3.run</API>(ParentRunner.java:290)
+    at <API label="">org.junit.runners.ParentRunner$1.schedule</API>(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at <API label="">org.junit.runners.ParentRunner$2.evaluate</API>(ParentRunner.java:268)
+    at <API label="">org.junit.runners.ParentRunner.run</API>(ParentRunner.java:363)
+    at <API label="">org.mockito.internal.runners.JUnit45AndHigherRunnerImpl.run</API>(JUnit45AndHigherRunnerImpl.java:37)
+    at <API label="">org.mockito.runners.MockitoJUnitRunner.run</API>(MockitoJUnitRunner.java:62)
+    at <API label="">org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run</API>(JUnit4TestReference.java:86)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.TestExecution.run</API>(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:459)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:678)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run</API>(RemoteTestRunner.java:382)
+    at <API label="">org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main</API>(RemoteTestRunner.java:192)
+Caused by: java.lang.ClassNotFoundException: org.powermock.core.classloader.MockClassLoader
+    at <API label="">java.net.URLClassLoader$1.run</API>(URLClassLoader.java:202)
+    at java.security.AccessController.doPrivileged(Native Method)
+    at <API label="">java.net.URLClassLoader.findClass</API>(URLClassLoader.java:190)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:306)
+    at <API label="">sun.misc.Launcher$AppClassLoader.loadClass</API>(Launcher.java:301)
+    at <API label="">java.lang.ClassLoader.loadClass</API>(ClassLoader.java:247)
+    ... 29 more
+
+</code></pre>
+
+
+ I am using mockito-all-1.10.19.jar and powermock-module-junit4-1.6.6.jar.Can anyone help me to resolve this issue.
+
+
+==========
+You need to <API label="">add</API> powermock-core.jar to your classpath
+

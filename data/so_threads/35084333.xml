@@ -1,0 +1,105 @@
+https://stackoverflow.com/questions/35084333
+I'm searching the best way to store values in data structure where the values came from querying three columns xxxxxx GROUP BY status, height; (i.e., two columns). the result looks like.
+
+<pre><code>
+status |  height | count |
+--------------------------
+InUse  |  90     |   5   |
+InUSe  |  80     |   3   |
+stock  |  80     |   1   |
+stock  |  120    |   3   |
+scrap  |  90     |   1   |
+
+</code></pre>
+
+Now I wanted to store in some data structure or MultiMap or whatever the best way so that I can <API label="">get</API> the value of count.
+
+Or
+
+whatever the best way I can manipulate with this values.
+
+One thing I figured is  for every unique set of (status, height)--> count I'll <API label="">get</API> the value of count so how I have to store them.
+
+Can I do something like <code>Map< Map, Long></code> 
+ Will this help me?
+or any other way to store and use this values with less confusion.
+
+<pre><code>
+status of type ENUM
+height of type Long
+count of type Long
+
+</code></pre>
+
+
+ EDIT: Thanks for your answers @Andy Turner, @OAD and @burhancerit
+
+
+these answers are working well in java. But I'm sorry for not being specific about my context I use.
+
+
+ The Context where I'm using this is I want to populate a HTML table
+  with this Guava Table suggested by @Andy Turner or <code>ArrayList</code> suggested by @OAD and @ burhancerit in jstl/EL.
+
+
+something like this
+
+<pre><code>
+status |  height | count |                  Height | stock | Scrap | InUSe  
+--------------------------                 ---------------------------------
+InUse  |  90     |   5   |          HTML      90    |  0    |  1    |   5 
+InUSe  |  80     |   3   |  ------> Table     80    |  1    |  0    |   3
+stock  |  80     |   1   |      using EL      120   |  3    |  0    |   0
+stock  |  120    |   3   |
+scrap  |  90     |   1   |
+
+</code></pre>
+
+So, Now which is the best way in this context and how to use them in EL.
+
+==========
+Since you tagged Guava: store it in a <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Table.html" rel="nofollow">Guava Table</a>, where the row is the status and column is the height:
+
+<pre><code>
+Table table;
+
+</code></pre>
+
+For example:
+
+<pre><code>
+// Construction:
+ImmutableTable.Builder <API label="None">builder</API> =
+    <API label="com.google.common.collect.ImmutableTable.builder">ImmutableTable.builder</API>();
+for (RowType row : rows) {
+  <API label=""><API label="com.google.common.collect.ImmutableTable.builder">builder</API>.put</API>(row.getStatus(), row.getHeight(), <API label="None">row.getCount</API>());
+} 
+ImmutableTable table = <API label="None"><API label="com.google.common.collect.ImmutableTable.builder">builder</API>.build</API>();
+
+// Retrieval:
+Long count = <API label="None">table.get</API>("InUse", 90L);
+
+</code></pre>
+
+
+
+To <API label="">build</API> the table you describe in your question, you can use the table structure suggested in this answer, or you can <API label="">transpose</API> the table, so that it is Table (swap the rows and columns). Then (example given as plain console output, since I am not familiar with el):
+
+<pre><code>
+Set statuses = <API label="None">table.columnKeySet</API>();
+<API label="None">System.out.print</API>("Height");
+for (String status : statuses) {
+  <API label="None">System.out.print</API>("|" + status);
+}
+<API label="None">System.out.println</API>();
+for (Long height : <API label="None">table.rowKeySet</API>()) {
+  <API label="None">System.out.print</API>(height);
+  for (String status : statuses) {
+    Long count = Objects.firstNotNull(<API label="None">table.get</API>(height, status), 0L);
+    <API label="None">System.out.print</API>("|" + count);
+  }
+  <API label="None">System.out.println</API>();
+}
+
+</code></pre>
+

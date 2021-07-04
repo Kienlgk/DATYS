@@ -1,0 +1,40 @@
+https://stackoverflow.com/questions/41890890
+The Javadoc for <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/Preconditions.html" rel="noreferrer">Preconditions</a> from Google's Guava library states that:
+
+
+ Projects which use <code>com.google.common</code> should generally avoid the use of <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Objects.html?is-external=true#requireNonNull-T-" rel="noreferrer">Objects.requireNonNull(Object)</a>. Instead, use whichever of <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/Preconditions.html#<API label="">checkNotNull</API>-T-" rel="noreferrer"><API label="com.google.common.base.Preconditions.checkNotNull">checkNotNull</API>(Object)</a> or <a href="https://google.github.io/guava/releases/snapshot/api/docs/com/google/common/base/Verify.html#<API label="">verifyNotNull</API>-T-" rel="noreferrer"><API label="com.google.common.base.Verify.verifyNotNull">Verify.verifyNotNull</API>(Object)</a> is appropriate to the situation. (The same goes for the message-accepting overloads.)
+
+
+What is the motivation behind this recommendation? I can't find any in the Javadoc.
+
+I mean, they pretty much do the same thing, and in these cases it is typically better to use the standard API (for example, the people behind Joda-Time now recommends people to use <code>java.time</code>, pretty much deprecating their own framework).
+
+As an example, these two rows of input validation do the same thing:
+
+<pre><code>
+class PreconditionsExample {
+  private String string;
+
+ public PreconditionsExample(String string) {
+    this.string = Objects.requireNonNull(string, "string must not be null");
+    this.string = <API label="com.google.common.base.Preconditions.checkNotNull">Preconditions.checkNotNull</API>(string, "string must not be null");
+  }
+}
+
+</code></pre>
+
+==========
+Guava's version offers a number of overloads that <API label="">accept</API> a format string and arguments. To quote the <a href="https://github.com/google/guava/wiki/PreconditionsExplained" rel="nofollow noreferrer">PreconditionsExplained</a> wiki:
+
+
+ We preferred rolling our own preconditions checks over e.g. the
+  comparable utilities from Apache Commons for a few reasons. Briefly:
+  
+  ...
+  
+  
+  Simple, varargs "printf-style" exception messages. (This advantage is also why we recommend continuing to use <code><API label="com.google.common.base.Preconditions.checkNotNull">checkNotNull</API></code> over
+  <a href="http://docs.oracle.com/javase/7/docs/api/java/util/Objects.html#requireNonNull(java.lang.Object,java.lang.String)" rel="nofollow noreferrer">Objects.requireNonNull</a> introduced in JDK 7.)
+  
+
+
