@@ -1,8 +1,8 @@
 version: '3'
 
 services:
-    datyps_env:
-        container_name: datyps
+    env:
+        container_name: datys
         build: .
         ports:
             - "9111:9111"
