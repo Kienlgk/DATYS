@@ -5,40 +5,6 @@ from utils.code_extractor import *
 from ApiMention import ApiMention
 from CodeBlock import CodeBlock, ListCodeBlock
 
-# def find_text(content):
-#     texts = []
-#     start = 0
-#     end = -1
-#     for line_idx, line in enumerate(content.split("\n")):
-#         if line.strip() == "<pre><code>":
-#             end = line_idx - 1
-#         elif line.strip() == "</code></pre>":
-#             start = line_idx + 1
-#         if (start != -1) and (end != -1):
-#             if start == 0 and end == 0:
-#                 pass
-#             else:
-#                 texts.append("\n".join([line for line in content.split("\n")[start:end+1] if (line.strip() != "" and line.strip() != "==========")]))
-#             start = -1
-#             end = -1
-#     text_end = []
-#     content_reverse = content.split("\n")
-#     content_reverse.reverse()
-#     return_content = None
-#     for line_idx, line in enumerate(content_reverse):
-#         if line.strip() == "</code></pre>":
-#             if line_idx == 0:
-#                 return texts
-#             else:
-#                 return_content = content_reverse[:line_idx-1]
-#                 return_content.reverse()
-#                 break
-#     if return_content is not None:
-#         return_content = [line for line in return_content if (line.strip() != "" and line.strip() != "==========")]
-#         return texts+return_content
-#     else:
-#         return texts
-
 class Thread:
     def __init__(self, content, title, tags):
         thread_id = content.split("\n")[0].split("/")[-1]

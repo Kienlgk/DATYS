@@ -24,16 +24,14 @@ comment_block = "/**.***/"
 comment_line = "\/\/.*"
 
 
-# import_stmt = "(import|package)[\ \t]+([^\s\{]*)"
 import_stmt = "(import)[\ \t]+([^\{]*?);"
 
 assign_stmt  = "[;\{^]\s*([^;\{]*=)\s*([^;]*)|^\s*([^;\{]*=)\s*([^;]*)"
 init_stmt = "([A-Za-z0-9_\.]+)\s+([A-Za-z0-9_\.]+)\s*;"
 fn_call_stmt = "(new\s)?([A-Za-z0-9_\.]+[(])" 
-# fn_call_stmt_1 = "(new\s[^\)]+\)\.)([A-Za-z0-9_\.]+[(])"
-fn_call_stmt_1 = "(new\s+[^\);]+?\)\.)([A-Za-z0-9_\.]+[(])" # new constructer().method()
-fn_call_stmt_2 = "(new.*[)][)]\.)([A-Za-z0-9_\.]+[(])" #new constructer(something()).method()
-fn_call_stmt_2_fix = "(new[^;]+?[)][)]\.)([A-Za-z0-9_\.]+[(])" #new constructer(something()).method()
+
+fn_call_stmt_1 = "(new\s+[^\);]+?\)\.)([A-Za-z0-9_\.]+[(])" 
+fn_call_stmt_2 = "(new.*[)][)]\.)([A-Za-z0-9_\.]+[(])"
 
 stmt_types = [import_stmt, init_stmt, assign_stmt, fn_call_stmt, fn_call_stmt_1, fn_call_stmt_2]
 
@@ -63,18 +61,14 @@ def clean_method_name(method_name):
     return method_name
 
 def extract_code(code_blk):
-    # logger.info(f"code:\n{code_blk}")
     var_type_dict = {}
     fn_var_dict = {}
     import_dict = {}
     lines = code_blk.split("\n")
-    # lines = [line[:-1] if line[-1]=="\n" else line for line in lines ]
     lines = [line for line in lines if len(line) > 0]
     code = " ".join(lines)
     for stmt_i, stmt_type in enumerate(stmt_types):
         pattern = re.compile(stmt_type)
-        # print("code")
-        # print(code)
         matches = pattern.findall(code)
         if len(matches) == 0:
             continue
@@ -100,7 +94,7 @@ def extract_code(code_blk):
                 else:
                     var_and_type = match[0]
                     
-                p = re.compile("(\S*\s+)?([A-Za-z0-9_\.]+)\s+([A-Za-z0-9_\.]+)\s*=") #JClass parameterType =
+                p = re.compile("(\S*\s+)?([A-Za-z0-9_\.]+)\s+([A-Za-z0-9_\.]+)\s*=")
                 side_matches = p.findall(var_and_type)
                 if len(side_matches) == 0:
                     continue
@@ -141,68 +135,8 @@ def extract_code(code_blk):
                 except Exception as e:
                     print(match)
                     raise e
-                
-        # if stmt_i ==5:
-        #     for match in matches:
-        #         constructor_new, var_dot_method = match
-        #         print(constructor_new)
-        #         print(var_dot_method)
-
-        #         method = var_dot_method.split(".")[-1]
-        #         pos = get_method_pos(constructor_new)
-                    
-        #         p = re.compile("new\s+([^(]+)[(]")
-        #         side_matches = p.findall(constructor_new)
-        #         var_or_module = side_matches[pos]
-        #         add_dict(fn_var_dict, clean_method_name(method), var_or_module, stmt_i)
     
-    # logger.info('[var_type_dict]\n'+pformat(var_type_dict))
-    # logger.info('[fn_var_dict]\n'+pformat(fn_var_dict))
     return var_type_dict, fn_var_dict, import_dict
-
-def resolve_imports_old(import_dict):
-    def append_value_to_key(key, value, dict):
-        if key not in dict:
-            dict[key] = []
-        dict[key].append(value)
-
-    dep_tracing_dict = {}
-    for key in import_dict.keys():
-        last_part = key.split(".")[-1]
-        pre_part = ".".join(key.split(".")[:-1])
-        
-        term_first_char = [term[0] for term in key.split(".")]
-        class_term_idx = None
-        for term_i, char in enumerate(term_first_char):
-            if char == char.upper():
-                class_term_idx = term_i
-                break
-        if class_term_idx is None:
-            
-            if last_part == "*":
-                pass
-                # append_value_to_key(key=last_part, value=pre_part, dict=dep_tracing_dict)
-                # wildcard_imports.append(pre_part)
-            else:
-                raise Exception(f"error while adding wildcard_imports with `{pre_part}`")
-        else:
-            # _type = ".".join(key.split(".")[:class_term_idx+1])
-            _type = key.split(".")[class_term_idx]
-            _type_fqn = ".".join(key.split(".")[:class_term_idx+1])
-            if not _type == last_part:
-                try:
-                    assert _type_fqn+"."+last_part == key
-                except Exception as e:
-                    print("Type assertion error:")
-                    print("key:", key)
-                    print("_type", _type)
-                    print("last_part", last_part)
-                    return None
-            
-
-            append_value_to_key(key=last_part, value=key, dict=dep_tracing_dict)
-        
-    return dep_tracing_dict
 
 import json
 class_method_dict_dir = "/app/data/class_methods_dict.json"
@@ -219,7 +153,6 @@ def resolve_imports(import_dict):
 
     dep_tracing_dict = {}
     
-
     for key in import_dict.keys():
         last_part = key.split(".")[-1]
         pre_part = ".".join(key.split(".")[:-1])
@@ -234,7 +167,6 @@ def resolve_imports(import_dict):
             
             if last_part == "*":
                 append_value_to_key(key=last_part, value=pre_part, dict=dep_tracing_dict)
-                # wildcard_imports.append(pre_part)
             else:
                 raise Exception(f"error while adding wildcard_imports with `{pre_part}`")
         else:
@@ -245,10 +177,10 @@ def resolve_imports(import_dict):
                 try:
                     assert _type_fqn+"."+last_part == key
                 except Exception as e:
-                    print("Type assertion error:")
-                    print("key:", key)
-                    print("_type", _type)
-                    print("last_part", last_part)
+                    # print("Type assertion error:")
+                    # print("key:", key)
+                    # print("_type", _type)
+                    # print("last_part", last_part)
                     return None
                 
                 if last_part == "*":
@@ -289,8 +221,6 @@ def trace_name(var_type_dict, fn_var_dict):
                 for candidate in type_candidates:
                     single_type_method, multi_type_method = add_method(method_simple_name, candidate, single_type_method, multi_type_method)
     
-    # logger.info('[single_type_method]\n'+pformat(single_type_method))
-    # logger.info('[multi_type_method]\n'+pformat(multi_type_method))
     return single_type_method, multi_type_method
 
 def determine_var_package(var_type_dict, fn_var_dict):
@@ -312,11 +242,4 @@ def determine_var_package(var_type_dict, fn_var_dict):
             elif var_stmt_i in [4, 5]:
                 add_method(method_simple_name, var, single_type_method, multi_type_method)
     
-    # logger.info('[single_type_method]\n'+pformat(single_type_method))
-    # logger.info('[multi_type_method]\n'+pformat(multi_type_method))
     return single_type_method, multi_type_method
-
-
-
-# trace_name(fn_var_dict, var_type_dict)
-
